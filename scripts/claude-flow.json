@@ -1,0 +1,53 @@
+{
+  "version": "3",
+  "name": "autodelovi-pipeline",
+  "description": "Multi-agent pipeline for autodelovi.sale scraping, normalization, DB updates, reporting",
+  "defaults": { "model": "claude-sonnet-4-6", "max_tokens": 4096, "temperature": 0 },
+  "variables": { "project": "autodelovi.sale", "market": "Serbia", "currency": "RSD" },
+  "workflows": {
+    "full-pipeline": {
+      "description": "Full daily scrape + normalize + upsert + report",
+      "trigger": "cron:0 4 * * *",
+      "steps": [
+        { "agent": "fetch-agent",     "id": "fetch" },
+        { "agent": "normalize-agent", "id": "normalize", "depends_on": ["fetch"] },
+        { "agent": "db-agent",        "id": "upsert",    "depends_on": ["normalize"] },
+        { "agent": "monitor-agent",   "id": "monitor",   "depends_on": ["upsert"] },
+        { "agent": "report-agent",    "id": "report",    "depends_on": ["monitor"] }
+      ]
+    },
+    "price-watch": {
+      "description": "Lightweight 6-hour price monitoring",
+      "trigger": "cron:0 */6 * * *",
+      "steps": [
+        { "agent": "fetch-agent",   "id": "fetch",   "config": { "mode": "prices_only" } },
+        { "agent": "monitor-agent", "id": "monitor", "depends_on": ["fetch"] }
+      ]
+    },
+    "on-demand-scrape": {
+      "description": "Manual scrape triggered via API",
+      "trigger": "api:/api/scrape",
+      "steps": [
+        { "agent": "fetch-agent",     "id": "fetch" },
+        { "agent": "normalize-agent", "id": "normalize", "depends_on": ["fetch"] },
+        { "agent": "db-agent",        "id": "upsert",    "depends_on": ["normalize"] }
+      ]
+    },
+    "market-analysis": {
+      "description": "Weekly market intelligence report",
+      "trigger": "cron:0 8 * * 1",
+      "steps": [
+        { "agent": "analyst-agent", "id": "analyze" },
+        { "agent": "report-agent",  "id": "report",  "depends_on": ["analyze"] }
+      ]
+    }
+  },
+  "agents": {
+    "fetch-agent":     { "description": "Scrapes parts from Serbian supplier websites", "prompt_file": "agents/fetch-agent.md",     "tools": ["web_fetch","bash"], "timeout_seconds": 240, "retry": { "max": 2, "backoff": "exponential" } },
+    "normalize-agent": { "description": "Normalizes and validates scraped part data",  "prompt_file": "agents/normalize-agent.md", "tools": ["bash"], "timeout_seconds": 60 },
+    "db-agent":        { "description": "Upserts normalized parts into Supabase",      "prompt_file": "agents/db-agent.md",        "tools": ["bash"], "timeout_seconds": 120 },
+    "monitor-agent":   { "description": "Detects price changes and anomalies",         "prompt_file": "agents/monitor-agent.md",   "tools": ["bash"], "timeout_seconds": 30 },
+    "report-agent":    { "description": "Generates daily summary report",              "prompt_file": "agents/report-agent.md",    "tools": ["bash"], "timeout_seconds": 60 },
+    "analyst-agent":   { "description": "Weekly market trend analysis",                "prompt_file": "agents/analyst-agent.md",   "tools": ["bash","web_search"], "timeout_seconds": 180 }
+  }
+}
