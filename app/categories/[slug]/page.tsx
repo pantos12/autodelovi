@@ -24,11 +24,11 @@ export default async function CategoryPage({ params }: { params: { slug: string 
   const category = STATIC_CATEGORIES.find(c => c.slug === params.slug);
 
   const [partsResult, dbCategories] = await Promise.all([
-    getParts({ category: params.slug, per_page: 60 }).catch(() => ({ data: [], meta: { total: 0, page: 1, per_page: 60, total_pages: 1 } })),
+    getParts({ category: params.slug, per_page: 60 }).catch(() => ({ parts: [] as any[], total: 0, page: 1, per_page: 60, total_pages: 1 })),
     getCategories().catch(() => []),
   ]);
 
-  const parts = partsResult.data || [];
+  const parts = partsResult.parts || [];
   const displayCategories = dbCategories.length > 0
     ? dbCategories
     : STATIC_CATEGORIES.map(c => ({ id: c.slug, slug: c.slug, name: c.name, name_sr: c.name, icon: c.icon, sort_order: 0 }));
@@ -95,7 +95,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
         <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '24px' }}>{parts.length} delova u kategoriji "{category.name}"</p>
         {parts.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-            {parts.map(part => {
+            {parts.map((part: any) => {
               const inStock = (part.stock_quantity ?? 0) > 0;
               return (
                 <div key={part.id} style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
