@@ -4,140 +4,173 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { mockParts, Part } from '../lib/data';
 
-const ATTRS = [
-  { key: 'nameSr', label: 'Naziv dela' },
-  { key: 'category', label: 'Kategorija' },
-  { key: 'make', label: 'Marka vozila' },
-  { key: 'model', label: 'Model vozila' },
-  { key: 'yearFrom', label: 'Godina od' },
-  { key: 'yearTo', label: 'Godina do' },
-  { key: 'oem', label: 'OEM broj' },
+const ATTRS: { key: keyof Part; label: string }[] = [
   { key: 'price', label: 'Cena (RSD)' },
-  { key: 'supplier', label: 'Dobavljac' },
+  { key: 'category', label: 'Kategorija' },
+  { key: 'make', label: 'Marka' },
+  { key: 'model', label: 'Model' },
+  { key: 'yearFrom', label: 'Od godine' },
+  { key: 'yearTo', label: 'Do godine' },
+  { key: 'oem', label: 'OEM broj' },
+  { key: 'supplier', label: 'Dobavljač' },
   { key: 'inStock', label: 'Na stanju' },
 ];
 
+function getCellStyle(key: string, value: any, allValues: any[]): React.CSSProperties {
+  if (key !== 'price') return { color: '#fff' };
+  const nums = allValues.filter(v => typeof v === 'number') as number[];
+  if (nums.length < 2) return { color: '#fff' };
+  const min = Math.min(...nums);
+  const max = Math.max(...nums);
+  if (value === min) return { color: '#22c55e', fontWeight: 700 };
+  if (value === max) return { color: '#ef4444', fontWeight: 700 };
+  return { color: '#fff' };
+}
+
 function ComparisonContent() {
   const searchParams = useSearchParams();
-  const idsParam = searchParams.get('ids');
-  const initialIds = idsParam ? idsParam.split(',').slice(0, 3) : [];
-
-  const [selectedIds, setSelectedIds] = useState<string[]>(initialIds);
+  const initialIds = searchParams.get('ids')?.split(',').filter(Boolean) || [];
+  const [selectedIds, setSelectedIds] = useState<string[]>(initialIds.slice(0, 3));
   const [search, setSearch] = useState('');
 
-  const selectedParts = selectedIds.map(id => mockParts.find(p => p.id === id)).filter(Boolean) as Part[];
-  const availableParts = mockParts.filter(p => !selectedIds.includes(p.id));
-  const filteredAvailable = search ? availableParts.filter(p => p.nameSr.toLowerCase().includes(search.toLowerCase()) || p.make.toLowerCase().includes(search.toLowerCase())) : availableParts;
+  const parts = selectedIds.map(id => mockParts.find(p => p.id === id)).filter(Boolean) as Part[];
+  const filtered = mockParts.filter(p =>
+    p.nameSr.toLowerCase().includes(search.toLowerCase()) ||
+    p.make.toLowerCase().includes(search.toLowerCase())
+  );
 
-  function addPart(id: string) {
-    if (selectedIds.length < 3) setSelectedIds([...selectedIds, id]);
-  }
-  function removePart(id: string) {
-    setSelectedIds(selectedIds.filter(x => x !== id));
-  }
-
-  function getCellStyle(values: string[], idx: number): React.CSSProperties {
-    if (values.length < 2) return {};
-    const numVals = values.map(Number).filter(n => !isNaN(n));
-    if (numVals.length === values.length) {
-      const max = Math.max(...numVals);
-      const min = Math.min(...numVals);
-      if (Number(values[idx]) === min && min !== max) return { color: '#4ade80', fontWeight: 600 };
-      if (Number(values[idx]) === max && min !== max) return { color: '#f87171', fontWeight: 600 };
+  const addPart = (id: string) => {
+    if (selectedIds.length < 3 && !selectedIds.includes(id)) {
+      setSelectedIds([...selectedIds, id]);
     }
-    return {};
-  }
+  };
 
-  const card = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' } as React.CSSProperties;
+  const removePart = (id: string) => setSelectedIds(selectedIds.filter(x => x !== id));
+
+  const s = {
+    page: { background: '#0c0d0f', minHeight: '100vh' } as React.CSSProperties,
+    container: { maxWidth: '1200px', margin: '0 auto', padding: '32px 16px' } as React.CSSProperties,
+    input: { width: '100%', padding: '10px 14px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px', boxSizing: 'border-box' as const },
+    th: { padding: '12px 16px', background: '#1a1b1f', color: '#aaa', fontSize: '13px', fontWeight: 600, textAlign: 'left' as const, borderBottom: '1px solid #252629' },
+    td: { padding: '12px 16px', borderBottom: '1px solid #1a1b1f', fontSize: '14px' },
+  };
+
+  if (parts.length === 0 && selectedIds.length === 0) {
+    return (
+      <div style={s.page}>
+        <div style={{ ...s.container, textAlign: 'center', paddingTop: '80px' }}>
+          <p style={{ fontSize: '48px', marginBottom: '16px' }}>⚖️</p>
+          <h2 style={{ color: '#fff', fontSize: '24px', marginBottom: '12px' }}>Poređenje delova</h2>
+          <p style={{ color: '#aaa', fontSize: '16px', marginBottom: '32px' }}>Odaberite do 3 dela za poređenje iz marketplace-a.</p>
+          <Link href="/marketplace" style={{ padding: '12px 28px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontWeight: 700 }}>
+            Idi na Marketplace
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '48px 24px' }}>
-      <div style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '40px', fontWeight: 800, letterSpacing: '-1px', marginBottom: '12px' }}>Poredenje delova</h1>
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>Uporedite do 3 dela. Zelena = bolja cena, crvena = skuplje.</p>
-      </div>
+    <div style={s.page}>
+      <div style={s.container}>
+        <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>
+          Poređenje <span style={{ color: '#ff4d00' }}>Delova</span>
+        </h1>
+        <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '32px' }}>Uporedite do 3 dela istovremeno</p>
 
-      {selectedIds.length < 3 && (
-        <div style={{ ...card, padding: '20px', marginBottom: '32px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: 'rgba(255,255,255,0.6)' }}>Dodajte deo ({selectedIds.length}/3)</h3>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Pretrazite delove..." style={{ width: '100%', background: '#1a1c1e', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box', marginBottom: '12px' }} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
-            {filteredAvailable.slice(0, 12).map(p => (
-              <button key={p.id} onClick={() => addPart(p.id)} style={{ textAlign: 'left', padding: '10px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
-                <div style={{ fontWeight: 600, marginBottom: '2px' }}>{p.nameSr}</div>
-                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{p.make} {p.model} - {p.price.toLocaleString('sr-RS')} RSD</div>
-              </button>
-            ))}
+        {/* Add part search */}
+        {selectedIds.length < 3 && (
+          <div style={{ marginBottom: '32px' }}>
+            <input
+              style={s.input}
+              placeholder="Pretražite deo za dodavanje..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && (
+              <div style={{ background: '#1a1b1f', borderRadius: '8px', marginTop: '8px', maxHeight: '200px', overflowY: 'auto', border: '1px solid #333' }}>
+                {filtered.slice(0, 10).map(p => (
+                  <div
+                    key={p.id}
+                    onClick={() => { addPart(p.id); setSearch(''); }}
+                    style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #252629', color: '#fff', fontSize: '14px' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#252629')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    {p.nameSr} — {p.make} {p.model} — {p.price.toLocaleString('sr-RS')} RSD
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {selectedParts.length > 0 ? (
+        {/* Comparison table */}
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', background: '#141517', borderRadius: '12px', overflow: 'hidden' }}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '12px 16px', color: 'rgba(255,255,255,0.35)', fontWeight: 500, fontSize: '11px', letterSpacing: '1px', textTransform: 'uppercase', width: '160px' }}>Atribut</th>
-                {selectedParts.map((p) => (
-                  <th key={p.id} style={{ padding: '12px 16px', textAlign: 'left', background: 'rgba(255,255,255,0.04)', borderLeft: '1px solid rgba(255,255,255,0.08)', minWidth: '240px' }}>
+                <th style={s.th}>Atribut</th>
+                {parts.map(part => (
+                  <th key={part.id} style={{ ...s.th, minWidth: '200px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 700, fontSize: '14px' }}>{p.nameSr}</span>
-                      <button onClick={() => removePart(p.id)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '18px' }}>x</button>
+                      <div>
+                        <div style={{ color: '#fff', fontSize: '15px' }}>{part.nameSr}</div>
+                        <div style={{ color: '#aaa', fontSize: '12px', fontWeight: 400 }}>{part.make} {part.model}</div>
+                      </div>
+                      <button
+                        onClick={() => removePart(part.id)}
+                        style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '18px' }}
+                      >×</button>
                     </div>
-                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '4px' }}>{p.make} {p.model}</div>
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {ATTRS.map((attr, attrIdx) => {
-                const values = selectedParts.map(p => {
-                  const v = (p as any)[attr.key];
-                  if (attr.key === 'inStock') return v ? 'Da' : 'Ne';
-                  return String(v);
-                });
+              {ATTRS.map(attr => {
+                const vals = parts.map(p => p[attr.key]);
                 return (
-                  <tr key={attr.key} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: attrIdx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
-                    <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.45)', fontSize: '12px' }}>{attr.label}</td>
-                    {values.map((v, i) => (
-                      <td key={i} style={{ padding: '12px 16px', borderLeft: '1px solid rgba(255,255,255,0.06)', ...getCellStyle(values, i) }}>
-                        {attr.key === 'price' ? Number(v).toLocaleString('sr-RS') + ' RSD' : v}
-                      </td>
-                    ))}
+                  <tr key={attr.key}>
+                    <td style={{ ...s.td, color: '#aaa', fontWeight: 600 }}>{attr.label}</td>
+                    {parts.map(part => {
+                      const val = part[attr.key];
+                      const display = typeof val === 'boolean' ? (val ? '✓ Da' : '✗ Ne') :
+                        attr.key === 'price' ? (val as number).toLocaleString('sr-RS') + ' RSD' : String(val);
+                      return (
+                        <td key={part.id} style={{ ...s.td, ...getCellStyle(attr.key as string, val, vals) }}>
+                          {display}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })}
+              <tr>
+                <td style={{ ...s.td, color: '#aaa', fontWeight: 600 }}>Akcija</td>
+                {parts.map(part => (
+                  <td key={part.id} style={s.td}>
+                    <Link
+                      href={`/parts/${part.id}`}
+                      style={{ padding: '8px 16px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontSize: '13px', fontWeight: 600 }}
+                    >
+                      Kupi
+                    </Link>
+                  </td>
+                ))}
+              </tr>
             </tbody>
           </table>
         </div>
-      ) : (
-        <div style={{ ...card, padding: '60px', textAlign: 'center', color: 'rgba(255,255,255,0.3)' }}>
-          <div style={{ fontSize: '32px', marginBottom: '16px' }}>VS</div>
-          <p style={{ marginBottom: '16px' }}>Dodajte delove za poredenje</p>
-          <Link href="/marketplace" style={{ color: '#f9372c', textDecoration: 'none', fontSize: '13px', fontWeight: 600 }}>Pregledajte marketplace</Link>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
 
 export default function ComparisonPage() {
   return (
-    <div style={{ background: '#0c0d0f', minHeight: '100vh', color: '#fff', fontFamily: 'Inter, sans-serif' }}>
-      <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 48px', height: '64px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(12,13,15,0.95)', position: 'sticky', top: 0, zIndex: 50 }}>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <span style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>AutoDelovi<span style={{ color: '#f9372c' }}>.sale</span></span>
-        </Link>
-        <div style={{ display: 'flex', gap: '32px' }}>
-          <Link href="/marketplace" style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', letterSpacing: '1px', textDecoration: 'none' }}>MARKETPLACE</Link>
-          <Link href="/suppliers" style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', letterSpacing: '1px', textDecoration: 'none' }}>DOBAVLJACI</Link>
-          <Link href="/vehicle-selection" style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', letterSpacing: '1px', textDecoration: 'none' }}>IZBOR VOZILA</Link>
-          <Link href="/comparison" style={{ color: '#f9372c', fontWeight: 600, fontSize: '13px', letterSpacing: '1px', textDecoration: 'none', borderBottom: '2px solid #f9372c', paddingBottom: '2px' }}>POREDENJE</Link>
-        </div>
-      </nav>
-      <Suspense fallback={<div style={{ padding: '48px', textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>Ucitavanje...</div>}>
-        <ComparisonContent />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center', color: '#aaa' }}>Učitavanje...</div>}>
+      <ComparisonContent />
+    </Suspense>
   );
 }
