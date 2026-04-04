@@ -1,24 +1,53 @@
 'use client';
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { mockParts, categories } from '../lib/data';
+import type { Part } from '@/lib/types';
+
+const STATIC_CATEGORIES = [
+  { slug: 'motor', name: 'Motor', icon: '⚙️' },
+  { slug: 'kocnice', name: 'Kocnice', icon: '🛑' },
+  { slug: 'elektronika', name: 'Elektronika', icon: '⚡' },
+  { slug: 'karoserija', name: 'Karoserija', icon: '🚗' },
+  { slug: 'suspenzija', name: 'Suspenzija', icon: '🔧' },
+  { slug: 'transmisija', name: 'Transmisija', icon: '⚙️' },
+  { slug: 'ostalo', name: 'Ostalo', icon: '📦' },
+];
 
 function MarketplaceContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [parts, setParts] = useState<Part[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
   const [compareList, setCompareList] = useState<string[]>([]);
   const [filterMake, setFilterMake] = useState(searchParams.get('make') || '');
   const [filterCategory, setFilterCategory] = useState(searchParams.get('category') || '');
   const [filterInStock, setFilterInStock] = useState(false);
-  const [sortBy, setSortBy] = useState('price-asc');
+  const [sortBy, setSortBy] = useState('price_asc');
 
-  const filteredParts = mockParts.filter(part => {
-    if (filterMake && part.make !== filterMake) return false;
-    if (filterCategory && part.categorySlug !== filterCategory) return false;
-    if (filterInStock && !part.inStock) return false;
-    return true;
-  }).sort((a, b) => sortBy === 'price-asc' ? a.price - b.price : b.price - a.price);
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (filterMake) params.set('make', filterMake);
+        if (filterCategory) params.set('category', filterCategory);
+        if (filterInStock) params.set('in_stock', 'true');
+        params.set('sort', sortBy);
+        params.set('per_page', '60');
+        const res = await fetch(`/api/parts?${params}`);
+        const json = await res.json();
+        setParts(json.data || []);
+        setTotal(json.meta?.total || json.data?.length || 0);
+      } catch {
+        setParts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [filterMake, filterCategory, filterInStock, sortBy]);
 
   const toggleCompare = (id: string) => {
     setCompareList(prev =>
@@ -34,6 +63,8 @@ function MarketplaceContent() {
     select: { width: '100%', padding: '8px 12px', background: '#0c0d0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' } as React.CSSProperties,
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
   };
+
+  const displayParts = parts;
 
   return (
     <div style={s.page}>
@@ -53,7 +84,7 @@ function MarketplaceContent() {
             <label style={s.label}>Kategorija</label>
             <select style={s.select} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
               <option value="">Sve kategorije</option>
-              {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+              {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
             </select>
           </div>
           <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -66,11 +97,12 @@ function MarketplaceContent() {
         </div>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <p style={{ color: '#aaa', fontSize: '14px' }}>{filteredParts.length} delova</p>
+            <p style={{ color: '#aaa', fontSize: '14px' }}>{loading ? 'Učitavanje...' : `${total} delova`}</p>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <select style={{ ...s.select, width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                <option value="price-asc">Cena: niža rarr viša</option>
-                <option value="price-desc">Cena: viša rarr niža</option>
+                <option value="price_asc">Cena: niža → viša</option>
+                <option value="price_desc">Cena: viša → niža</option>
+                <option value="newest">Najnovije</option>
               </select>
               {compareList.length > 0 && (
                 <button onClick={() => router.push('/comparison?ids=' + compareList.join(','))} style={{ padding: '8px 16px', background: '#ff4d00', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
@@ -79,24 +111,39 @@ function MarketplaceContent() {
               )}
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-            {filteredParts.map(part => (
-              <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
-                <div style={{ background: '#252629', height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }}>{part.image}</div>
-                <div style={{ padding: '12px' }}>
-                  <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{part.make} {part.model}</p>
-                  <h3 style={{ color: '#fff', fontSize: '14px', marginBottom: '8px', lineHeight: '1.3' }}>{part.nameSr}</h3>
-                  <p style={{ color: '#ff4d00', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{part.price.toLocaleString('sr-RS')} RSD</p>
-                  <p style={{ color: part.inStock ? '#22c55e' : '#ef4444', fontSize: '12px', marginBottom: '10px' }}>{part.inStock ? 'Na stanju' : 'Nema na stanju'}</p>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <Link href={`/parts/${part.id}`} style={{ flex: 1, padding: '8px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px' }}>Detalji</Link>
-                    <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
+          {loading ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} style={{ ...s.card, height: '280px', background: 'linear-gradient(90deg, #1a1b1f 25%, #252629 50%, #1a1b1f 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+              {displayParts.map(part => {
+                const vehicle = part.compatible_vehicles?.[0];
+                const inStock = (part.stock_quantity ?? 0) > 0;
+                const partUrl = `/parts/${part.slug || part.id}`;
+                return (
+                  <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
+                    <div style={{ background: '#252629', height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', overflow: 'hidden' }}>
+                      {part.images?.[0] ? <img src={part.images[0]} alt={part.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🔧'}
+                    </div>
+                    <div style={{ padding: '12px' }}>
+                      {vehicle && <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{vehicle.make} {vehicle.model}</p>}
+                      <h3 style={{ color: '#fff', fontSize: '14px', marginBottom: '8px', lineHeight: '1.3' }}>{part.name_sr || part.name}</h3>
+                      <p style={{ color: '#ff4d00', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{part.price.toLocaleString('sr-RS')} RSD</p>
+                      <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '12px', marginBottom: '10px' }}>{inStock ? 'Na stanju' : 'Nema na stanju'}</p>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <Link href={partUrl} style={{ flex: 1, padding: '8px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px' }}>Detalji</Link>
+                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          {filteredParts.length === 0 && (
+                );
+              })}
+            </div>
+          )}
+          {!loading && displayParts.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
               <p style={{ fontSize: '48px' }}>🔍</p>
               <p style={{ fontSize: '18px', color: '#aaa' }}>Nema rezultata za date filtere</p>
