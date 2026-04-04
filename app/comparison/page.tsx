@@ -44,7 +44,6 @@ function ComparisonContent() {
       setSelectedIds([...selectedIds, id]);
     }
   };
-
   const removePart = (id: string) => setSelectedIds(selectedIds.filter(x => x !== id));
 
   const s = {
@@ -72,13 +71,16 @@ function ComparisonContent() {
 
   return (
     <div style={s.page}>
+      <style>{`
+        .search-result-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #252629; color: #fff; font-size: 14px; }
+        .search-result-item:hover { background: #252629; }
+      `}</style>
       <div style={s.container}>
         <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>
           Poređenje <span style={{ color: '#ff4d00' }}>Delova</span>
         </h1>
         <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '32px' }}>Uporedite do 3 dela istovremeno</p>
 
-        {/* Add part search */}
         {selectedIds.length < 3 && (
           <div style={{ marginBottom: '32px' }}>
             <input
@@ -92,10 +94,8 @@ function ComparisonContent() {
                 {filtered.slice(0, 10).map(p => (
                   <div
                     key={p.id}
+                    className="search-result-item"
                     onClick={() => { addPart(p.id); setSearch(''); }}
-                    style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #252629', color: '#fff', fontSize: '14px' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#252629')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
                     {p.nameSr} — {p.make} {p.model} — {p.price.toLocaleString('sr-RS')} RSD
                   </div>
@@ -105,7 +105,6 @@ function ComparisonContent() {
           </div>
         )}
 
-        {/* Comparison table */}
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', background: '#141517', borderRadius: '12px', overflow: 'hidden' }}>
             <thead>
@@ -135,8 +134,11 @@ function ComparisonContent() {
                     <td style={{ ...s.td, color: '#aaa', fontWeight: 600 }}>{attr.label}</td>
                     {parts.map(part => {
                       const val = part[attr.key];
-                      const display = typeof val === 'boolean' ? (val ? '✓ Da' : '✗ Ne') :
-                        attr.key === 'price' ? (val as number).toLocaleString('sr-RS') + ' RSD' : String(val);
+                      const display = typeof val === 'boolean'
+                        ? (val ? '✓ Da' : '✗ Ne')
+                        : attr.key === 'price'
+                        ? (val as number).toLocaleString('sr-RS') + ' RSD'
+                        : String(val);
                       return (
                         <td key={part.id} style={{ ...s.td, ...getCellStyle(attr.key as string, val, vals) }}>
                           {display}
