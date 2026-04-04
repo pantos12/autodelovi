@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import NavBar from './components/NavBar';
 
 export const metadata: Metadata = {
   title: {
@@ -27,17 +28,16 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-    },
   },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="sr">
-      <body>{children}</body>
+      <body style={{ margin: 0, background: '#0c0d0f' }}>
+        <NavBar />
+        {children}
+      </body>
     </html>
   );
 }
