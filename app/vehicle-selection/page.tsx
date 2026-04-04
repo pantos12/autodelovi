@@ -1,155 +1,140 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { vehicleMakes, getModels, getEngines, getYears } from '../lib/data';
+import { vehicleData, getModels, getEngines, getYears } from '../lib/data';
 
-type Step = 1 | 2 | 3 | 4;
+const steps = ['Marka', 'Model', 'Godište', 'Motor'];
 
 export default function VehicleSelection() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStep] = useState(0);
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
   const [year, setYear] = useState('');
   const [engine, setEngine] = useState('');
 
-  const models = getModels(make);
-  const engines = getEngines(make, model);
+  const makes = Object.keys(vehicleData);
+  const models = make ? getModels(make) : [];
+  const engines = make && model ? getEngines(make, model) : [];
   const years = getYears();
 
-  function handleSearch() {
+  const handleSearch = () => {
     const params = new URLSearchParams();
     if (make) params.set('make', make);
     if (model) params.set('model', model);
     if (year) params.set('year', year);
     if (engine) params.set('engine', engine);
     router.push('/marketplace?' + params.toString());
-  }
+  };
 
-  const stepLabels = ['Marka', 'Model', 'Godiste', 'Motor'];
-  const stepValues = [make, model, year, engine];
+  const canProceed = () => {
+    if (step === 0) return !!make;
+    if (step === 1) return !!model;
+    if (step === 2) return !!year;
+    return !!engine;
+  };
 
-  const cardStyle = (active: boolean, selected: boolean, value: string): React.CSSProperties => ({
-    padding: '14px 20px',
-    borderRadius: '10px',
-    border: '1px solid',
-    borderColor: selected ? '#f9372c' : active ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.07)',
-    background: selected ? 'rgba(249,55,44,0.1)' : 'transparent',
-    color: selected ? '#f9372c' : active ? '#fff' : 'rgba(255,255,255,0.5)',
-    cursor: active ? 'pointer' : 'default',
-    fontSize: '14px',
-    fontWeight: selected ? 600 : 400,
-    transition: 'all 0.15s',
-  });
+  const s = {
+    page: { background: '#0c0d0f', minHeight: '100vh', padding: '40px 16px' } as React.CSSProperties,
+    container: { maxWidth: '600px', margin: '0 auto' } as React.CSSProperties,
+    card: { background: '#1a1b1f', borderRadius: '16px', padding: '32px', border: '1px solid #252629' } as React.CSSProperties,
+    stepBtn: (active: boolean, done: boolean): React.CSSProperties => ({
+      width: '32px', height: '32px', borderRadius: '50%', border: 'none', cursor: 'pointer',
+      background: done ? '#22c55e' : active ? '#ff4d00' : '#333',
+      color: '#fff', fontWeight: 700, fontSize: '14px',
+    }),
+    optionBtn: (selected: boolean): React.CSSProperties => ({
+      width: '100%', padding: '14px 16px', background: selected ? '#ff4d00' : '#252629',
+      border: selected ? '2px solid #ff4d00' : '2px solid transparent',
+      borderRadius: '10px', color: '#fff', cursor: 'pointer', textAlign: 'left', fontSize: '15px',
+      fontWeight: selected ? 600 : 400, marginBottom: '8px',
+    }),
+    navBtn: (primary: boolean): React.CSSProperties => ({
+      padding: '12px 24px', background: primary ? '#ff4d00' : '#333',
+      border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer',
+      fontSize: '15px', fontWeight: 600, opacity: primary && !canProceed() ? 0.5 : 1,
+    }),
+  };
+
+  const renderOptions = (items: string[], selected: string, onSelect: (v: string) => void) => (
+    <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+      {items.map(item => (
+        <button key={item} style={s.optionBtn(selected === item)} onClick={() => onSelect(item)}>
+          {item}
+        </button>
+      ))}
+    </div>
+  );
+
+  const getStepContent = () => {
+    if (step === 0) return renderOptions(makes, make, v => { setMake(v); setModel(''); setEngine(''); });
+    if (step === 1) return renderOptions(models, model, v => { setModel(v); setEngine(''); });
+    if (step === 2) return renderOptions(years, year, setYear);
+    if (step === 3) return renderOptions(engines, engine, setEngine);
+    return null;
+  };
 
   return (
-    <div style={{ background: '#0c0d0f', minHeight: '100vh', color: '#fff', fontFamily: 'Inter, sans-serif' }}>
-      <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 48px', height: '64px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(12,13,15,0.95)', position: 'sticky', top: 0, zIndex: 50 }}>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <span style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>AutoDelovi<span style={{ color: '#f9372c' }}>.sale</span></span>
-        </Link>
-        <div style={{ display: 'flex', gap: '32px' }}>
-          <Link href="/marketplace" style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', letterSpacing: '1px', textDecoration: 'none' }}>MARKETPLACE</Link>
-          <Link href="/suppliers" style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', letterSpacing: '1px', textDecoration: 'none' }}>DOBAVLJACI</Link>
-          <Link href="/vehicle-selection" style={{ color: '#f9372c', fontWeight: 600, fontSize: '13px', letterSpacing: '1px', textDecoration: 'none', borderBottom: '2px solid #f9372c', paddingBottom: '2px' }}>IZBOR VOZILA</Link>
-          <Link href="/comparison" style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', letterSpacing: '1px', textDecoration: 'none' }}>POREDENJE</Link>
-        </div>
-      </nav>
-
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '48px 24px' }}>
-        <div style={{ marginBottom: '48px' }}>
-          <h1 style={{ fontSize: '40px', fontWeight: 800, letterSpacing: '-1px', marginBottom: '12px' }}>Izbor vozila</h1>
-          <p style={{ color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>Odaberite vase vozilo korak po korak kako bismo pronasli tacno prave delove.</p>
+    <div style={s.page}>
+      <div style={s.container}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>
+            Odaberite <span style={{ color: '#ff4d00' }}>Vaše Vozilo</span>
+          </h1>
+          <p style={{ color: '#aaa', fontSize: '15px' }}>Pronađite delove koji odgovaraju vašem automobilu</p>
         </div>
 
-        {/* Step progress */}
-        <div style={{ display: 'flex', gap: '0', marginBottom: '40px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '4px', border: '1px solid rgba(255,255,255,0.08)' }}>
-          {stepLabels.map((label, i) => {
-            const stepNum = (i + 1) as Step;
-            const isActive = step === stepNum;
-            const isCompleted = stepValues[i] !== '';
-            return (
-              <button key={i} onClick={() => { if (i === 0 || stepValues[i-1]) setStep(stepNum); }} style={{ flex: 1, padding: '12px 8px', borderRadius: '8px', border: 'none', background: isActive ? 'rgba(249,55,44,0.15)' : 'transparent', color: isActive ? '#f9372c' : isCompleted ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)', fontSize: '13px', fontWeight: isActive ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s' }}>
-                <div style={{ fontSize: '10px', marginBottom: '2px', letterSpacing: '1px', textTransform: 'uppercase' }}>Korak {i+1}</div>
-                <div>{isCompleted && !isActive ? stepValues[i] : label}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Step content */}
-        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '32px' }}>
-          {step === 1 && (
-            <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '24px' }}>Izaberite marku vozila</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
-                {vehicleMakes.map(m => (
-                  <button key={m} onClick={() => { setMake(m); setModel(''); setEngine(''); setStep(2); }} style={cardStyle(true, make === m, m)}>
-                    {m}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {step === 2 && (
-            <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '24px' }}>Izaberite model — <span style={{ color: '#f9372c' }}>{make}</span></h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
-                {models.map(m => (
-                  <button key={m} onClick={() => { setModel(m); setEngine(''); setStep(3); }} style={cardStyle(true, model === m, m)}>
-                    {m}
-                  </button>
-                ))}
-              </div>
-              <button onClick={() => setStep(1)} style={{ marginTop: '20px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '13px' }}>← Nazad</button>
-            </div>
-          )}
-          {step === 3 && (
-            <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '24px' }}>Izaberite godiste — <span style={{ color: '#f9372c' }}>{make} {model}</span></h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '10px' }}>
-                {years.map(y => (
-                  <button key={y} onClick={() => { setYear(y); setStep(4); }} style={cardStyle(true, year === y, y)}>
-                    {y}
-                  </button>
-                ))}
-              </div>
-              <button onClick={() => setStep(2)} style={{ marginTop: '20px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '13px' }}>← Nazad</button>
-            </div>
-          )}
-          {step === 4 && (
-            <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '24px' }}>Izaberite motor — <span style={{ color: '#f9372c' }}>{make} {model} {year}</span></h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px', marginBottom: '28px' }}>
-                {engines.map(e => (
-                  <button key={e} onClick={() => setEngine(e)} style={cardStyle(true, engine === e, e)}>
-                    {e}
-                  </button>
-                ))}
-              </div>
-              <div style={{ display: 'flex', gap: '12px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-                <button onClick={handleSearch} style={{ flex: 1, background: '#f9372c', color: '#fff', border: 'none', padding: '14px', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', letterSpacing: '0.5px' }}>
-                  Nadji delove za {make} {model}
+        {/* Step indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '32px', gap: '0' }}>
+          {steps.map((s_label, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                <button style={s.stepBtn(i === step, i < step)} onClick={() => i < step && setStep(i)}>
+                  {i < step ? '✓' : i + 1}
                 </button>
-                <button onClick={() => setStep(3)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)', padding: '14px 20px', borderRadius: '10px', fontSize: '13px', cursor: 'pointer' }}>← Nazad</button>
+                <span style={{ color: i === step ? '#ff4d00' : i < step ? '#22c55e' : '#555', fontSize: '11px' }}>{s_label}</span>
               </div>
+              {i < steps.length - 1 && (
+                <div style={{ width: '48px', height: '2px', background: i < step ? '#22c55e' : '#333', margin: '0 4px 16px' }} />
+              )}
             </div>
-          )}
+          ))}
+        </div>
+
+        {/* Card */}
+        <div style={s.card}>
+          <h2 style={{ color: '#fff', fontSize: '20px', marginBottom: '20px' }}>
+            {step === 0 && 'Odaberite marku vozila'}
+            {step === 1 && `Odaberite model za ${make}`}
+            {step === 2 && 'Odaberite godište'}
+            {step === 3 && 'Odaberite motor'}
+          </h2>
+          {getStepContent()}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px' }}>
+            {step > 0 ? (
+              <button style={s.navBtn(false)} onClick={() => setStep(s => s - 1)}>← Nazad</button>
+            ) : <div />}
+            {step < 3 ? (
+              <button style={s.navBtn(true)} disabled={!canProceed()} onClick={() => setStep(s => s + 1)}>
+                Dalje →
+              </button>
+            ) : (
+              <button style={s.navBtn(true)} disabled={!canProceed()} onClick={handleSearch}>
+                🔍 Nađi delove
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Summary */}
         {(make || model || year || engine) && (
-          <div style={{ marginTop: '24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px 20px', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '1px' }}>Odabrano:</span>
-            {[make, model, year, engine].filter(Boolean).map((v, i) => (
-              <span key={i} style={{ fontSize: '13px', color: '#fff', background: 'rgba(255,255,255,0.07)', padding: '4px 12px', borderRadius: '20px' }}>{v}</span>
-            ))}
-            {make && model && (
-              <button onClick={handleSearch} style={{ marginLeft: 'auto', background: '#f9372c', color: '#fff', border: 'none', padding: '8px 20px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                Trazi delove →
-              </button>
-            )}
+          <div style={{ marginTop: '20px', background: '#1a1b1f', borderRadius: '12px', padding: '16px', border: '1px solid #333' }}>
+            <p style={{ color: '#aaa', fontSize: '13px', marginBottom: '8px' }}>Vaš izbor:</p>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {[make, model, year, engine].filter(Boolean).map((v, i) => (
+                <span key={i} style={{ background: '#ff4d00', color: '#fff', padding: '4px 10px', borderRadius: '6px', fontSize: '13px' }}>{v}</span>
+              ))}
+            </div>
           </div>
         )}
       </div>
