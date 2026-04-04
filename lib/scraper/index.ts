@@ -52,7 +52,11 @@ export async function runScrapingPipeline(supplier: Supplier, triggeredBy: 'cron
   let upserted = 0, skipped = 0, priceChangeCount = 0;
   const dbErrors: string[] = [];
 
-  const priceAlerts = await detectPriceChanges(normalized.map(p => ({ id: p.part_number, price: p.price, part_number: p.part_number, supplier_id: supplier.id })));
+  const priceAlerts = await detectPriceChanges(
+    normalized
+      .filter(p => p.part_number)
+      .map(p => ({ id: p.part_number!, price: p.price, part_number: p.part_number!, supplier_id: supplier.id }))
+  );
   priceChangeCount = priceAlerts.length;
 
   const BATCH = 20;
