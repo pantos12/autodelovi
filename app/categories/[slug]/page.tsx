@@ -1,21 +1,37 @@
 import Link from 'next/link';
-import { mockParts, categories } from '../../lib/data';
+import { getParts, getCategories } from '@/lib/supabase';
+import type { Metadata } from 'next';
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const cat = categories.find(c => c.slug === params.slug);
+const STATIC_CATEGORIES = [
+  { slug: 'motor', name: 'Motor', icon: '⚙️', description: 'Delovi za motor' },
+  { slug: 'kocnice', name: 'Kocnice', icon: '🛑', description: 'Kočioni sistem' },
+  { slug: 'elektronika', name: 'Elektronika', icon: '⚡', description: 'Elektronski delovi' },
+  { slug: 'karoserija', name: 'Karoserija', icon: '🚗', description: 'Karoserijski delovi' },
+  { slug: 'suspenzija', name: 'Suspenzija', icon: '🔧', description: 'Ovjesi i amortizeri' },
+  { slug: 'transmisija', name: 'Transmisija', icon: '⚙️', description: 'Menjač i kvačilo' },
+  { slug: 'ostalo', name: 'Ostalo', icon: '📦', description: 'Ostali delovi' },
+];
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const cat = STATIC_CATEGORIES.find(c => c.slug === params.slug);
   return {
     title: cat ? cat.name + ' | AutoDelovi.sale' : 'Kategorija | AutoDelovi.sale',
     description: cat?.description || 'Auto delovi po kategorijama.',
   };
 }
 
-export function generateStaticParams() {
-  return categories.map(c => ({ slug: c.slug }));
-}
+export default async function CategoryPage({ params }: { params: { slug: string } }) {
+  const category = STATIC_CATEGORIES.find(c => c.slug === params.slug);
 
-export default function CategoryPage({ params }: { params: { slug: string } }) {
-  const category = categories.find(c => c.slug === params.slug);
-  const parts = mockParts.filter(p => p.categorySlug === params.slug);
+  const [partsResult, dbCategories] = await Promise.all([
+    getParts({ category: params.slug, per_page: 60 }).catch(() => ({ data: [], meta: { total: 0, page: 1, per_page: 60, total_pages: 1 } })),
+    getCategories().catch(() => []),
+  ]);
+
+  const parts = partsResult.data || [];
+  const displayCategories = dbCategories.length > 0
+    ? dbCategories
+    : STATIC_CATEGORIES.map(c => ({ id: c.slug, slug: c.slug, name: c.name, name_sr: c.name, icon: c.icon, sort_order: 0 }));
 
   if (!category) {
     return (
@@ -54,7 +70,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
       {/* Category tabs */}
       <div style={{ borderBottom: '1px solid #252629', background: '#141517' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '0', overflowX: 'auto' }}>
-          {categories.map(cat => (
+          {STATIC_CATEGORIES.map(cat => (
             <Link
               key={cat.slug}
               href={`/categories/${cat.slug}`}
@@ -79,29 +95,32 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
         <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '24px' }}>{parts.length} delova u kategoriji "{category.name}"</p>
         {parts.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-            {parts.map(part => (
-              <div key={part.id} style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
-                <div style={{ background: '#252629', height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px' }}>
-                  {part.image}
+            {parts.map(part => {
+              const inStock = (part.stock_quantity ?? 0) > 0;
+              return (
+                <div key={part.id} style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
+                  <div style={{ background: '#252629', height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', overflow: 'hidden' }}>
+                    {part.images?.[0] ? <img src={part.images[0]} alt={part.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🔧'}
+                  </div>
+                  <div style={{ padding: '12px' }}>
+                    <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{part.brand || ''}</p>
+                    <h3 style={{ color: '#fff', fontSize: '14px', marginBottom: '8px', lineHeight: '1.3' }}>{part.name_sr || part.name}</h3>
+                    <p style={{ color: '#ff4d00', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>
+                      {part.price.toLocaleString('sr-RS')} RSD
+                    </p>
+                    <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '12px', marginBottom: '10px' }}>
+                      {inStock ? '✓ Na stanju' : '✗ Nema na stanju'}
+                    </p>
+                    <Link
+                      href={`/parts/${part.slug || part.id}`}
+                      style={{ display: 'block', padding: '8px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px', fontWeight: 600 }}
+                    >
+                      Vidi više
+                    </Link>
+                  </div>
                 </div>
-                <div style={{ padding: '12px' }}>
-                  <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{part.make} {part.model}</p>
-                  <h3 style={{ color: '#fff', fontSize: '14px', marginBottom: '8px', lineHeight: '1.3' }}>{part.nameSr}</h3>
-                  <p style={{ color: '#ff4d00', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>
-                    {part.price.toLocaleString('sr-RS')} RSD
-                  </p>
-                  <p style={{ color: part.inStock ? '#22c55e' : '#ef4444', fontSize: '12px', marginBottom: '10px' }}>
-                    {part.inStock ? '✓ Na stanju' : '✗ Nema na stanju'}
-                  </p>
-                  <Link
-                    href={`/parts/${part.id}`}
-                    style={{ display: 'block', padding: '8px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px', fontWeight: 600 }}
-                  >
-                    Vidi više
-                  </Link>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
