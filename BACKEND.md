@@ -76,3 +76,6 @@ See `.env.example`. Key vars:
 - `SUPABASE_SERVICE_ROLE_KEY` — server-only, never expose to browser
 - `SCRAPE_API_SECRET` — protects POST /api/scrape
 - `CRON_SECRET` — authenticates Vercel cron calls
+
+
+<!-- build trigger -->
