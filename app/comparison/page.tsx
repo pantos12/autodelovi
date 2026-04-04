@@ -1,19 +1,17 @@
 'use client';
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { mockParts, Part } from '../lib/data';
+import type { Part } from '@/lib/types';
 
-const ATTRS: { key: keyof Part; label: string }[] = [
+const ATTRS: { key: keyof Part | string; label: string }[] = [
   { key: 'price', label: 'Cena (RSD)' },
-  { key: 'category', label: 'Kategorija' },
-  { key: 'make', label: 'Marka' },
-  { key: 'model', label: 'Model' },
-  { key: 'yearFrom', label: 'Od godine' },
-  { key: 'yearTo', label: 'Do godine' },
-  { key: 'oem', label: 'OEM broj' },
-  { key: 'supplier', label: 'Dobavljač' },
-  { key: 'inStock', label: 'Na stanju' },
+  { key: 'category_id', label: 'Kategorija' },
+  { key: 'brand', label: 'Marka' },
+  { key: 'part_number', label: 'Broj dela' },
+  { key: 'oem_number', label: 'OEM broj' },
+  { key: 'condition', label: 'Stanje' },
+  { key: 'stock_quantity', label: 'Na stanju' },
 ];
 
 function getCellStyle(key: string, value: any, allValues: any[]): React.CSSProperties {
@@ -27,22 +25,43 @@ function getCellStyle(key: string, value: any, allValues: any[]): React.CSSPrope
   return { color: '#fff' };
 }
 
+function formatValue(key: string, value: any): string {
+  if (key === 'price') return typeof value === 'number' ? value.toLocaleString('sr-RS') + ' RSD' : '-';
+  if (key === 'stock_quantity') return (value ?? 0) > 0 ? `✓ ${value} kom` : '✗ Nema';
+  if (value === null || value === undefined) return '-';
+  return String(value);
+}
+
 function ComparisonContent() {
   const searchParams = useSearchParams();
   const initialIds = searchParams.get('ids')?.split(',').filter(Boolean) || [];
   const [selectedIds, setSelectedIds] = useState<string[]>(initialIds.slice(0, 3));
+  const [parts, setParts] = useState<Part[]>([]);
+  const [allParts, setAllParts] = useState<Part[]>([]);
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const parts = selectedIds.map(id => mockParts.find(p => p.id === id)).filter(Boolean) as Part[];
-  const filtered = mockParts.filter(p =>
-    p.nameSr.toLowerCase().includes(search.toLowerCase()) ||
-    p.make.toLowerCase().includes(search.toLowerCase())
+  useEffect(() => {
+    // Load all parts for search
+    fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
+  }, []);
+
+  useEffect(() => {
+    if (selectedIds.length === 0) { setParts([]); return; }
+    setLoading(true);
+    Promise.all(selectedIds.map(id => fetch(`/api/parts/${id}`).then(r => r.json()).then(d => d.data || d)))
+      .then(results => setParts(results.filter(Boolean)))
+      .catch(() => setParts([]))
+      .finally(() => setLoading(false));
+  }, [selectedIds]);
+
+  const filtered = allParts.filter(p =>
+    (p.name_sr || p.name).toLowerCase().includes(search.toLowerCase()) ||
+    (p.brand || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const addPart = (id: string) => {
-    if (selectedIds.length < 3 && !selectedIds.includes(id)) {
-      setSelectedIds([...selectedIds, id]);
-    }
+    if (selectedIds.length < 3 && !selectedIds.includes(id)) setSelectedIds([...selectedIds, id]);
   };
   const removePart = (id: string) => setSelectedIds(selectedIds.filter(x => x !== id));
 
@@ -58,12 +77,19 @@ function ComparisonContent() {
     return (
       <div style={s.page}>
         <div style={{ ...s.container, textAlign: 'center', paddingTop: '80px' }}>
-          <p style={{ fontSize: '48px', marginBottom: '16px' }}>⚖️</p>
-          <h2 style={{ color: '#fff', fontSize: '24px', marginBottom: '12px' }}>Poređenje delova</h2>
-          <p style={{ color: '#aaa', fontSize: '16px', marginBottom: '32px' }}>Odaberite do 3 dela za poređenje iz marketplace-a.</p>
-          <Link href="/marketplace" style={{ padding: '12px 28px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontWeight: 700 }}>
-            Idi na Marketplace
-          </Link>
+          <p style={{ fontSize: '64px', marginBottom: '16px' }}>⚖️</p>
+          <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '12px' }}>Poređenje delova</h1>
+          <p style={{ color: '#aaa', marginBottom: '32px' }}>Izaberite do 3 dela za poređenje</p>
+          <input style={{ ...s.input, maxWidth: '400px', margin: '0 auto 16px' }} placeholder="Pretraži delove..." value={search} onChange={e => setSearch(e.target.value)} />
+          <div style={{ maxWidth: '600px', margin: '0 auto', maxHeight: '300px', overflowY: 'auto' }}>
+            {filtered.slice(0, 20).map(p => (
+              <div key={p.id} onClick={() => addPart(p.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1a1b1f', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer' }}>
+                <span style={{ color: '#fff', fontSize: '14px' }}>{p.name_sr || p.name}</span>
+                <span style={{ color: '#ff4d00', fontSize: '14px', fontWeight: 600 }}>{p.price.toLocaleString('sr-RS')} RSD</span>
+              </div>
+            ))}
+          </div>
+          <Link href="/marketplace" style={{ color: '#ff4d00', textDecoration: 'none', fontSize: '14px' }}>← Nazad na marketplace</Link>
         </div>
       </div>
     );
@@ -71,99 +97,68 @@ function ComparisonContent() {
 
   return (
     <div style={s.page}>
-      <style>{`
-        .search-result-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #252629; color: #fff; font-size: 14px; }
-        .search-result-item:hover { background: #252629; }
-      `}</style>
       <div style={s.container}>
-        <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>
-          Poređenje <span style={{ color: '#ff4d00' }}>Delova</span>
-        </h1>
-        <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '32px' }}>Uporedite do 3 dela istovremeno</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: 800 }}>Poređenje delova</h1>
+          <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none', fontSize: '14px' }}>← Nazad</Link>
+        </div>
 
-        {selectedIds.length < 3 && (
-          <div style={{ marginBottom: '32px' }}>
-            <input
-              style={s.input}
-              placeholder="Pretražite deo za dodavanje..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            {search && (
-              <div style={{ background: '#1a1b1f', borderRadius: '8px', marginTop: '8px', maxHeight: '200px', overflowY: 'auto', border: '1px solid #333' }}>
-                {filtered.slice(0, 10).map(p => (
-                  <div
-                    key={p.id}
-                    className="search-result-item"
-                    onClick={() => { addPart(p.id); setSearch(''); }}
-                  >
-                    {p.nameSr} — {p.make} {p.model} — {p.price.toLocaleString('sr-RS')} RSD
-                  </div>
-                ))}
+        {/* Part selector */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
+          {Array.from({ length: 3 }).map((_, i) => {
+            const part = parts[i];
+            return (
+              <div key={i} style={{ background: '#1a1b1f', borderRadius: '12px', padding: '16px', border: '1px solid #252629', textAlign: 'center', minHeight: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                {part ? (
+                  <>
+                    <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>{part.name_sr || part.name}</p>
+                    <p style={{ color: '#ff4d00', fontSize: '16px', fontWeight: 700, marginBottom: '12px' }}>{part.price.toLocaleString('sr-RS')} RSD</p>
+                    <button onClick={() => removePart(part.id)} style={{ padding: '6px 12px', background: '#333', border: 'none', borderRadius: '6px', color: '#aaa', cursor: 'pointer', fontSize: '12px' }}>Ukloni</button>
+                  </>
+                ) : (
+                  <>
+                    <p style={{ color: '#555', fontSize: '14px', marginBottom: '8px' }}>+ Dodaj deo</p>
+                    <input style={{ ...s.input, fontSize: '12px', padding: '6px 10px' }} placeholder="Pretraži..." value={search} onChange={e => setSearch(e.target.value)} />
+                    {search && filtered.slice(0, 5).map(p => (
+                      <div key={p.id} onClick={() => addPart(p.id)} style={{ padding: '6px 10px', background: '#252629', borderRadius: '6px', marginTop: '4px', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                        <span style={{ color: '#fff', fontSize: '12px' }}>{(p.name_sr || p.name).slice(0, 30)}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
-            )}
+            );
+          })}
+        </div>
+
+        {/* Comparison table */}
+        {parts.length > 0 && (
+          <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={s.th}>Karakteristika</th>
+                  {parts.map(p => <th key={p.id} style={s.th}>{p.name_sr || p.name}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {ATTRS.map(attr => {
+                  const vals = parts.map(p => (p as any)[attr.key]);
+                  return (
+                    <tr key={attr.key}>
+                      <td style={{ ...s.td, color: '#aaa', fontWeight: 500 }}>{attr.label}</td>
+                      {vals.map((val, i) => (
+                        <td key={i} style={{ ...s.td, ...getCellStyle(attr.key, val, vals) }}>
+                          {formatValue(attr.key, val)}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
-
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', background: '#141517', borderRadius: '12px', overflow: 'hidden' }}>
-            <thead>
-              <tr>
-                <th style={s.th}>Atribut</th>
-                {parts.map(part => (
-                  <th key={part.id} style={{ ...s.th, minWidth: '200px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ color: '#fff', fontSize: '15px' }}>{part.nameSr}</div>
-                        <div style={{ color: '#aaa', fontSize: '12px', fontWeight: 400 }}>{part.make} {part.model}</div>
-                      </div>
-                      <button
-                        onClick={() => removePart(part.id)}
-                        style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '18px' }}
-                      >×</button>
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {ATTRS.map(attr => {
-                const vals = parts.map(p => p[attr.key]);
-                return (
-                  <tr key={attr.key}>
-                    <td style={{ ...s.td, color: '#aaa', fontWeight: 600 }}>{attr.label}</td>
-                    {parts.map(part => {
-                      const val = part[attr.key];
-                      const display = typeof val === 'boolean'
-                        ? (val ? '✓ Da' : '✗ Ne')
-                        : attr.key === 'price'
-                        ? (val as number).toLocaleString('sr-RS') + ' RSD'
-                        : String(val);
-                      return (
-                        <td key={part.id} style={{ ...s.td, ...getCellStyle(attr.key as string, val, vals) }}>
-                          {display}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-              <tr>
-                <td style={{ ...s.td, color: '#aaa', fontWeight: 600 }}>Akcija</td>
-                {parts.map(part => (
-                  <td key={part.id} style={s.td}>
-                    <Link
-                      href={`/parts/${part.id}`}
-                      style={{ padding: '8px 16px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontSize: '13px', fontWeight: 600 }}
-                    >
-                      Kupi
-                    </Link>
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   );
