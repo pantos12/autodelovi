@@ -18,6 +18,7 @@ export async function getParts(params: {
   in_stock?: boolean; sort?: string; page?: number; per_page?: number;
 } = {}) {
   if (!isConfigured()) {
+    // Supabase not set up yet — return empty results
     return { parts: [] as Part[], total: 0, page: params.page ?? 1, per_page: params.per_page ?? 24, total_pages: 0 };
   }
 
@@ -50,10 +51,9 @@ export async function getParts(params: {
   if (error) throw error;
   return { parts: data as Part[], total: count ?? 0, page, per_page, total_pages: Math.ceil((count ?? 0) / per_page) };
 }
-
 export async function getPartById(id: string): Promise<Part | null> {
   if (!isConfigured()) return null;
-  const { data, error } = await supabase.from('parts').select(`*, category:categories(*), supplier:suppliers(*)`).eq('id', id).single();
+  const { data, error } = await supabase.from('parts').select(`*, category:categories(*), supplier:suppliers())`).eq('id', id).single();
   if (error) return null;
   return data as Part;
 }
@@ -119,20 +119,4 @@ export async function getSupplierById(id: string): Promise<Supplier | null> {
   if (!isConfigured()) return null;
   const { data } = await supabase.from('suppliers').select('*').eq('id', id).single();
   return data as Supplier | null;
-}
-
-export async function createScrapingJob(supplierId: string, triggeredBy: 'cron' | 'manual' | 'api' = 'api'): Promise<ScrapingJob> {
-  const { data, error } = await supabaseAdmin.from('scraping_jobs').insert({ supplier_id: supplierId, status: 'pending', started_at: new Date().toISOString(), parts_found: 0, parts_upserted: 0, parts_skipped: 0, errors: [], triggered_by: triggeredBy }).select().single();
-  if (error) throw error;
-  return data as ScrapingJob;
-}
-
-export async function updateScrapingJob(id: string, updates: Partial<ScrapingJob>): Promise<void> {
-  await supabaseAdmin.from('scraping_jobs').update(updates).eq('id', id);
-}
-
-export async function getRecentJobs(limit = 10): Promise<ScrapingJob[]> {
-  if (!isConfigured()) return [];
-  const { data } = await supabaseAdmin.from('scraping_jobs').select('*, supplier:suppliers(name)').order('started_at', { ascending: false }).limit(limit);
-  return (data ?? []) as ScrapingJob[];
 }
