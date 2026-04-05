@@ -18,7 +18,7 @@ export async function getParts(params: {
   in_stock?: boolean; sort?: string; page?: number; per_page?: number;
 } = {}) {
   if (!isConfigured()) {
-    // Supabase not set up yet — return empty results
+    // Supabase not set up yet â return empty results
     return { parts: [] as Part[], total: 0, page: params.page ?? 1, per_page: params.per_page ?? 24, total_pages: 0 };
   }
 
@@ -119,4 +119,63 @@ export async function getSupplierById(id: string): Promise<Supplier | null> {
   if (!isConfigured()) return null;
   const { data } = await supabase.from('suppliers').select('*').eq('id', id).single();
   return data as Supplier | null;
+}
+
+
+export async function createScrapingJob(
+  supplierId: string,
+  triggeredBy: 'cron' | 'manual' | 'api'
+): Promise<ScrapingJob> {
+  if (!isConfigured()) {
+    return {
+      id: crypto.randomUUID(),
+      supplier_id: supplierId,
+      status: 'running',
+      started_at: new Date().toISOString(),
+      parts_found: 0,
+      parts_upserted: 0,
+      parts_skipped: 0,
+      errors: [],
+      triggered_by: triggeredBy,
+    } as ScrapingJob;
+  }
+  const { data, error } = await supabaseAdmin
+    .from('scraping_jobs')
+    .insert({
+      supplier_id: supplierId,
+      status: 'running',
+      started_at: new Date().toISOString(),
+      parts_found: 0,
+      parts_upserted: 0,
+      parts_skipped: 0,
+      errors: [],
+      triggered_by: triggeredBy,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as ScrapingJob;
+}
+
+export async function updateScrapingJob(
+  jobId: string,
+  updates: Partial<ScrapingJob>
+): Promise<void> {
+  if (!isConfigured()) return;
+  const { error } = await supabaseAdmin
+    .from('scraping_jobs')
+    .update(updates)
+    .eq('id', jobId);
+  if (error) throw error;
+}
+
+export async function getRecentJobs(limit = 20): Promise<ScrapingJob[]> {
+  if (!isConfigured()) return [];
+  const { data, error } = await supabase
+    .from('scraping_jobs')
+    .select('*, supplier:suppliers(name, slug)')
+    .order('started_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as ScrapingJob[];
 }
