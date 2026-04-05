@@ -1,5 +1,8 @@
 import { normalizeAll, setEurRate } from './normalizer';
 import { DemoScraper } from './sources/demo';
+import { AutoHubScraper } from './sources/autohub';
+import { HaloOglasiScraper } from './sources/halooglasi';
+import { ProdajaDelovaScraper } from './sources/prodajadelova';
 import type { BaseScraper } from './base';
 import type { PipelineResult, Supplier } from '../types';
 import { upsertPart, recordPriceHistory, detectPriceChanges, createScrapingJob, updateScrapingJob } from '../supabase';
@@ -13,14 +16,24 @@ async function fetchEurRate(): Promise<number> {
 }
 
 function getScraper(supplier: Supplier): BaseScraper {
-  switch (supplier.id) {
-    default:
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn(`[Scraper] No scraper for ${supplier.id}, using demo`);
-        return new DemoScraper(supplier.id, supplier.name);
-      }
-      throw new Error(`No scraper configured for supplier: ${supplier.id}`);
+  const id = (supplier.id || '').toLowerCase();
+  const website = (supplier.website || '').toLowerCase();
+
+  if (id.includes('autohub') || website.includes('autohub.rs')) {
+    return new AutoHubScraper(supplier.id, supplier.name);
   }
+  if (id.includes('halooglasi') || website.includes('halooglasi.com')) {
+    return new HaloOglasiScraper(supplier.id, supplier.name);
+  }
+  if (id.includes('prodajadelova') || website.includes('prodajadelova.rs')) {
+    return new ProdajaDelovaScraper(supplier.id, supplier.name);
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn(`[Scraper] No scraper for ${supplier.id}, using demo`);
+    return new DemoScraper(supplier.id, supplier.name);
+  }
+  throw new Error(`No scraper configured for supplier: ${supplier.id} (website: ${supplier.website})`);
 }
 
 export async function runScrapingPipeline(supplier: Supplier, triggeredBy: 'cron' | 'manual' | 'api' = 'api', maxPages = 10): Promise<PipelineResult> {
