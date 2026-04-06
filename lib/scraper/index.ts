@@ -52,27 +52,28 @@ export async function runScrapingPipeline(
     let skipped = 0;
     for (const part of normalized) {
       try {
+        const partNum = part.part_number || part.raw_name;
         await upsertPart({
-          part_number: part.partNumber,
-          name: part.title,
-          name_sr: part.title,
-          slug: part.slug || part.partNumber,
+          part_number: partNum,
+          name: part.name,
+          name_sr: part.name,
+          slug: partNum,
           description: part.description || '',
           price: part.price,
-          price_eur: part.priceEur,
-          currency: part.currency || 'RSD',
+          price_eur: part.price_eur,
+          currency: part.price_currency || 'RSD',
           supplier_id: supplier.id,
-          image_url: part.imageUrl,
-          source_url: part.sourceUrl,
+          image_url: part.image_urls?.[0],
+          source_url: part.product_url,
           condition: part.condition || 'new',
           status: 'active',
           in_stock: true,
-          oem_number: part.oemNumber,
+          oem_number: part.oem_number,
           brand: part.brand,
         });
         upserted++;
         if (part.price > 0) {
-          await recordPriceHistory(part.partNumber, supplier.id, part.price, part.priceEur || 0, part.currency || 'RSD');
+          await recordPriceHistory(partNum, supplier.id, part.price, part.price_eur || 0, part.price_currency || 'RSD');
         }
       } catch (e) {
         skipped++;
@@ -80,7 +81,7 @@ export async function runScrapingPipeline(
     }
 
     const priceAlerts = await detectPriceChanges(
-      normalized.map(p => ({ id: p.partNumber, price: p.price, part_number: p.partNumber, supplier_id: supplier.id }))
+      normalized.map(p => ({ id: p.part_number || p.raw_name, price: p.price, part_number: p.part_number || p.raw_name, supplier_id: supplier.id }))
     );
 
     await updateScrapingJob(job.id, {
