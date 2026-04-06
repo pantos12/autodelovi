@@ -53,7 +53,7 @@ export async function getParts(params: {
 }
 export async function getPartById(id: string): Promise<Part | null> {
   if (!isConfigured()) return null;
-  const { data, error } = await supabase.from('parts').select(`*, category:categories(*), supplier:suppliers())`).eq('id', id).single();
+  const { data, error } = await supabase.from('parts').select(`*, category:categories(*), supplier:suppliers(*)`).eq('id', id).single();
   if (error) return null;
   return data as Part;
 }
