@@ -10,9 +10,9 @@ import { upsertPart, recordPriceHistory, detectPriceChanges, createScrapingJob, 
 export function getScraper(supplier: Supplier): BaseScraper {
   const url = (supplier.website || supplier.scrape_url || '').toLowerCase();
 
-  if (url.includes('autohub.rs')) return new AutoHubScraper();
-  if (url.includes('halooglasi.com')) return new HaloOglasiScraper();
-  if (url.includes('prodajadelova.rs')) return new ProdajaDelovaScraper();
+  if (url.includes('autohub.rs')) return new AutoHubScraper(supplier.id, supplier.name);
+  if (url.includes('halooglasi.com')) return new HaloOglasiScraper(supplier.id, supplier.name);
+  if (url.includes('prodajadelova.rs')) return new ProdajaDelovaScraper(supplier.id, supplier.name);
 
   // Fallback to demo scraper
   return new DemoScraper();
