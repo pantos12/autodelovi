@@ -61,15 +61,18 @@ export async function runScrapingPipeline(
           description: part.description || '',
           price: part.price,
           price_eur: part.price_eur,
-          currency: part.price_currency || 'RSD',
+          price_currency: part.price_currency || 'RSD',
           supplier_id: supplier.id,
-          image_url: part.image_urls?.[0],
+          images: part.image_urls || [],
           source_url: part.product_url,
           condition: part.condition || 'new',
           status: 'active',
-          in_stock: true,
+          stock_quantity: 1,
           oem_number: part.oem_number,
-          brand: part.brand,
+          brand: part.brand || '',
+          category_id: part.category_id || '',
+          specs: part.specs || {},
+          compatible_vehicles: part.compatible_vehicles || [],
         });
         upserted++;
         if (part.price > 0) {
