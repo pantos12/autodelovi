@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
+import { useCart } from './CartProvider';
 import type { User } from '@supabase/supabase-js';
 
 const navLinks = [
@@ -21,6 +22,7 @@ export default function NavBar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const { cartCount } = useCart();
 
   useEffect(() => {
     const supabase = createClient();
@@ -98,7 +100,17 @@ export default function NavBar() {
           })}
         </div>
 
-        {/* Auth buttons - desktop */}
+        {/* Cart + Auth buttons - desktop */}
+        <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+          <Link href="/cart" style={{ position: 'relative', textDecoration: 'none', fontSize: '20px', padding: '4px' }}>
+            🛒
+            {cartCount > 0 && (
+              <span style={{ position: 'absolute', top: '-4px', right: '-8px', background: '#f9372c', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {cartCount}
+              </span>
+            )}
+          </Link>
+        </div>
         <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
           {user ? (
             <div style={{ position: 'relative' }}>

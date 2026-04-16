@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <rect width="400" height="300" fill="#252629"/>
+  <g transform="translate(150, 90)">
+    <path d="M50 0C22.4 0 0 22.4 0 50s22.4 50 50 50 50-22.4 50-50S77.6 0 50 0zm0 88c-20.9 0-38-17.1-38-38s17.1-38 38-38 38 17.1 38 38-17.1 38-38 38z" fill="#3a3b3f"/>
+    <path d="M50 20c-16.5 0-30 13.5-30 30s13.5 30 30 30 30-13.5 30-30-13.5-30-30-30zm0 48c-9.9 0-18-8.1-18-18s8.1-18 18-18 18 8.1 18 18-8.1 18-18 18z" fill="#3a3b3f"/>
+    <circle cx="50" cy="50" r="8" fill="#3a3b3f"/>
+    <path d="M85 42h20c2.2 0 4 1.8 4 4v8c0 2.2-1.8 4-4 4H85" fill="#3a3b3f"/>
+  </g>
+  <text x="200" y="260" text-anchor="middle" fill="#555" font-family="sans-serif" font-size="14" font-weight="500">Auto deo</text>
+</svg>

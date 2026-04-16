@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getPartBySlug, getPartById, getRelatedParts } from '@/lib/supabase';
 import type { Part } from '@/lib/types';
+import AddToCartButton from '@/app/components/AddToCartButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,7 +75,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
             <div style={{ background: '#1a1b1f', borderRadius: '16px', height: '320px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', border: '1px solid #252629', overflow: 'hidden' }}>
               {part.images?.[0]
                 ? <img src={part.images[0]} alt={part.name} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '16px' }} />
-                : <span style={{ fontSize: '80px' }}>🔧</span>}
+                : <img src="/images/part-placeholder.svg" alt="Auto deo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
             </div>
 
             {/* Title */}
@@ -126,9 +127,19 @@ export default async function PartDetail({ params }: { params: { id: string } })
               <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '14px', marginBottom: '20px', fontWeight: 600 }}>
                 {inStock ? `✓ Na stanju (${part.stock_quantity} kom)` : '✗ Trenutno nema na stanju'}
               </p>
-              <button style={{ width: '100%', padding: '14px', background: inStock ? '#ff4d00' : '#555', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, cursor: inStock ? 'pointer' : 'not-allowed', marginBottom: '12px' }}>
-                {inStock ? '🛒 Dodaj u korpu' : 'Nema na stanju'}
-              </button>
+              <AddToCartButton
+                part={{
+                  id: part.id,
+                  slug: part.slug,
+                  name: part.name_sr || part.name,
+                  brand: part.brand,
+                  price: part.price,
+                  price_currency: part.price_currency,
+                  image: part.images?.[0],
+                  supplier_name: part.supplier?.name,
+                }}
+                inStock={inStock}
+              />
               <Link
                 href={`/comparison?ids=${part.id}`}
                 style={{ display: 'block', width: '100%', padding: '12px', background: '#252629', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: 600, textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' as const }}
@@ -166,7 +177,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
                 return (
                   <div key={rp.id} style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
                     <div style={{ background: '#252629', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', overflow: 'hidden' }}>
-                      {rp.images?.[0] ? <img src={rp.images[0]} alt={rp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🔧'}
+                      {rp.images?.[0] ? <img src={rp.images[0]} alt={rp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <img src="/images/part-placeholder.svg" alt="Auto deo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                     </div>
                     <div style={{ padding: '12px' }}>
                       <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{rp.brand}</p>
