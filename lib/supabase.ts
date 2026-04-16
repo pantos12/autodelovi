@@ -26,7 +26,7 @@ export async function getParts(params: {
     in_stock, sort = 'newest', page = 1, per_page = 24 } = params;
 
   let query = supabase
-    .from('parts')
+    .from('parts_v2')
     .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`, { count: 'exact' })
     .eq('status', 'active');
 
@@ -53,26 +53,26 @@ export async function getParts(params: {
 }
 export async function getPartById(id: string): Promise<Part | null> {
   if (!isConfigured()) return null;
-  const { data, error } = await supabase.from('parts').select(`*, category:categories(*), supplier:suppliers(*)`).eq('id', id).single();
+  const { data, error } = await supabase.from('parts_v2').select(`*, category:categories(*), supplier:suppliers(*)`).eq('id', id).single();
   if (error) return null;
   return data as Part;
 }
 
 export async function getPartBySlug(slug: string): Promise<Part | null> {
   if (!isConfigured()) return null;
-  const { data, error } = await supabase.from('parts').select(`*, category:categories(*), supplier:suppliers(*)`).eq('slug', slug).single();
+  const { data, error } = await supabase.from('parts_v2').select(`*, category:categories(*), supplier:suppliers(*)`).eq('slug', slug).single();
   if (error) return null;
   return data as Part;
 }
 
 export async function getRelatedParts(part: Part, limit = 4): Promise<Part[]> {
   if (!isConfigured()) return [];
-  const { data } = await supabase.from('parts').select(`*, supplier:suppliers(id,name,slug,city,is_verified)`).eq('category_id', part.category_id).neq('id', part.id).eq('status', 'active').limit(limit);
+  const { data } = await supabase.from('parts_v2').select(`*, supplier:suppliers(id,name,slug,city,is_verified)`).eq('category_id', part.category_id).neq('id', part.id).eq('status', 'active').limit(limit);
   return (data ?? []) as Part[];
 }
 
 export async function upsertPart(part: Partial<Part>): Promise<Part> {
-  const { data, error } = await supabaseAdmin.from('parts').upsert(part, { onConflict: 'part_number,supplier_id', ignoreDuplicates: false }).select().single();
+  const { data, error } = await supabaseAdmin.from('parts_v2').upsert(part, { onConflict: 'part_number,supplier_id', ignoreDuplicates: false }).select().single();
   if (error) throw error;
   return data as Part;
 }
@@ -95,7 +95,7 @@ export async function detectPriceChanges(parts: Array<{ id: string; price: numbe
   for (const part of parts) {
     const { data: latest } = await supabase.from('price_history').select('price').eq('part_id', part.id).order('recorded_at', { ascending: false }).limit(1).single();
     if (latest && Math.abs(latest.price - part.price) / latest.price > 0.05) {
-      const { data: pf } = await supabase.from('parts').select('name, supplier:suppliers(name)').eq('id', part.id).single();
+      const { data: pf } = await supabase.from('parts_v2').select('name, supplier:suppliers(name)').eq('id', part.id).single();
       alerts.push({ part_id: part.id, part_name: (pf as any)?.name ?? part.part_number, old_price: latest.price, new_price: part.price, change_pct: ((part.price - latest.price) / latest.price) * 100, supplier_name: (pf as any)?.supplier?.name ?? '', currency: 'RSD' });
     }
   }
@@ -104,7 +104,7 @@ export async function detectPriceChanges(parts: Array<{ id: string; price: numbe
 
 export async function getCategories(): Promise<Category[]> {
   if (!isConfigured()) return [];
-  const { data } = await supabase.from('categories').select('*, part_count:parts(count)').order('sort_order', { ascending: true });
+  const { data } = await supabase.from('categories').select('*, part_count:parts_v2(count)').order('sort_order', { ascending: true });
   return (data ?? []) as Category[];
 }
 

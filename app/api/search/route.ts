@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       const { data: fb, count } = await supabase
-        .from('parts')
+        .from('parts_v2')
         .select('id,slug,name,brand,part_number,price,price_eur,stock_quantity,images,category_id,supplier_id', { count: 'exact' })
         .or(`name.ilike.%${q}%,part_number.ilike.%${q}%,brand.ilike.%${q}%`)
         .in('status', ['active','out_of_stock'])
