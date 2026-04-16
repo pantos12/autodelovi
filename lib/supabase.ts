@@ -3,7 +3,9 @@ import type { Part, Category, Supplier, PriceRecord, ScrapingJob, NormalizedPart
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder';
+// When the service role key is not configured, fall back to the anon key so
+// server routes still work against tables that grant public insert/update via RLS.
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseKey;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
