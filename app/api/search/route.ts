@@ -23,13 +23,16 @@ export async function GET(request: NextRequest) {
     });
 
     if (error) {
+      // Sanitize search input: remove special PostgREST characters
+      const sanitized = q.replace(/[%_\\(),"']/g, '');
+      if (!sanitized) return NextResponse.json({ data: [], meta: { total: 0, page, per_page: perPage } });
       const { data: fb, count } = await supabase
         .from('parts')
         .select('id,slug,name,brand,part_number,price,price_eur,stock_quantity,images,category_id,supplier_id', { count: 'exact' })
-        .or(`name.ilike.%${q}%,part_number.ilike.%${q}%,brand.ilike.%${q}%`)
+        .or(`name.ilike.%${sanitized}%,part_number.ilike.%${sanitized}%,brand.ilike.%${sanitized}%`)
         .in('status', ['active','out_of_stock'])
         .range((page-1)*perPage, page*perPage-1);
-      return NextResponse.json({ data: fb ?? [], meta: { total: count ?? 0, page, per_page: perPage } });
+      return NextResponse.json({ data: fb ?? [], meta: { total: count ?? 0, page, per_page: perPage, total_pages: Math.ceil((count ?? 0) / perPage) } });
     }
 
     const total = data?.[0]?.total_count ?? 0;
