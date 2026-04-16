@@ -175,6 +175,16 @@ export default function NavBar() {
           );
         })}
 
+        {/* Mobile cart link */}
+        <Link href="/cart" onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px', color: pathname === '/cart' ? '#f9372c' : 'rgba(255,255,255,0.7)', fontWeight: pathname === '/cart' ? 600 : 400, fontSize: '14px', letterSpacing: '1px', textDecoration: 'none', borderLeft: pathname === '/cart' ? '3px solid #f9372c' : '3px solid transparent' }}>
+          <span>🛒 KORPA</span>
+          {cartCount > 0 && (
+            <span style={{ background: '#f9372c', color: '#fff', fontSize: '11px', fontWeight: 700, borderRadius: '10px', padding: '2px 8px', minWidth: '20px', textAlign: 'center' }}>
+              {cartCount}
+            </span>
+          )}
+        </Link>
+
         {/* Mobile auth */}
         <div style={{ margin: '16px 24px 0', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '12px' }}>
           {user ? (

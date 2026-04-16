@@ -127,19 +127,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
               <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '14px', marginBottom: '20px', fontWeight: 600 }}>
                 {inStock ? `✓ Na stanju (${part.stock_quantity} kom)` : '✗ Trenutno nema na stanju'}
               </p>
-              <AddToCartButton
-                part={{
-                  id: part.id,
-                  slug: part.slug,
-                  name: part.name_sr || part.name,
-                  brand: part.brand,
-                  price: part.price,
-                  price_currency: part.price_currency,
-                  image: part.images?.[0],
-                  supplier_name: part.supplier?.name,
-                }}
-                inStock={inStock}
-              />
+              <AddToCartButton part={part} inStock={inStock} full />
               <Link
                 href={`/comparison?ids=${part.id}`}
                 style={{ display: 'block', width: '100%', padding: '12px', background: '#252629', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: 600, textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' as const }}
