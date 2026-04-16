@@ -25,21 +25,44 @@ function MarketplaceContent() {
   const [filterCategory, setFilterCategory] = useState(searchParams.get('category') || '');
   const [filterInStock, setFilterInStock] = useState(false);
   const [sortBy, setSortBy] = useState('price_asc');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
+
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q) {
+      setSearchQuery(q);
+      setSearchInput(q);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams();
-        if (filterMake) params.set('make', filterMake);
-        if (filterCategory) params.set('category', filterCategory);
-        if (filterInStock) params.set('in_stock', 'true');
-        params.set('sort', sortBy);
-        params.set('per_page', '60');
-        const res = await fetch(`/api/parts?${params}`);
-        const json = await res.json();
-        setParts(json.data || []);
-        setTotal(json.meta?.total || json.data?.length || 0);
+        // Use /api/search when there's a text query, /api/parts otherwise
+        if (searchQuery && searchQuery.length >= 2) {
+          const params = new URLSearchParams();
+          params.set('q', searchQuery);
+          if (filterCategory) params.set('category', filterCategory);
+          if (filterInStock) params.set('in_stock', 'true');
+          params.set('per_page', '60');
+          const res = await fetch(`/api/search?${params}`);
+          const json = await res.json();
+          setParts(json.data || []);
+          setTotal(json.meta?.total || json.data?.length || 0);
+        } else {
+          const params = new URLSearchParams();
+          if (filterMake) params.set('make', filterMake);
+          if (filterCategory) params.set('category', filterCategory);
+          if (filterInStock) params.set('in_stock', 'true');
+          params.set('sort', sortBy);
+          params.set('per_page', '60');
+          const res = await fetch(`/api/parts?${params}`);
+          const json = await res.json();
+          setParts(json.data || []);
+          setTotal(json.meta?.total || json.data?.length || 0);
+        }
       } catch {
         setParts([]);
       } finally {
@@ -47,13 +70,23 @@ function MarketplaceContent() {
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
 
   const toggleCompare = (id: string) => {
     setCompareList(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : prev.length < 3 ? [...prev, id] : prev
     );
   };
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    setSearchQuery(searchInput.trim());
+  }
+
+  function clearSearch() {
+    setSearchQuery('');
+    setSearchInput('');
+  }
 
   const s = {
     page: { background: '#0c0d0f', minHeight: '100vh' } as React.CSSProperties,
@@ -70,6 +103,28 @@ function MarketplaceContent() {
     <div style={s.page}>
       <div style={s.container}>
         <div style={s.sidebar}>
+          {/* Search input in sidebar */}
+          <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
+            <label style={s.label}>Pretraga</label>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <input
+                type="text"
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                placeholder="Naziv, broj dela, brend..."
+                style={{ ...s.select, flex: 1, padding: '8px 12px' }}
+              />
+              <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
+                🔍
+              </button>
+            </div>
+            {searchQuery && (
+              <button type="button" onClick={clearSearch} style={{ marginTop: '8px', background: 'none', border: 'none', color: '#f9372c', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
+                ✕ Obriši pretragu: &quot;{searchQuery}&quot;
+              </button>
+            )}
+          </form>
+
           <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '16px' }}>Filteri</h3>
           <div style={{ marginBottom: '16px' }}>
             <label style={s.label}>Marka</label>
@@ -91,13 +146,15 @@ function MarketplaceContent() {
             <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
-            Resetuj filtere
+          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+            Resetuj sve
           </button>
         </div>
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <p style={{ color: '#aaa', fontSize: '14px' }}>{loading ? 'Učitavanje...' : `${total} delova`}</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+            <p style={{ color: '#aaa', fontSize: '14px' }}>
+              {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
+            </p>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <select style={{ ...s.select, width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
                 <option value="price_asc">Cena: niža → viša</option>
@@ -131,7 +188,7 @@ function MarketplaceContent() {
                     <div style={{ padding: '12px' }}>
                       {vehicle && <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{vehicle.make} {vehicle.model}</p>}
                       <h3 style={{ color: '#fff', fontSize: '14px', marginBottom: '8px', lineHeight: '1.3' }}>{part.name_sr || part.name}</h3>
-                      <p style={{ color: '#ff4d00', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{part.price.toLocaleString('sr-RS')} RSD</p>
+                      <p style={{ color: '#ff4d00', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{part.price?.toLocaleString('sr-RS')} RSD</p>
                       <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '12px', marginBottom: '10px' }}>{inStock ? 'Na stanju' : 'Nema na stanju'}</p>
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <Link href={partUrl} style={{ flex: 1, padding: '8px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px' }}>Detalji</Link>
@@ -146,7 +203,14 @@ function MarketplaceContent() {
           {!loading && displayParts.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
               <p style={{ fontSize: '48px' }}>🔍</p>
-              <p style={{ fontSize: '18px', color: '#aaa' }}>Nema rezultata za date filtere</p>
+              <p style={{ fontSize: '18px', color: '#aaa' }}>
+                {searchQuery ? `Nema rezultata za "${searchQuery}"` : 'Nema rezultata za date filtere'}
+              </p>
+              {searchQuery && (
+                <button onClick={clearSearch} style={{ marginTop: '16px', padding: '10px 24px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px' }}>
+                  Obriši pretragu
+                </button>
+              )}
             </div>
           )}
         </div>

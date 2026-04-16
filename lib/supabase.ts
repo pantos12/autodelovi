@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Part, Category, Supplier, PriceRecord, ScrapingJob, NormalizedPart, PriceAlert } from './types';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder';
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
@@ -78,7 +78,8 @@ export async function upsertPart(part: Partial<Part>): Promise<Part> {
 }
 
 export async function recordPriceHistory(partId: string, supplierId: string, price: number, priceEur: number, currency: string): Promise<void> {
-  await supabaseAdmin.from('price_history').insert({ part_id: partId, supplier_id: supplierId, price, price_eur: priceEur, currency, source: 'scrape', recorded_at: new Date().toISOString() });
+  const { error } = await supabaseAdmin.from('price_history').insert({ part_id: partId, supplier_id: supplierId, price, price_eur: priceEur, currency, source: 'scrape', recorded_at: new Date().toISOString() });
+  if (error) throw error;
 }
 
 export async function getPriceHistory(partId: string, days = 30): Promise<PriceRecord[]> {

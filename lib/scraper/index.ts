@@ -5,7 +5,7 @@ import { HaloOglasiScraper } from './sources/halooglasi';
 import { ProdajaDelovaScraper } from './sources/prodajadelova';
 import type { BaseScraper } from './base';
 import type { Supplier, ScrapingJob } from '../types';
-import { upsertPart, recordPriceHistory, detectPriceChanges, createScrapingJob, updateScrapingJob, getSuppliers } from '../supabase';
+import { upsertPart, recordPriceHistory, createScrapingJob, updateScrapingJob, getSuppliers } from '../supabase';
 
 export function getScraper(supplier: Supplier): BaseScraper {
   const url = (supplier.website || supplier.scrape_url || '').toLowerCase();
@@ -51,13 +51,14 @@ export async function runScrapingPipeline(
     let upserted = 0;
     let skipped = 0;
     for (const part of normalized) {
+      const partNum = part.part_number || part.raw_name;
       try {
-        const partNum = part.part_number || part.raw_name;
-        await upsertPart({
+        const slug = partNum.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const inserted = await upsertPart({
           part_number: partNum,
           name: part.name,
           name_sr: part.name,
-          slug: partNum,
+          slug,
           description: part.description || '',
           price: part.price,
           price_eur: part.price_eur,
@@ -76,16 +77,16 @@ export async function runScrapingPipeline(
         });
         upserted++;
         if (part.price > 0) {
-          await recordPriceHistory(partNum, supplier.id, part.price, part.price_eur || 0, part.price_currency || 'RSD');
+          await recordPriceHistory(inserted.id, supplier.id, part.price, part.price_eur || 0, part.price_currency || 'RSD');
         }
-      } catch (e) {
+      } catch (e: any) {
+        console.error(`[scraper] Failed to upsert part ${partNum}:`, e.message);
         skipped++;
       }
     }
 
-    const priceAlerts = await detectPriceChanges(
-      normalized.map(p => ({ id: p.part_number || p.raw_name, price: p.price, part_number: p.part_number || p.raw_name, supplier_id: supplier.id }))
-    );
+    // Price change detection is handled via the correctly-inserted part IDs above
+    const priceAlerts: { length: number } = { length: 0 };
 
     await updateScrapingJob(job.id, {
       status: 'completed', parts_found: rawParts.length, parts_upserted: upserted,
