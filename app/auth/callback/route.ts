@@ -28,9 +28,11 @@ export async function GET(request: Request) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      // Redirect to branded confirm page (shows success) or the requested next page
+      const redirectTo = next === '/' ? '/auth/confirm' : next;
+      return NextResponse.redirect(`${origin}${redirectTo}`);
     }
   }
 
-  return NextResponse.redirect(`${origin}/auth/login?error=auth_failed`);
+  return NextResponse.redirect(`${origin}/auth/confirm?error=auth_failed&error_description=Link+je+istekao+ili+je+nevazeci`);
 }

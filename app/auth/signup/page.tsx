@@ -27,7 +27,7 @@ export default function SignUpPage() {
     const { error: authError } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
     });
 
     if (authError) {
