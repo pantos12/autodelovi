@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getPartBySlug, getPartById, getRelatedParts } from '@/lib/supabase';
 import type { Part } from '@/lib/types';
+import BuyButton from '@/app/components/BuyButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,9 +27,10 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   };
 }
 
-export default async function PartDetail({ params }: { params: { id: string } }) {
+export default async function PartDetail({ params, searchParams }: { params: { id: string }; searchParams: { canceled?: string } }) {
   const part = await fetchPart(params.id);
   if (!part) notFound();
+  const canceled = searchParams?.canceled === '1';
 
   const related = await getRelatedParts(part, 4).catch(() => []);
   const vehicle = part.compatible_vehicles?.[0];
@@ -130,9 +132,12 @@ export default async function PartDetail({ params }: { params: { id: string } })
               <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '14px', marginBottom: '20px', fontWeight: 600 }}>
                 {inStock ? `✓ Na stanju (${part.stock_quantity} kom)` : '✗ Trenutno nema na stanju'}
               </p>
-              <button style={{ width: '100%', padding: '14px', background: inStock ? '#f9372c' : '#555', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, cursor: inStock ? 'pointer' : 'not-allowed', marginBottom: '12px' }}>
-                {inStock ? '🛒 Dodaj u korpu' : 'Nema na stanju'}
-              </button>
+              {canceled && (
+                <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', padding: '10px', color: '#ef4444', fontSize: '13px', marginBottom: '12px' }}>
+                  Kupovina je otkazana. Možete pokušati ponovo.
+                </div>
+              )}
+              <BuyButton partId={part.id} inStock={inStock} stockQuantity={part.stock_quantity ?? 0} />
               <Link
                 href={`/comparison?ids=${part.id}`}
                 style={{ display: 'block', width: '100%', padding: '12px', background: '#252629', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: 600, textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' as const }}

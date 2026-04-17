@@ -53,6 +53,7 @@ function MarketplaceContent() {
         if (searchQuery && searchQuery.length >= 2) {
           const params = new URLSearchParams();
           params.set('q', searchQuery);
+          if (filterMake) params.set('make', filterMake);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
           if (minPrice) params.set('min_price', minPrice);

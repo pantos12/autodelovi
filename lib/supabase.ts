@@ -42,7 +42,16 @@ export async function getParts(params: {
   if (min_price !== undefined) query = query.gte('price', min_price);
   if (max_price !== undefined) query = query.lte('price', max_price);
   if (in_stock) query = query.gt('stock_quantity', 0);
-  if (make) query = query.contains('compatible_vehicles', [{ make }]);
+  if (make) {
+    const safeMake = make.replace(/[%_\\'"(),.]/g, '').slice(0, 50);
+    if (safeMake.length > 0) {
+      // Match either JSONB compatible_vehicles OR text in name/brand (scrapers often don't populate JSONB)
+      const p = `%${safeMake}%`;
+      query = query.or(
+        `compatible_vehicles.cs.[{"make":"${safeMake}"}],name.ilike.${p},name_sr.ilike.${p},brand.ilike.${p},description.ilike.${p}`
+      );
+    }
+  }
 
   switch (sort) {
     case 'price_asc':  query = query.order('price', { ascending: true }); break;

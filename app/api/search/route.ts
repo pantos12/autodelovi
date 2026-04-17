@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') ?? '1') || 1);
     const perPage = Math.min(Math.max(1, parseInt(searchParams.get('per_page') ?? '20') || 20), 50);
     const category = searchParams.get('category') ?? null;
+    const make = searchParams.get('make')?.replace(/[%_\\'"(),.]/g, '').slice(0, 50) || null;
     const minPrice = searchParams.get('min_price') ? parseFloat(searchParams.get('min_price')!) : null;
     const maxPrice = searchParams.get('max_price') ? parseFloat(searchParams.get('max_price')!) : null;
     const inStock = searchParams.get('in_stock') === 'true' ? true : null;
@@ -31,12 +32,20 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       const safePattern = `%${q}%`;
-      const { data: fb, count } = await supabase
+      let fbQuery = supabase
         .from('parts')
         .select('id,slug,name,name_sr,brand,part_number,oem_number,price,price_eur,stock_quantity,images,category_id,supplier_id,compatible_vehicles,condition,status', { count: 'exact' })
         .or(`name.ilike.${safePattern},name_sr.ilike.${safePattern},part_number.ilike.${safePattern},brand.ilike.${safePattern}`)
-        .in('status', ['active','out_of_stock'])
-        .range((page-1)*perPage, page*perPage-1);
+        .in('status', ['active','out_of_stock']);
+      if (category) fbQuery = fbQuery.eq('category_id', category);
+      if (make) {
+        const p = `%${make}%`;
+        fbQuery = fbQuery.or(`compatible_vehicles.cs.[{"make":"${make}"}],name.ilike.${p},brand.ilike.${p}`);
+      }
+      if (minPrice !== null) fbQuery = fbQuery.gte('price', minPrice);
+      if (maxPrice !== null) fbQuery = fbQuery.lte('price', maxPrice);
+      if (inStock) fbQuery = fbQuery.gt('stock_quantity', 0);
+      const { data: fb, count } = await fbQuery.range((page-1)*perPage, page*perPage-1);
       return NextResponse.json({ data: fb ?? [], meta: { total: count ?? 0, page, per_page: perPage, total_pages: Math.ceil((count ?? 0) / perPage) } });
     }
 
