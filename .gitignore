@@ -9,6 +9,7 @@ out/
 .env
 .env.local
 .env.*.local
+.env.production
 
 # debug
 npm-debug.log*
@@ -17,8 +18,14 @@ npm-debug.log*
 next-env.d.ts
 
 # vercel
-.vercel
+.vercel/
 
 # misc
 .DS_Store
 *.tsbuildinfo
+
+# playwright
+playwright-report/
+blob-report/
+test-results/
+.playwright/

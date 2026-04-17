@@ -16,6 +16,38 @@
 import { BaseScraper, fetchHTML, extractPrice, slugify } from '../base';
 import type { ScrapedPart, ScrapeConfig } from '../../types';
 
+/**
+ * Offer stock signal helpers shared across scrapers.
+ * We attach these to ScrapedPart via a thin extension so the backfill
+ * can pass them straight into the `offers` table.
+ */
+export type StockSignalStrength = 'strong' | 'weak' | 'negative';
+export type LastCheckStatus = 'ok' | 'not_found' | 'blocked' | 'timeout';
+
+export interface ScrapedPartWithSignal extends ScrapedPart {
+  stock_signal_strength?: StockSignalStrength;
+  stock_signal_raw?: string;
+  last_check_status?: LastCheckStatus;
+  merchant_id?: string;
+  fitment?: {
+    make: string;
+    model?: string;
+    year_from?: number;
+    year_to?: number;
+    engine?: string;
+  }[];
+}
+
+const STRONG_POS_RE = /na\s*stanju|in\s*stock|dostupno|raspolo[zž]ivo/i;
+const NEGATIVE_RE = /nema\s*na\s*stanju|rasprodato|po\s*porud[zž]bini|nedostupno|out\s*of\s*stock|prodato/i;
+
+export function classifyStockSignal(raw: string): { strength: StockSignalStrength; raw: string } {
+  const trimmed = (raw || '').slice(0, 200);
+  if (NEGATIVE_RE.test(trimmed)) return { strength: 'negative', raw: trimmed };
+  if (STRONG_POS_RE.test(trimmed)) return { strength: 'strong', raw: trimmed };
+  return { strength: 'weak', raw: trimmed };
+}
+
 const CONFIG: ScrapeConfig = {
   type: 'html',
   base_url: 'https://www.autohub.rs',
@@ -83,8 +115,8 @@ function parseProductsFromHTML(
   category: { slug: string; hint: string },
   baseUrl: string,
   supplierSupplierId: string
-): ScrapedPart[] {
-  const parts: ScrapedPart[] = [];
+): ScrapedPartWithSignal[] {
+  const parts: ScrapedPartWithSignal[] = [];
   const now = new Date().toISOString();
 
   // --- Strategy 1: JSON-LD structured data (most reliable) ---
@@ -103,6 +135,11 @@ function parseProductsFromHTML(
         const url = data.url || data.offers?.url || '';
         const desc = data.description || '';
         if (name && price) {
+          const availability: string = data.offers?.availability || '';
+          const rawAvail = availability || desc || name;
+          const isInStock = availability.includes('InStock');
+          const isOOS = availability.includes('OutOfStock') || availability.includes('Discontinued');
+          const strength: StockSignalStrength = isOOS ? 'negative' : isInStock ? 'strong' : 'weak';
           parts.push({
             raw_name: name,
             raw_price: `${price} RSD`,
@@ -112,9 +149,12 @@ function parseProductsFromHTML(
             description: desc,
             image_urls: image ? [image] : [],
             product_url: url.startsWith('http') ? url : `${baseUrl}${url}`,
-            stock: data.offers?.availability?.includes('InStock') ? '10' : '0',
+            stock: isInStock ? '10' : '0',
             supplier_id: supplierSupplierId,
             scraped_at: now,
+            stock_signal_strength: strength,
+            stock_signal_raw: String(rawAvail).slice(0, 200),
+            last_check_status: 'ok',
           });
         }
       }
@@ -123,6 +163,10 @@ function parseProductsFromHTML(
         for (const item of data.itemListElement) {
           const p = item.item || item;
           if (p['@type'] === 'Product' && p.name && p.offers?.price) {
+            const availability: string = p.offers?.availability || '';
+            const isInStock = availability.includes('InStock');
+            const isOOS = availability.includes('OutOfStock') || availability.includes('Discontinued');
+            const strength: StockSignalStrength = isOOS ? 'negative' : isInStock ? 'strong' : 'weak';
             parts.push({
               raw_name: p.name,
               raw_price: `${p.offers.price} RSD`,
@@ -132,9 +176,12 @@ function parseProductsFromHTML(
               description: p.description || '',
               image_urls: p.image ? [Array.isArray(p.image) ? p.image[0] : p.image] : [],
               product_url: p.url ? (p.url.startsWith('http') ? p.url : `${baseUrl}${p.url}`) : '',
-              stock: p.offers?.availability?.includes('InStock') ? '10' : '0',
+              stock: isInStock ? '10' : '0',
               supplier_id: supplierSupplierId,
               scraped_at: now,
+              stock_signal_strength: strength,
+              stock_signal_raw: String(availability || p.name).slice(0, 200),
+              last_check_status: 'ok',
             });
           }
         }
@@ -194,8 +241,11 @@ function parseProductsFromHTML(
     const imgMatch = block.match(/<img[^>]+src=["']([^"']+)["']/i);
     const imageUrl = imgMatch ? imgMatch[1] : '';
 
-    // Extract stock
-    const inStock = /na.stanju|in.stock|available|dostupan/i.test(block);
+    // Extract stock signal
+    const negative = NEGATIVE_RE.test(block);
+    const strong = !negative && STRONG_POS_RE.test(block);
+    const strength: StockSignalStrength = negative ? 'negative' : strong ? 'strong' : 'weak';
+    const rawSignal = (block.match(STRONG_POS_RE) || block.match(NEGATIVE_RE) || [''])[0];
 
     // Parse autohub title format: "BRAND - PART_NUM - Name SR"
     const parsedParts = parseAutoHubTitle(rawName);
@@ -209,9 +259,12 @@ function parseProductsFromHTML(
       description: parsedParts.description,
       image_urls: imageUrl ? [imageUrl.startsWith('http') ? imageUrl : `${baseUrl}${imageUrl}`] : [],
       product_url: productUrl,
-      stock: inStock ? '10' : '1',
+      stock: negative ? '0' : strong ? '10' : '1',
       supplier_id: supplierSupplierId,
       scraped_at: now,
+      stock_signal_strength: strength,
+      stock_signal_raw: rawSignal.slice(0, 200),
+      last_check_status: 'ok',
     });
   }
 
@@ -239,6 +292,9 @@ function parseProductsFromHTML(
       stock: '5',
       supplier_id: supplierSupplierId,
       scraped_at: now,
+      stock_signal_strength: 'weak',
+      stock_signal_raw: '',
+      last_check_status: 'ok',
     });
   }
 
@@ -272,8 +328,8 @@ export class AutoHubScraper extends BaseScraper {
     super(supplierId, supplierName, CONFIG);
   }
 
-  async fetchParts(maxPages = 5): Promise<ScrapedPart[]> {
-    const allParts: ScrapedPart[] = [];
+  async fetchParts(maxPages = 5): Promise<ScrapedPartWithSignal[]> {
+    const allParts: ScrapedPartWithSignal[] = [];
     const seenPartNumbers = new Set<string>();
 
     for (const category of AUTOHUB_CATEGORIES) {
@@ -299,8 +355,8 @@ export class AutoHubScraper extends BaseScraper {
   private async scrapeCategory(
     category: { slug: string; hint: string; srLabel: string },
     maxPages: number
-  ): Promise<ScrapedPart[]> {
-    const parts: ScrapedPart[] = [];
+  ): Promise<ScrapedPartWithSignal[]> {
+    const parts: ScrapedPartWithSignal[] = [];
 
     for (let page = 1; page <= maxPages; page++) {
       const url = `${this.baseUrl}/search/category/${category.slug}?q=&page=${page}`;

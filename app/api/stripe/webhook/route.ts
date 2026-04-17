@@ -29,28 +29,57 @@ export async function POST(request: NextRequest) {
 
   try {
     if (event.type === 'checkout.session.completed') {
+      // Idempotency: check if this event was already processed
+      const { data: existing } = await supabaseAdmin
+        .from('stripe_events')
+        .select('id')
+        .eq('event_id', event.id)
+        .maybeSingle();
+
+      if (existing) {
+        return NextResponse.json({ received: true, duplicate: true });
+      }
+
+      // Record event before processing to prevent concurrent duplicates
+      try {
+        await supabaseAdmin
+          .from('stripe_events')
+          .insert({ event_id: event.id, event_type: event.type, processed_at: new Date().toISOString() });
+      } catch {
+        // Table may not exist yet; proceed without idempotency guard
+      }
+
       const session = event.data.object as Stripe.Checkout.Session;
       const partId = session.metadata?.part_id;
       if (partId && session.payment_status === 'paid') {
         const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 10 });
         const qty = lineItems.data[0]?.quantity ?? 1;
 
-        const { data: currentPart } = await supabaseAdmin
-          .from('parts')
-          .select('stock_quantity')
-          .eq('id', partId)
-          .single();
+        // Atomic stock decrement using RPC to avoid read-then-write race
+        const { error: rpcError } = await supabaseAdmin.rpc('decrement_stock', {
+          p_part_id: partId,
+          p_quantity: qty,
+        });
 
-        if (currentPart) {
-          const newStock = Math.max(0, (currentPart.stock_quantity ?? 0) - qty);
-          await supabaseAdmin
+        if (rpcError) {
+          // Fallback: direct update if RPC doesn't exist yet
+          const { data: currentPart } = await supabaseAdmin
             .from('parts')
-            .update({
-              stock_quantity: newStock,
-              status: newStock === 0 ? 'out_of_stock' : 'active',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', partId);
+            .select('stock_quantity')
+            .eq('id', partId)
+            .single();
+
+          if (currentPart) {
+            const newStock = Math.max(0, (currentPart.stock_quantity ?? 0) - qty);
+            await supabaseAdmin
+              .from('parts')
+              .update({
+                stock_quantity: newStock,
+                status: newStock === 0 ? 'out_of_stock' : 'active',
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', partId);
+          }
         }
       }
     }

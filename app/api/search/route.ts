@@ -30,30 +30,39 @@ export async function GET(request: NextRequest) {
       max_price_filter: maxPrice, in_stock_filter: inStock, page_num: page, page_size: perPage,
     });
 
-    if (error) {
-      const safePattern = `%${q}%`;
-      let fbQuery = supabase
-        .from('parts')
-        .select('id,slug,name,name_sr,brand,part_number,oem_number,price,price_eur,stock_quantity,images,category_id,supplier_id,compatible_vehicles,condition,status', { count: 'exact' })
-        .or(`name.ilike.${safePattern},name_sr.ilike.${safePattern},part_number.ilike.${safePattern},brand.ilike.${safePattern}`)
-        .in('status', ['active','out_of_stock']);
-      if (category) fbQuery = fbQuery.eq('category_id', category);
+    if (!error && data) {
+      let results = data;
       if (make) {
-        const p = `%${make}%`;
-        fbQuery = fbQuery.or(`compatible_vehicles.cs.[{"make":"${make}"}],name.ilike.${p},brand.ilike.${p}`);
+        const makeLower = make.toLowerCase();
+        results = results.filter((p: any) => {
+          if (p.compatible_vehicles?.some((v: any) => v.make?.toLowerCase() === makeLower)) return true;
+          const searchable = `${p.name || ''} ${p.name_sr || ''} ${p.brand || ''}`.toLowerCase();
+          return searchable.includes(makeLower);
+        });
       }
-      if (minPrice !== null) fbQuery = fbQuery.gte('price', minPrice);
-      if (maxPrice !== null) fbQuery = fbQuery.lte('price', maxPrice);
-      if (inStock) fbQuery = fbQuery.gt('stock_quantity', 0);
-      const { data: fb, count } = await fbQuery.range((page-1)*perPage, page*perPage-1);
-      return NextResponse.json({ data: fb ?? [], meta: { total: count ?? 0, page, per_page: perPage, total_pages: Math.ceil((count ?? 0) / perPage) } });
+      const total = make ? results.length : (data?.[0]?.total_count ?? 0);
+      return NextResponse.json(
+        { data: results, meta: { total, page, per_page: perPage, total_pages: Math.ceil(total / perPage), query: q } },
+        { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' } }
+      );
     }
 
-    const total = data?.[0]?.total_count ?? 0;
-    return NextResponse.json(
-      { data: data ?? [], meta: { total, page, per_page: perPage, total_pages: Math.ceil(total/perPage), query: q } },
-      { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' } }
-    );
+    const safePattern = `%${q}%`;
+    let fbQuery = supabase
+      .from('parts')
+      .select('id,slug,name,name_sr,brand,part_number,oem_number,price,price_eur,stock_quantity,images,category_id,supplier_id,compatible_vehicles,condition,status', { count: 'exact' })
+      .or(`name.ilike.${safePattern},name_sr.ilike.${safePattern},part_number.ilike.${safePattern},brand.ilike.${safePattern}`)
+      .in('status', ['active','out_of_stock']);
+    if (category) fbQuery = fbQuery.eq('category_id', category);
+    if (make) {
+      const p = `%${make}%`;
+      fbQuery = fbQuery.or(`compatible_vehicles.cs.[{"make":"${make}"}],name.ilike.${p},brand.ilike.${p}`);
+    }
+    if (minPrice !== null) fbQuery = fbQuery.gte('price', minPrice);
+    if (maxPrice !== null) fbQuery = fbQuery.lte('price', maxPrice);
+    if (inStock) fbQuery = fbQuery.gt('stock_quantity', 0);
+    const { data: fb, count } = await fbQuery.range((page-1)*perPage, page*perPage-1);
+    return NextResponse.json({ data: fb ?? [], meta: { total: count ?? 0, page, per_page: perPage, total_pages: Math.ceil((count ?? 0) / perPage) } });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Part, Category, Supplier, PriceRecord, ScrapingJob, NormalizedPart, PriceAlert } from './types';
+import type { Part, Category, Supplier, PriceRecord, ScrapingJob, NormalizedPart, PriceAlert, Offer } from './types';
+import { computeBand, type Band } from './confidence';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder';
+// When the service role key is not configured, fall back to the anon key so
+// server routes still work against tables that grant public insert/update via RLS.
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseKey;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
@@ -26,7 +29,7 @@ export async function getParts(params: {
     in_stock, sort = 'newest', page = 1, per_page = 24 } = params;
 
   let query = supabase
-    .from('parts')
+    .from('parts_v2')
     .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`, { count: 'exact' })
     .eq('status', 'active');
 
@@ -68,26 +71,26 @@ export async function getParts(params: {
 }
 export async function getPartById(id: string): Promise<Part | null> {
   if (!isConfigured()) return null;
-  const { data, error } = await supabase.from('parts').select(`*, category:categories(*), supplier:suppliers(*)`).eq('id', id).single();
+  const { data, error } = await supabase.from('parts_v2').select(`*, category:categories(*), supplier:suppliers(*)`).eq('id', id).single();
   if (error) return null;
   return data as Part;
 }
 
 export async function getPartBySlug(slug: string): Promise<Part | null> {
   if (!isConfigured()) return null;
-  const { data, error } = await supabase.from('parts').select(`*, category:categories(*), supplier:suppliers(*)`).eq('slug', slug).single();
+  const { data, error } = await supabase.from('parts_v2').select(`*, category:categories(*), supplier:suppliers(*)`).eq('slug', slug).single();
   if (error) return null;
   return data as Part;
 }
 
 export async function getRelatedParts(part: Part, limit = 4): Promise<Part[]> {
   if (!isConfigured()) return [];
-  const { data } = await supabase.from('parts').select(`*, supplier:suppliers(id,name,slug,city,is_verified)`).eq('category_id', part.category_id).neq('id', part.id).eq('status', 'active').limit(limit);
+  const { data } = await supabase.from('parts_v2').select(`*, supplier:suppliers(id,name,slug,city,is_verified)`).eq('category_id', part.category_id).neq('id', part.id).eq('status', 'active').limit(limit);
   return (data ?? []) as Part[];
 }
 
 export async function upsertPart(part: Partial<Part>): Promise<Part> {
-  const { data, error } = await supabaseAdmin.from('parts').upsert(part, { onConflict: 'part_number,supplier_id', ignoreDuplicates: false }).select().single();
+  const { data, error } = await supabaseAdmin.from('parts_v2').upsert(part, { onConflict: 'part_number,supplier_id', ignoreDuplicates: false }).select().single();
   if (error) throw error;
   return data as Part;
 }
@@ -110,7 +113,7 @@ export async function detectPriceChanges(parts: Array<{ id: string; price: numbe
   for (const part of parts) {
     const { data: latest } = await supabase.from('price_history').select('price').eq('part_id', part.id).order('recorded_at', { ascending: false }).limit(1).single();
     if (latest && Math.abs(latest.price - part.price) / latest.price > 0.05) {
-      const { data: pf } = await supabase.from('parts').select('name, supplier:suppliers(name)').eq('id', part.id).single();
+      const { data: pf } = await supabase.from('parts_v2').select('name, supplier:suppliers(name)').eq('id', part.id).single();
       alerts.push({ part_id: part.id, part_name: (pf as any)?.name ?? part.part_number, old_price: latest.price, new_price: part.price, change_pct: ((part.price - latest.price) / latest.price) * 100, supplier_name: (pf as any)?.supplier?.name ?? '', currency: 'RSD' });
     }
   }
@@ -119,7 +122,7 @@ export async function detectPriceChanges(parts: Array<{ id: string; price: numbe
 
 export async function getCategories(): Promise<Category[]> {
   if (!isConfigured()) return [];
-  const { data } = await supabase.from('categories').select('*, part_count:parts(count)').order('sort_order', { ascending: true });
+  const { data } = await supabase.from('categories').select('*, part_count:parts_v2(count)').order('sort_order', { ascending: true });
   return (data ?? []) as Category[];
 }
 
@@ -183,6 +186,67 @@ export async function updateScrapingJob(
     .update(updates)
     .eq('id', jobId);
   if (error) throw error;
+}
+
+export async function getPartsWithOffers(params: {
+  category?: string;
+  merchant?: string;
+  band?: 'verified' | 'likely' | 'inquiry' | 'all';
+  limit?: number;
+  offset?: number;
+}): Promise<{ parts: (Part & { offers: Offer[]; best_offer: Offer | null })[]; total: number }> {
+  if (!isConfigured()) return { parts: [], total: 0 };
+
+  const { category, merchant, band = 'all', limit = 24, offset = 0 } = params;
+
+  let query = supabase
+    .from('parts_v2')
+    .select('*, offers(*)', { count: 'exact' })
+    .eq('status', 'active');
+
+  if (category) query = query.eq('category_id', category);
+  query = query.range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+
+  const now = new Date();
+  const rows = (data ?? []) as Array<Part & { offers: Offer[] | null }>;
+
+  const parts = rows.map((row) => {
+    let offers = (row.offers ?? []) as Offer[];
+
+    if (merchant) {
+      offers = offers.filter((o) => o.merchant_id === merchant);
+    }
+
+    // Compute band per offer (in JS, not SQL)
+    const withBand = offers.map((o) => ({ offer: o, band: computeBand(o, now) as Band }));
+
+    const filtered = band === 'all'
+      ? withBand
+      : withBand.filter((x) => x.band === band);
+
+    const finalOffers = filtered.map((x) => x.offer);
+
+    // best_offer = lowest price among non-inquiry-band offers, else null
+    const eligible = withBand
+      .filter((x) => x.band !== 'inquiry')
+      .map((x) => x.offer);
+
+    const best_offer = eligible.length
+      ? eligible.reduce((min, o) => (o.price < min.price ? o : min), eligible[0])
+      : null;
+
+    return { ...row, offers: finalOffers, best_offer };
+  });
+
+  // If band filter is set, drop parts with zero matching offers (unless 'all').
+  const filteredParts = band === 'all'
+    ? parts
+    : parts.filter((p) => p.offers.length > 0);
+
+  return { parts: filteredParts, total: count ?? 0 };
 }
 
 export async function getRecentJobs(limit = 20): Promise<ScrapingJob[]> {

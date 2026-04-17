@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
+import { useCart } from './CartProvider';
 import type { User } from '@supabase/supabase-js';
 
 const navLinks = [
@@ -21,10 +22,11 @@ export default function NavBar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const { cartCount } = useCart();
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data }) => setUser(data.user)).catch(() => {});
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
@@ -98,7 +100,17 @@ export default function NavBar() {
           })}
         </div>
 
-        {/* Auth buttons - desktop */}
+        {/* Cart + Auth buttons - desktop */}
+        <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+          <Link href="/cart" style={{ position: 'relative', textDecoration: 'none', fontSize: '20px', padding: '4px' }}>
+            🛒
+            {cartCount > 0 && (
+              <span style={{ position: 'absolute', top: '-4px', right: '-8px', background: '#f9372c', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {cartCount}
+              </span>
+            )}
+          </Link>
+        </div>
         <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
           {user ? (
             <div style={{ position: 'relative' }}>
@@ -162,6 +174,16 @@ export default function NavBar() {
             </Link>
           );
         })}
+
+        {/* Mobile cart link */}
+        <Link href="/cart" onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px', color: pathname === '/cart' ? '#f9372c' : 'rgba(255,255,255,0.7)', fontWeight: pathname === '/cart' ? 600 : 400, fontSize: '14px', letterSpacing: '1px', textDecoration: 'none', borderLeft: pathname === '/cart' ? '3px solid #f9372c' : '3px solid transparent' }}>
+          <span>🛒 KORPA</span>
+          {cartCount > 0 && (
+            <span style={{ background: '#f9372c', color: '#fff', fontSize: '11px', fontWeight: 700, borderRadius: '10px', padding: '2px 8px', minWidth: '20px', textAlign: 'center' }}>
+              {cartCount}
+            </span>
+          )}
+        </Link>
 
         {/* Mobile auth */}
         <div style={{ margin: '16px 24px 0', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '12px' }}>

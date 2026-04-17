@@ -18,6 +18,62 @@ export default function VehicleSelection() {
   const engines = make && model ? getEngines(make, model) : [];
   const years = getYears();
 
+  // VIN decode state
+  const [vin, setVin] = useState('');
+  const [vinLoading, setVinLoading] = useState(false);
+  const [vinError, setVinError] = useState('');
+  const [vinInfo, setVinInfo] = useState('');
+
+  async function handleVinDecode() {
+    setVinError('');
+    setVinInfo('');
+    const cleaned = vin.trim().toUpperCase();
+    if (cleaned.length !== 17) {
+      setVinError('VIN nije validan');
+      return;
+    }
+    setVinLoading(true);
+    try {
+      const res = await fetch(`/api/vin/${cleaned}`);
+      if (res.status === 400) {
+        setVinError('VIN nije validan');
+        return;
+      }
+      const json = await res.json();
+      if (!res.ok || json?.error) {
+        setVinError('Servis trenutno nedostupan, koristi dropdown');
+        return;
+      }
+      // Match make case-insensitively against known list
+      if (json.make) {
+        const matchedMake = makes.find(m => m.toLowerCase() === String(json.make).toLowerCase());
+        if (matchedMake) {
+          setMake(matchedMake);
+          // Try to match model under that make
+          if (json.model) {
+            const modelList = getModels(matchedMake);
+            const matchedModel = modelList.find(mo => mo.toLowerCase() === String(json.model).toLowerCase());
+            if (matchedModel) setModel(matchedModel);
+          }
+          if (json.model_year) {
+            const yr = String(json.model_year);
+            if (years.includes(yr)) setYear(yr);
+          }
+          setStep(1);
+          setVinInfo(`Prepoznato: ${json.make}${json.model ? ' ' + json.model : ''}${json.model_year ? ' ' + json.model_year : ''}`);
+        } else {
+          setVinInfo(`Prepoznato: ${json.make}${json.model ? ' ' + json.model : ''} - nije u listi, koristi dropdown.`);
+        }
+      } else {
+        setVinError('Servis trenutno nedostupan, koristi dropdown');
+      }
+    } catch {
+      setVinError('Servis trenutno nedostupan, koristi dropdown');
+    } finally {
+      setVinLoading(false);
+    }
+  }
+
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (make) params.set('make', make);
@@ -82,6 +138,57 @@ export default function VehicleSelection() {
             Odaberite <span style={{ color: '#f9372c' }}>Vaše Vozilo</span>
           </h1>
           <p style={{ color: '#aaa', fontSize: '15px' }}>Pronađite delove koji odgovaraju vašem automobilu</p>
+        </div>
+
+        {/* VIN decode card */}
+        <div style={{ ...s.card, marginBottom: '24px' }}>
+          <h2 style={{ color: '#fff', fontSize: '18px', marginBottom: '12px' }}>Ili unesite VIN</h2>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              value={vin}
+              maxLength={17}
+              onChange={e => setVin(e.target.value.toUpperCase())}
+              placeholder="npr. WVWZZZ1JZ1W000001"
+              style={{
+                flex: '1 1 200px',
+                padding: '12px',
+                background: '#0c0d0f',
+                border: '1px solid #333',
+                borderRadius: '8px',
+                color: '#fff',
+                fontSize: '14px',
+                letterSpacing: '1px',
+                fontFamily: 'monospace',
+                textTransform: 'uppercase',
+              }}
+            />
+            <button
+              onClick={handleVinDecode}
+              disabled={vinLoading || vin.trim().length === 0}
+              style={{
+                padding: '12px 20px',
+                background: vinLoading || vin.trim().length === 0 ? '#3a3a3a' : '#ff4d00',
+                border: 'none',
+                borderRadius: '8px',
+                color: '#fff',
+                cursor: vinLoading || vin.trim().length === 0 ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: 600,
+              }}
+            >
+              {vinLoading ? 'Dekodujem...' : 'Dekoduj VIN'}
+            </button>
+          </div>
+          <p style={{ color: '#888', fontSize: '12px', marginTop: '10px', lineHeight: 1.5 }}>
+            VIN podaci dolaze iz NHTSA vPIC — delimični podaci za evropske VIN-ove su normalni.
+          </p>
+          {vinError && (
+            <p style={{ color: '#ef4444', fontSize: '13px', marginTop: '8px' }}>{vinError}</p>
+          )}
+          {vinInfo && (
+            <p style={{ color: '#22c55e', fontSize: '13px', marginTop: '8px' }}>{vinInfo}</p>
+          )}
         </div>
 
         {/* Step indicator */}

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import NavBar from './components/NavBar';
+import CartProvider from './components/CartProvider';
 
 const inter = Inter({
   subsets: ['latin', 'latin-ext'],
@@ -42,8 +43,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="sr" className={inter.variable}>
       <body style={{ margin: 0, background: '#0c0d0f', fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}>
-        <NavBar />
-        {children}
+        <CartProvider>
+          <NavBar />
+          {children}
+        </CartProvider>
       </body>
     </html>
   );

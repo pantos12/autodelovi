@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getPartBySlug, getPartById, getRelatedParts } from '@/lib/supabase';
 import type { Part } from '@/lib/types';
 import BuyButton from '@/app/components/BuyButton';
+import AddToCartButton from '@/app/components/AddToCartButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,10 +79,16 @@ export default async function PartDetail({ params, searchParams }: { params: { i
           {/* Left column */}
           <div>
             {/* Image */}
-            <div style={{ background: '#1a1b1f', borderRadius: '16px', height: '320px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', border: '1px solid #252629', overflow: 'hidden' }}>
-              {part.images?.[0]
-                ? <img src={part.images[0]} alt={part.name} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '16px' }} />
-                : <span style={{ fontSize: '80px' }}>🔧</span>}
+            <div style={{ position: 'relative', background: '#1a1b1f', borderRadius: '16px', height: '320px', marginBottom: '24px', border: '1px solid #252629', overflow: 'hidden' }}>
+              <Image
+                src={part.images?.[0] || '/images/part-placeholder.svg'}
+                alt={part.name}
+                fill
+                sizes="(max-width: 1200px) 100vw, 800px"
+                style={{ objectFit: part.images?.[0] ? 'contain' : 'cover', padding: part.images?.[0] ? '16px' : 0 }}
+                priority
+                unoptimized
+              />
             </div>
 
             {/* Title */}
@@ -138,6 +146,9 @@ export default async function PartDetail({ params, searchParams }: { params: { i
                 </div>
               )}
               <BuyButton partId={part.id} inStock={inStock} stockQuantity={part.stock_quantity ?? 0} />
+              <div style={{ marginTop: '8px' }}>
+                <AddToCartButton part={part} inStock={inStock} full />
+              </div>
               <Link
                 href={`/comparison?ids=${part.id}`}
                 style={{ display: 'block', width: '100%', padding: '12px', background: '#252629', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: 600, textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' as const }}
@@ -170,12 +181,20 @@ export default async function PartDetail({ params, searchParams }: { params: { i
           <div style={{ marginTop: '48px' }}>
             <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, marginBottom: '20px' }}>Slični delovi</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-              {related.map(rp => {
+              {related.map((rp, idx) => {
                 const rpInStock = (rp.stock_quantity ?? 0) > 0;
                 return (
                   <div key={rp.id} style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
-                    <div style={{ background: '#252629', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', overflow: 'hidden' }}>
-                      {rp.images?.[0] ? <img src={rp.images[0]} alt={rp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" /> : '🔧'}
+                    <div style={{ position: 'relative', background: '#252629', height: '120px', overflow: 'hidden' }}>
+                      <Image
+                        src={rp.images?.[0] || '/images/part-placeholder.svg'}
+                        alt={rp.name}
+                        fill
+                        sizes="(max-width: 768px) 50vw, 220px"
+                        style={{ objectFit: 'cover' }}
+                        loading="lazy"
+                        unoptimized
+                      />
                     </div>
                     <div style={{ padding: '12px' }}>
                       <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{rp.brand}</p>

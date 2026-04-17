@@ -3,6 +3,9 @@ import { DemoScraper } from './sources/demo';
 import { AutoHubScraper } from './sources/autohub';
 import { HaloOglasiScraper } from './sources/halooglasi';
 import { ProdajaDelovaScraper } from './sources/prodajadelova';
+import { DeloviOnlineScraper } from './sources/delovionline';
+import { AlvadiScraper } from './sources/alvadi';
+import { PolovniAutomobiliScraper } from './sources/polovniautomobili';
 import type { BaseScraper } from './base';
 import type { Supplier, ScrapingJob } from '../types';
 import { upsertPart, recordPriceHistory, createScrapingJob, updateScrapingJob, getSuppliers } from '../supabase';
@@ -13,9 +16,45 @@ export function getScraper(supplier: Supplier): BaseScraper {
   if (url.includes('autohub.rs')) return new AutoHubScraper(supplier.id, supplier.name);
   if (url.includes('halooglasi.com')) return new HaloOglasiScraper(supplier.id, supplier.name);
   if (url.includes('prodajadelova.rs')) return new ProdajaDelovaScraper(supplier.id, supplier.name);
+  if (url.includes('delovionline.rs')) return new DeloviOnlineScraper(supplier.id, supplier.name);
+  if (url.includes('alvadi.com')) return new AlvadiScraper(supplier.id, supplier.name);
+  if (url.includes('polovniautomobili.com')) return new PolovniAutomobiliScraper(supplier.id, supplier.name);
+
+  // Also resolve by supplier id/slug for the backfill flow
+  switch (supplier.id) {
+    case 'autohub':           return new AutoHubScraper(supplier.id, supplier.name);
+    case 'prodajadelova':     return new ProdajaDelovaScraper(supplier.id, supplier.name);
+    case 'delovionline':      return new DeloviOnlineScraper(supplier.id, supplier.name);
+    case 'alvadi':            return new AlvadiScraper(supplier.id, supplier.name);
+    case 'polovniautomobili': return new PolovniAutomobiliScraper(supplier.id, supplier.name);
+  }
 
   // Fallback to demo scraper
   return new DemoScraper();
+}
+
+/**
+ * Resolve a scraper by source name. Used by the one-off backfill script
+ * and by cron endpoints that iterate over SOURCE_NAMES.
+ */
+export const SOURCE_NAMES = [
+  'autohub',
+  'prodajadelova',
+  'delovionline',
+  'alvadi',
+  'polovniautomobili',
+] as const;
+export type SourceName = typeof SOURCE_NAMES[number];
+
+export function getScraperByName(name: string): BaseScraper {
+  switch (name) {
+    case 'autohub':           return new AutoHubScraper('autohub', 'AutoHub.rs');
+    case 'prodajadelova':     return new ProdajaDelovaScraper('prodajadelova', 'ProdajaDelova.rs');
+    case 'delovionline':      return new DeloviOnlineScraper('delovionline', 'DeloviOnline.rs');
+    case 'alvadi':            return new AlvadiScraper('alvadi', 'Alvadi.com');
+    case 'polovniautomobili': return new PolovniAutomobiliScraper('polovniautomobili', 'PolovniAutomobili.com');
+    default: throw new Error(`Unknown source: ${name}`);
+  }
 }
 
 export interface PipelineResult {

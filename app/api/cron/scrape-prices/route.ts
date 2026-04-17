@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const { data: parts } = await supabaseAdmin
-      .from('parts')
+      .from('parts_v2')
       .select('id,part_number,supplier_id,price,source_url')
       .eq('status', 'active')
       .not('source_url', 'is', null)
