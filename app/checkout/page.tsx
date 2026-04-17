@@ -5,12 +5,12 @@ import Link from 'next/link';
 import { useCart } from '../components/CartProvider';
 
 interface BuyerForm {
-  buyer_name: string;
-  buyer_email: string;
-  buyer_phone: string;
-  shipping_address: string;
-  shipping_city: string;
-  shipping_postal: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  postal: string;
   notes: string;
 }
 
@@ -20,12 +20,12 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<BuyerForm>({
-    buyer_name: '',
-    buyer_email: '',
-    buyer_phone: '',
-    shipping_address: '',
-    shipping_city: '',
-    shipping_postal: '',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    postal: '',
     notes: '',
   });
 
@@ -48,20 +48,27 @@ export default function CheckoutPage() {
     e.preventDefault();
     setError(null);
 
-    if (!form.buyer_name.trim() || !form.buyer_email.trim() || !form.buyer_phone.trim() || !form.shipping_address.trim() || !form.shipping_city.trim()) {
+    if (!form.name.trim() || !form.email.trim() || !form.phone.trim() || !form.address.trim() || !form.city.trim()) {
       setError('Molimo popunite sva obavezna polja.');
       return;
     }
 
     setSubmitting(true);
     try {
-      const session_id = typeof window !== 'undefined' ? localStorage.getItem('ads_cart_session') : null;
+      let session_id: string | null = null;
+      if (typeof window !== 'undefined') {
+        session_id = localStorage.getItem('ads_cart_session');
+        if (!session_id) {
+          session_id = `ads_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+          try { localStorage.setItem('ads_cart_session', session_id); } catch {}
+        }
+      }
       const res = await fetch('/api/checkout/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           session_id,
-          items,
+          items: items.map(i => ({ part_id: i.part_id, quantity: i.quantity })),
           buyer: form,
         }),
       });
@@ -119,33 +126,33 @@ export default function CheckoutPage() {
 
             <div style={{ marginBottom: '14px' }}>
               <label style={labelStyle}>Ime i prezime *</label>
-              <input type="text" required value={form.buyer_name} onChange={e => update('buyer_name', e.target.value)} style={inputStyle} />
+              <input type="text" required value={form.name} onChange={e => update('name', e.target.value)} style={inputStyle} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <label style={labelStyle}>Email *</label>
-                <input type="email" required value={form.buyer_email} onChange={e => update('buyer_email', e.target.value)} style={inputStyle} />
+                <input type="email" required value={form.email} onChange={e => update('email', e.target.value)} style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Telefon *</label>
-                <input type="tel" required value={form.buyer_phone} onChange={e => update('buyer_phone', e.target.value)} style={inputStyle} />
+                <input type="tel" required value={form.phone} onChange={e => update('phone', e.target.value)} style={inputStyle} />
               </div>
             </div>
 
             <div style={{ marginBottom: '14px' }}>
               <label style={labelStyle}>Adresa za dostavu *</label>
-              <input type="text" required value={form.shipping_address} onChange={e => update('shipping_address', e.target.value)} style={inputStyle} />
+              <input type="text" required value={form.address} onChange={e => update('address', e.target.value)} style={inputStyle} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <label style={labelStyle}>Grad *</label>
-                <input type="text" required value={form.shipping_city} onChange={e => update('shipping_city', e.target.value)} style={inputStyle} />
+                <input type="text" required value={form.city} onChange={e => update('city', e.target.value)} style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Poštanski broj</label>
-                <input type="text" value={form.shipping_postal} onChange={e => update('shipping_postal', e.target.value)} style={inputStyle} />
+                <input type="text" value={form.postal} onChange={e => update('postal', e.target.value)} style={inputStyle} />
               </div>
             </div>
 
@@ -170,11 +177,18 @@ export default function CheckoutPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px', maxHeight: '320px', overflowY: 'auto' }}>
               {items.map(item => (
                 <div key={item.part_id} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '6px', background: '#252629', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
-                    {item.image_url
-                      ? <img src={item.image_url} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <img src="/images/part-placeholder.svg" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    }
+                  <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: '#252629', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+                    <img
+                      src={item.image_url || '/images/part-placeholder.svg'}
+                      alt={item.name || ''}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      onError={(e) => {
+                        const img = e.currentTarget;
+                        if (!img.src.endsWith('/images/part-placeholder.svg')) {
+                          img.src = '/images/part-placeholder.svg';
+                        }
+                      }}
+                    />
                     <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#2a2b2f', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #1a1b1f' }}>{item.quantity}</span>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>

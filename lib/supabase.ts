@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Part, Category, Supplier, PriceRecord, ScrapingJob, NormalizedPart, PriceAlert } from './types';
+import type { Part, Category, Supplier, PriceRecord, ScrapingJob, NormalizedPart, PriceAlert, Offer } from './types';
+import { computeBand, type Band } from './confidence';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
@@ -170,6 +171,67 @@ export async function updateScrapingJob(
     .update(updates)
     .eq('id', jobId);
   if (error) throw error;
+}
+
+export async function getPartsWithOffers(params: {
+  category?: string;
+  merchant?: string;
+  band?: 'verified' | 'likely' | 'inquiry' | 'all';
+  limit?: number;
+  offset?: number;
+}): Promise<{ parts: (Part & { offers: Offer[]; best_offer: Offer | null })[]; total: number }> {
+  if (!isConfigured()) return { parts: [], total: 0 };
+
+  const { category, merchant, band = 'all', limit = 24, offset = 0 } = params;
+
+  let query = supabase
+    .from('parts_v2')
+    .select('*, offers(*)', { count: 'exact' })
+    .eq('status', 'active');
+
+  if (category) query = query.eq('category_id', category);
+  query = query.range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+
+  const now = new Date();
+  const rows = (data ?? []) as Array<Part & { offers: Offer[] | null }>;
+
+  const parts = rows.map((row) => {
+    let offers = (row.offers ?? []) as Offer[];
+
+    if (merchant) {
+      offers = offers.filter((o) => o.merchant_id === merchant);
+    }
+
+    // Compute band per offer (in JS, not SQL)
+    const withBand = offers.map((o) => ({ offer: o, band: computeBand(o, now) as Band }));
+
+    const filtered = band === 'all'
+      ? withBand
+      : withBand.filter((x) => x.band === band);
+
+    const finalOffers = filtered.map((x) => x.offer);
+
+    // best_offer = lowest price among non-inquiry-band offers, else null
+    const eligible = withBand
+      .filter((x) => x.band !== 'inquiry')
+      .map((x) => x.offer);
+
+    const best_offer = eligible.length
+      ? eligible.reduce((min, o) => (o.price < min.price ? o : min), eligible[0])
+      : null;
+
+    return { ...row, offers: finalOffers, best_offer };
+  });
+
+  // If band filter is set, drop parts with zero matching offers (unless 'all').
+  const filteredParts = band === 'all'
+    ? parts
+    : parts.filter((p) => p.offers.length > 0);
+
+  return { parts: filteredParts, total: count ?? 0 };
 }
 
 export async function getRecentJobs(limit = 20): Promise<ScrapingJob[]> {

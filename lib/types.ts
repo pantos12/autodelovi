@@ -215,3 +215,65 @@ export interface PriceAlert {
   supplier_name: string;
   currency: string;
 }
+
+// ─── v3.3 new tables ────────────────────────────────────────
+
+export interface Merchant {
+  id: string;
+  slug: string;
+  name: string;
+  homepage: string | null;
+  logo_url: string | null;
+  country: string;
+  trust_tier: 'retailer' | 'warehouse' | 'classifieds' | 'supplier';
+  created_at: string;
+}
+
+export interface Offer {
+  id: string;
+  part_id: string;
+  merchant_id: string;
+  source_url: string | null;
+  price: number;
+  price_currency: string;
+  price_eur: number | null;
+  stock_signal_strength: 'strong' | 'weak' | 'negative';
+  stock_signal_raw: string | null;
+  last_check_status: 'ok' | 'not_found' | 'blocked' | 'timeout';
+  last_seen_at: string;
+  created_at: string;
+}
+
+export interface FitmentClaim {
+  id: string;
+  part_id: string;
+  make: string;
+  model: string | null;
+  year_from: number | null;
+  year_to: number | null;
+  engine: string | null;
+  source: string | null;
+  confidence: number;
+}
+
+export interface VinCacheRow {
+  vin: string;
+  make: string | null;
+  model: string | null;
+  model_year: number | null;
+  raw_payload: unknown;
+  source: string;
+  decoded_at: string;
+}
+
+export interface Inquiry {
+  id: string;
+  part_id: string | null;
+  merchant_id: string | null;
+  buyer_name: string | null;
+  buyer_email: string;
+  buyer_phone: string | null;
+  message: string | null;
+  status: 'pending' | 'responded' | 'closed';
+  created_at: string;
+}
