@@ -1,11 +1,30 @@
+# dependencies
 node_modules/
+
+# next.js
 .next/
+out/
+
+# env files
 .env
 .env.local
+.env.*.local
 .env.production
-.vercel/
-*.tsbuildinfo
+
+# debug
+npm-debug.log*
+
+# typescript
 next-env.d.ts
+
+# vercel
+.vercel/
+
+# misc
+.DS_Store
+*.tsbuildinfo
+
+# playwright
 playwright-report/
 blob-report/
 test-results/

@@ -96,17 +96,17 @@ export default function VehicleSelection() {
     card: { background: '#1a1b1f', borderRadius: '16px', padding: '32px', border: '1px solid #252629' } as React.CSSProperties,
     stepBtn: (active: boolean, done: boolean): React.CSSProperties => ({
       width: '32px', height: '32px', borderRadius: '50%', border: 'none', cursor: 'pointer',
-      background: done ? '#22c55e' : active ? '#ff4d00' : '#333',
+      background: done ? '#22c55e' : active ? '#f9372c' : '#333',
       color: '#fff', fontWeight: 700, fontSize: '14px',
     }),
     optionBtn: (selected: boolean): React.CSSProperties => ({
-      width: '100%', padding: '14px 16px', background: selected ? '#ff4d00' : '#252629',
-      border: selected ? '2px solid #ff4d00' : '2px solid transparent',
+      width: '100%', padding: '14px 16px', background: selected ? '#f9372c' : '#252629',
+      border: selected ? '2px solid #f9372c' : '2px solid transparent',
       borderRadius: '10px', color: '#fff', cursor: 'pointer', textAlign: 'left', fontSize: '15px',
       fontWeight: selected ? 600 : 400, marginBottom: '8px',
     }),
     navBtn: (primary: boolean): React.CSSProperties => ({
-      padding: '12px 24px', background: primary ? '#ff4d00' : '#333',
+      padding: '12px 24px', background: primary ? '#f9372c' : '#333',
       border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer',
       fontSize: '15px', fontWeight: 600, opacity: primary && !canProceed() ? 0.5 : 1,
     }),
@@ -135,7 +135,7 @@ export default function VehicleSelection() {
       <div style={s.container}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>
-            Odaberite <span style={{ color: '#ff4d00' }}>Vaše Vozilo</span>
+            Odaberite <span style={{ color: '#f9372c' }}>Vaše Vozilo</span>
           </h1>
           <p style={{ color: '#aaa', fontSize: '15px' }}>Pronađite delove koji odgovaraju vašem automobilu</p>
         </div>
@@ -199,7 +199,7 @@ export default function VehicleSelection() {
                 <button style={s.stepBtn(i === step, i < step)} onClick={() => i < step && setStep(i)}>
                   {i < step ? '✓' : i + 1}
                 </button>
-                <span style={{ color: i === step ? '#ff4d00' : i < step ? '#22c55e' : '#555', fontSize: '11px' }}>{s_label}</span>
+                <span style={{ color: i === step ? '#f9372c' : i < step ? '#22c55e' : '#555', fontSize: '11px' }}>{s_label}</span>
               </div>
               {i < steps.length - 1 && (
                 <div style={{ width: '48px', height: '2px', background: i < step ? '#22c55e' : '#333', margin: '0 4px 16px' }} />
@@ -239,7 +239,7 @@ export default function VehicleSelection() {
             <p style={{ color: '#aaa', fontSize: '13px', marginBottom: '8px' }}>Vaš izbor:</p>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {[make, model, year, engine].filter(Boolean).map((v, i) => (
-                <span key={i} style={{ background: '#ff4d00', color: '#fff', padding: '4px 10px', borderRadius: '6px', fontSize: '13px' }}>{v}</span>
+                <span key={i} style={{ background: '#f9372c', color: '#fff', padding: '4px 10px', borderRadius: '6px', fontSize: '13px' }}>{v}</span>
               ))}
             </div>
           </div>
