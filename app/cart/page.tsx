@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCart } from '../components/CartProvider';
 
 export default function CartPage() {
@@ -48,11 +49,16 @@ export default function CartPage() {
               const lineTotal = item.price * item.quantity;
               return (
                 <div key={item.part_id} className="cart-item-row" style={{ display: 'flex', gap: '14px', background: '#1a1b1f', borderRadius: '12px', padding: '16px', border: '1px solid #2a2b2f', alignItems: 'center' }}>
-                  <div style={{ width: '60px', height: '60px', borderRadius: '8px', background: '#252629', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                    {item.image_url
-                      ? <img src={item.image_url} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <img src="/images/part-placeholder.svg" alt="Auto deo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    }
+                  <div style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '8px', background: '#252629', overflow: 'hidden', flexShrink: 0 }}>
+                    <Image
+                      src={item.image_url || '/images/part-placeholder.svg'}
+                      alt={item.name}
+                      fill
+                      sizes="60px"
+                      style={{ objectFit: 'cover' }}
+                      loading="lazy"
+                      unoptimized
+                    />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ color: '#fff', fontSize: '14px', fontWeight: 600, marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>

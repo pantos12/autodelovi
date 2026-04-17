@@ -1,5 +1,37 @@
 # Changelog
 
+## [3.3.0] - 2026-04-16
+
+### Added — Catalog depth + trustable stock + payable checkout
+
+**Database (6 new tables):** `merchants`, `offers`, `fitment_claims`, `vin_cache`, `inquiries`, `backfill_runs`. Schema extends `parts_v2` (no rebuild). RLS policies added for each.
+
+**Stock confidence bands** — 3-band UI (🟢 Na stanju · provereno / 🟡 Verovatno dostupno / 🔴 Proveri sa prodavcem), computed at read-time from `offers.stock_signal_strength` + `last_check_status` + `last_seen_at`. Evidence fields preserved (raw signal text, check status). See `lib/confidence.ts`.
+
+**Stripe checkout fix** — aligned client form field names with server validator (`name/email/phone/address/city/postal/notes`); fixed missing `image_url` in `/checkout` summary; hardened session_id fallback.
+
+**Inquiry flow** — `POST /api/inquiries`, `<InquiryModal>`, `<InquiryButton>` for 🔴 Na-upit products (hidden add-to-cart, inquiry form instead).
+
+**VIN decoding** — `GET /api/vin/[vin]` proxies NHTSA vPIC with 24h `vin_cache` and field allowlist; VIN input on `/vehicle-selection` pre-fills Make/Model/Year. Graceful partial-decode for European VINs.
+
+**5 scrapers** — AutoHub and ProdajaDelova polished to emit `stock_signal_strength`/`stock_signal_raw`/`last_check_status`. New: DeloviOnline, ALVADI Serbia, PolovniAutomobili (playwright-extra + stealth). `scripts/backfill.ts` CLI with `--source`, `--limit`, `--dry-run`, `--since`, `backfill_runs` checkpoint.
+
+**Marketplace UX** — 24-per-page pagination (was 60), band badge on every card, "Dostupnost proverena skoro" disclaimer on 🟡, "Samo dostupno" filter, skeleton loaders, Next.js `<Image>` with `remotePatterns` whitelist + lazy loading.
+
+**Playwright E2E — 99 tests / 14 files** across chromium/firefox/webkit. Tier 1: 12 critical-flow specs. Tier 2: button inventory crawler with allow/deny filter. Tier 3: 11 API route smoke tests via `APIRequestContext`. CI workflow `.github/workflows/e2e-preview.yml` triggered by `repository_dispatch: vercel.deployment.success`, 4 shards × 1 worker, Vercel Protection Bypass via `VERCEL_AUTOMATION_BYPASS_SECRET`.
+
+### Changed
+- `parts_v2.supplier_id` FK extended with 5 new merchant IDs (`autohub`, `prodajadelova`, `delovionline`, `alvadi`, `polovniautomobili`) — backfill script upserts rows into `suppliers` so the FK resolves.
+- `next.config.js` externalizes `playwright-extra` / `puppeteer-extra-plugin-stealth` to keep webpack from trying to bundle their dynamic requires.
+
+### Out of scope / deferred
+- HaloOglasi, KupujemProdajem, Deloovi, Autodelovi.net scrapers → v3.4+.
+- Scrapling (Python stealth service) → v3.4+ for KupujemProdajem.
+- Supabase Storage image cache / proxy → free-tier strategy; remote URLs only.
+- CarQuery API → permanently out.
+- TecDoc / direct stock feeds → Track B procurement.
+- Visual regression testing → v3.5.
+
 ## [3.2.0] - 2026-04-16
 
 ### Added

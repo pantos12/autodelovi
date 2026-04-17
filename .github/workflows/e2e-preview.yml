@@ -1,0 +1,82 @@
+name: e2e-preview
+
+on:
+  repository_dispatch:
+    types: [vercel.deployment.success]
+  workflow_dispatch:
+    inputs:
+      preview_url:
+        description: 'Preview URL to test against'
+        required: true
+        type: string
+  schedule:
+    - cron: '0 3 * * *'
+
+concurrency:
+  group: e2e-preview-${{ github.event.client_payload.url || github.event.inputs.preview_url || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  playwright:
+    if: ${{ github.event_name != 'schedule' }}
+    name: playwright-preview / chromium / shard-${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    env:
+      PLAYWRIGHT_BASE_URL: ${{ github.event.client_payload.url || github.event.inputs.preview_url }}
+      VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      STRIPE_TEST_MODE: 'on'
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+      - name: Run Playwright tests (shard ${{ matrix.shard }}/4)
+        run: npx playwright test --project=chromium --shard=${{ matrix.shard }}/4
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-shard-${{ matrix.shard }}
+          path: |
+            playwright-report
+            blob-report
+          retention-days: 14
+
+  nightly-cross-browser:
+    if: ${{ github.event_name == 'schedule' }}
+    name: playwright-nightly / ${{ matrix.browser }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    env:
+      PLAYWRIGHT_BASE_URL: https://autodelovi.sale
+      VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      STRIPE_TEST_MODE: 'on'
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install ${{ matrix.browser }} --with-deps
+      - run: npx playwright test --project=${{ matrix.browser }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report
+          retention-days: 14

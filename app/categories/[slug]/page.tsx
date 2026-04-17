@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { getParts, getCategories } from '@/lib/supabase';
 import type { Metadata } from 'next';
 
@@ -95,12 +96,22 @@ export default async function CategoryPage({ params }: { params: { slug: string 
         <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '24px' }}>{parts.length} delova u kategoriji "{category.name}"</p>
         {parts.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-            {parts.map((part: any) => {
+            {parts.map((part: any, idx: number) => {
               const inStock = (part.stock_quantity ?? 0) > 0;
+              const imgSrc = part.images?.[0] || '/images/part-placeholder.svg';
               return (
                 <div key={part.id} style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
-                  <div style={{ background: '#252629', height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', overflow: 'hidden' }}>
-                    {part.images?.[0] ? <img src={part.images[0]} alt={part.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🔧'}
+                  <div style={{ position: 'relative', background: '#252629', height: '130px', overflow: 'hidden' }}>
+                    <Image
+                      src={imgSrc}
+                      alt={part.name}
+                      fill
+                      sizes="(max-width: 768px) 50vw, 220px"
+                      style={{ objectFit: 'cover' }}
+                      priority={idx < 4}
+                      loading={idx < 4 ? undefined : 'lazy'}
+                      unoptimized
+                    />
                   </div>
                   <div style={{ padding: '12px' }}>
                     <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{part.brand || ''}</p>

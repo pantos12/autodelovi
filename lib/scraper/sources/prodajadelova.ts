@@ -12,6 +12,10 @@
 
 import { BaseScraper, fetchHTML, extractPrice, slugify } from '../base';
 import type { ScrapedPart, ScrapeConfig } from '../../types';
+import type { ScrapedPartWithSignal, StockSignalStrength } from './autohub';
+
+const PD_STRONG_POS_RE = /na\s*stanju|in\s*stock|dostupno|raspolo[zž]ivo/i;
+const PD_NEGATIVE_RE = /nema\s*na\s*stanju|rasprodato|po\s*porud[zž]bini|nedostupno|out\s*of\s*stock|prodato/i;
 
 const CONFIG: ScrapeConfig = {
   type: 'html',
@@ -71,8 +75,8 @@ function parseProductsFromHTML(
   categoryHint: string,
   baseUrl: string,
   supplierId: string
-): ScrapedPart[] {
-  const parts: ScrapedPart[] = [];
+): ScrapedPartWithSignal[] {
+  const parts: ScrapedPartWithSignal[] = [];
   const now = new Date().toISOString();
   const seenKeys = new Set<string>();
 
@@ -100,6 +104,10 @@ function parseProductsFromHTML(
         const url = offer?.url || p.url || '';
         const image = Array.isArray(p.image) ? p.image[0] : (p.image || '');
 
+        const availability: string = offer?.availability || '';
+        const isInStock = availability.includes('InStock');
+        const isOOS = availability.includes('OutOfStock') || availability.includes('Discontinued');
+        const strength: StockSignalStrength = isOOS ? 'negative' : isInStock ? 'strong' : 'weak';
         parts.push({
           raw_name: name,
           raw_price: `${price} ${offer?.priceCurrency || 'RSD'}`,
@@ -110,9 +118,12 @@ function parseProductsFromHTML(
           description: p.description || '',
           image_urls: image ? [image] : [],
           product_url: url.startsWith('http') ? url : (url ? `${baseUrl}${url}` : ''),
-          stock: offer?.availability?.includes('InStock') ? '10' : '0',
+          stock: isInStock ? '10' : '0',
           supplier_id: supplierId,
           scraped_at: now,
+          stock_signal_strength: strength,
+          stock_signal_raw: String(availability || '').slice(0, 200),
+          last_check_status: 'ok',
         });
       }
     } catch { /* ignore */ }
@@ -134,6 +145,8 @@ function parseProductsFromHTML(
         const key = `${name}-${price}`;
         if (seenKeys.has(key)) continue;
         seenKeys.add(key);
+        const qty = Number(product.stock ?? product.qty ?? product.quantity ?? 0);
+        const strength: StockSignalStrength = qty > 0 ? 'strong' : qty === 0 ? 'negative' : 'weak';
         parts.push({
           raw_name: name,
           raw_price: `${price} RSD`,
@@ -143,9 +156,12 @@ function parseProductsFromHTML(
           description: product.description || '',
           image_urls: extractImageUrls(product),
           product_url: product.url || product.slug ? `${baseUrl}/${product.slug}` : '',
-          stock: String(product.stock || product.qty || product.quantity || '1'),
+          stock: String(qty || '1'),
           supplier_id: supplierId,
           scraped_at: now,
+          stock_signal_strength: strength,
+          stock_signal_raw: `quantity=${qty}`,
+          last_check_status: 'ok',
         });
       }
     } catch { /* ignore */ }
@@ -177,6 +193,10 @@ function parseProductsFromHTML(
     const imgMatch = block.match(/<img[^>]+(?:src|data-src)=["']([^"']+)["']/i);
 
     seenKeys.add(key);
+    const negative = PD_NEGATIVE_RE.test(block);
+    const strong = !negative && PD_STRONG_POS_RE.test(block);
+    const strength: StockSignalStrength = negative ? 'negative' : strong ? 'strong' : 'weak';
+    const rawSignal = (block.match(PD_STRONG_POS_RE) || block.match(PD_NEGATIVE_RE) || [''])[0];
     parts.push({
       raw_name: rawName,
       raw_price: priceMatch[0].trim(),
@@ -185,9 +205,12 @@ function parseProductsFromHTML(
       description: '',
       image_urls: imgMatch ? [imgMatch[1].startsWith('http') ? imgMatch[1] : `${baseUrl}${imgMatch[1]}`] : [],
       product_url: productUrl,
-      stock: /nema|out.of.stock/i.test(block) ? '0' : '5',
+      stock: negative ? '0' : strong ? '10' : '5',
       supplier_id: supplierId,
       scraped_at: now,
+      stock_signal_strength: strength,
+      stock_signal_raw: rawSignal.slice(0, 200),
+      last_check_status: 'ok',
     });
   }
 
@@ -230,8 +253,8 @@ export class ProdajaDelovaScraper extends BaseScraper {
     super(supplierId, supplierName, CONFIG);
   }
 
-  async fetchParts(maxPages = 5): Promise<ScrapedPart[]> {
-    const allParts: ScrapedPart[] = [];
+  async fetchParts(maxPages = 5): Promise<ScrapedPartWithSignal[]> {
+    const allParts: ScrapedPartWithSignal[] = [];
     const seenKeys = new Set<string>();
 
     for (const category of CATEGORY_PATHS) {
@@ -257,8 +280,8 @@ export class ProdajaDelovaScraper extends BaseScraper {
   private async scrapeCategory(
     category: { path: string; hint: string; label: string },
     maxPages: number
-  ): Promise<ScrapedPart[]> {
-    const parts: ScrapedPart[] = [];
+  ): Promise<ScrapedPartWithSignal[]> {
+    const parts: ScrapedPartWithSignal[] = [];
 
     for (let page = 1; page <= maxPages; page++) {
       const url = page === 1
