@@ -20,7 +20,7 @@ export default async function SuppliersPage() {
       {/* Hero */}
       <div style={{ background: 'linear-gradient(135deg, #1a1b1f 0%, #0c0d0f 100%)', padding: '60px 16px', textAlign: 'center' }}>
         <h1 style={{ color: '#fff', fontSize: '36px', fontWeight: 800, marginBottom: '16px' }}>
-          Naši <span style={{ color: '#ff4d00' }}>Dobavljači</span>
+          Naši <span style={{ color: '#f9372c' }}>Dobavljači</span>
         </h1>
         <p style={{ color: '#aaa', fontSize: '16px', maxWidth: '600px', margin: '0 auto 40px' }}>
           Sarađujemo isključivo sa proverenim dobavljačima koji garantuju kvalitet i originalnost delova.
@@ -28,7 +28,7 @@ export default async function SuppliersPage() {
         <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
           {stats.map(stat => (
             <div key={stat.label} style={{ textAlign: 'center' }}>
-              <div style={{ color: '#ff4d00', fontSize: '32px', fontWeight: 800 }}>{stat.value}</div>
+              <div style={{ color: '#f9372c', fontSize: '32px', fontWeight: 800 }}>{stat.value}</div>
               <div style={{ color: '#aaa', fontSize: '14px' }}>{stat.label}</div>
             </div>
           ))}
@@ -41,7 +41,7 @@ export default async function SuppliersPage() {
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
             <p style={{ fontSize: '48px' }}>🏪</p>
             <p style={{ color: '#aaa', fontSize: '16px', marginBottom: '16px' }}>Nema dobavljača trenutno</p>
-            <Link href="/marketplace" style={{ color: '#ff4d00', textDecoration: 'none' }}>← Pogledaj delove</Link>
+            <Link href="/marketplace" style={{ color: '#f9372c', textDecoration: 'none' }}>← Pogledaj delove</Link>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
@@ -72,7 +72,7 @@ export default async function SuppliersPage() {
                   </div>
                   <Link
                     href={`/marketplace?supplier=${supplier.slug || supplier.id}`}
-                    style={{ padding: '8px 16px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontSize: '13px', fontWeight: 600 }}
+                    style={{ padding: '8px 16px', background: '#f9372c', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontSize: '13px', fontWeight: 600 }}
                   >
                     Pogledaj delove
                   </Link>
@@ -83,7 +83,7 @@ export default async function SuppliersPage() {
         )}
 
         {/* Partner CTA */}
-        <div style={{ marginTop: '60px', background: 'linear-gradient(135deg, #ff4d00 0%, #cc3d00 100%)', borderRadius: '16px', padding: '40px', textAlign: 'center' }}>
+        <div style={{ marginTop: '60px', background: 'linear-gradient(135deg, #f9372c 0%, #cc3d00 100%)', borderRadius: '16px', padding: '40px', textAlign: 'center' }}>
           <h2 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '12px' }}>
             Postanite naš partner
           </h2>
@@ -92,7 +92,7 @@ export default async function SuppliersPage() {
           </p>
           <a
             href="mailto:dobavljaci@autodelovi.sale"
-            style={{ display: 'inline-block', padding: '12px 32px', background: '#fff', color: '#ff4d00', borderRadius: '8px', textDecoration: 'none', fontWeight: 700, fontSize: '16px' }}
+            style={{ display: 'inline-block', padding: '12px 32px', background: '#fff', color: '#f9372c', borderRadius: '8px', textDecoration: 'none', fontWeight: 700, fontSize: '16px' }}
           >
             Kontaktirajte nas
           </a>

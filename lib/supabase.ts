@@ -30,7 +30,13 @@ export async function getParts(params: {
     .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`, { count: 'exact' })
     .eq('status', 'active');
 
-  if (q) query = query.or(`name.ilike.%${q}%,name_sr.ilike.%${q}%,part_number.ilike.%${q}%,oem_number.ilike.%${q}%,brand.ilike.%${q}%`);
+  if (q) {
+    const safeQ = q.replace(/[%_\\'"(),.]/g, '').slice(0, 100);
+    if (safeQ.length >= 2) {
+      const p = `%${safeQ}%`;
+      query = query.or(`name.ilike.${p},name_sr.ilike.${p},part_number.ilike.${p},oem_number.ilike.${p},brand.ilike.${p}`);
+    }
+  }
   if (category) query = query.eq('category_id', category);
   if (supplier) query = query.eq('supplier_id', supplier);
   if (min_price !== undefined) query = query.gte('price', min_price);

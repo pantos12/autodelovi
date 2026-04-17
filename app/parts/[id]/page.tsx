@@ -7,7 +7,6 @@ import type { Part } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 async function fetchPart(id: string): Promise<Part | null> {
-  // Try slug first, then UUID
   const bySlug = await getPartBySlug(id);
   if (bySlug) return bySlug;
   return getPartById(id);
@@ -16,7 +15,6 @@ async function fetchPart(id: string): Promise<Part | null> {
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const part = await fetchPart(params.id);
   if (!part) return { title: 'Deo nije pronađen' };
-  const vehicle = part.compatible_vehicles?.[0];
   return {
     title: (part.name_sr || part.name) + ' | AutoDelovi.sale',
     description: part.description_sr || part.description || `${part.name_sr || part.name}. OEM: ${part.oem_number || part.part_number}.`,
@@ -51,9 +49,15 @@ export default async function PartDetail({ params }: { params: { id: string } })
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .part-layout { grid-template-columns: 1fr !important; }
+          .buy-card { position: static !important; }
+        }
+      `}</style>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
         {/* Breadcrumb */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px', flexWrap: 'wrap' }}>
           <Link href="/" style={{ color: '#aaa', textDecoration: 'none' }}>Početna</Link>
           <span style={{ color: '#555' }}>/</span>
           <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none' }}>Marketplace</Link>
@@ -67,7 +71,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
           <span style={{ color: '#fff' }}>{part.name_sr || part.name}</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
+        <div className="part-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
           {/* Left column */}
           <div>
             {/* Image */}
@@ -115,9 +119,9 @@ export default async function PartDetail({ params }: { params: { id: string } })
           </div>
 
           {/* Right: Buy card */}
-          <div style={{ position: 'sticky', top: '80px' }}>
+          <div className="buy-card" style={{ position: 'sticky', top: '80px' }}>
             <div style={{ background: '#1a1b1f', borderRadius: '16px', padding: '24px', border: '1px solid #252629' }}>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: '#ff4d00', marginBottom: '4px' }}>
+              <div style={{ fontSize: '32px', fontWeight: 800, color: '#f9372c', marginBottom: '4px' }}>
                 {part.price.toLocaleString('sr-RS')} RSD
               </div>
               {part.price_eur && (
@@ -126,7 +130,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
               <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '14px', marginBottom: '20px', fontWeight: 600 }}>
                 {inStock ? `✓ Na stanju (${part.stock_quantity} kom)` : '✗ Trenutno nema na stanju'}
               </p>
-              <button style={{ width: '100%', padding: '14px', background: inStock ? '#ff4d00' : '#555', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, cursor: inStock ? 'pointer' : 'not-allowed', marginBottom: '12px' }}>
+              <button style={{ width: '100%', padding: '14px', background: inStock ? '#f9372c' : '#555', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: 700, cursor: inStock ? 'pointer' : 'not-allowed', marginBottom: '12px' }}>
                 {inStock ? '🛒 Dodaj u korpu' : 'Nema na stanju'}
               </button>
               <Link
@@ -166,13 +170,13 @@ export default async function PartDetail({ params }: { params: { id: string } })
                 return (
                   <div key={rp.id} style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
                     <div style={{ background: '#252629', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', overflow: 'hidden' }}>
-                      {rp.images?.[0] ? <img src={rp.images[0]} alt={rp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🔧'}
+                      {rp.images?.[0] ? <img src={rp.images[0]} alt={rp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" /> : '🔧'}
                     </div>
                     <div style={{ padding: '12px' }}>
                       <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{rp.brand}</p>
                       <h3 style={{ color: '#fff', fontSize: '13px', marginBottom: '8px', lineHeight: '1.3' }}>{rp.name_sr || rp.name}</h3>
-                      <p style={{ color: '#ff4d00', fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>{rp.price.toLocaleString('sr-RS')} RSD</p>
-                      <Link href={`/parts/${rp.slug || rp.id}`} style={{ display: 'block', padding: '7px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '12px', fontWeight: 600 }}>Vidi detalje</Link>
+                      <p style={{ color: '#f9372c', fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>{rp.price.toLocaleString('sr-RS')} RSD</p>
+                      <Link href={`/parts/${rp.slug || rp.id}`} style={{ display: 'block', padding: '7px', background: '#f9372c', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '12px', fontWeight: 600 }}>Vidi detalje</Link>
                     </div>
                   </div>
                 );

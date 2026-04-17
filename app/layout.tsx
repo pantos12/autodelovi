@@ -1,6 +1,13 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import NavBar from './components/NavBar';
+
+const inter = Inter({
+  subsets: ['latin', 'latin-ext'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -33,8 +40,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="sr">
-      <body style={{ margin: 0, background: '#0c0d0f' }}>
+    <html lang="sr" className={inter.variable}>
+      <body style={{ margin: 0, background: '#0c0d0f', fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}>
         <NavBar />
         {children}
       </body>
