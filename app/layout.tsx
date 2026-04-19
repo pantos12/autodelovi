@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import NavBar from './components/NavBar';
 import CartProvider from './components/CartProvider';
+import Footer from './components/Footer';
 
 export const metadata: Metadata = {
   title: {
@@ -38,7 +39,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body style={{ margin: 0, background: '#0c0d0f' }}>
         <CartProvider>
           <NavBar />
-          {children}
+          <main style={{ minHeight: 'calc(100vh - 64px - 180px)' }}>{children}</main>
+          <Footer />
         </CartProvider>
       </body>
     </html>
