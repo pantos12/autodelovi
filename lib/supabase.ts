@@ -15,6 +15,10 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 
 const isConfigured = () => !!process.env.NEXT_PUBLIC_SUPABASE_URL;
 
+function escLike(s: string): string {
+  return s.replace(/[\\%_]/g, ch => '\\' + ch);
+}
+
 export async function getParts(params: {
   q?: string; category?: string; make?: string; model?: string; year?: number;
   supplier?: string; min_price?: number; max_price?: number;
@@ -33,7 +37,10 @@ export async function getParts(params: {
     .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`, { count: 'exact' })
     .eq('status', 'active');
 
-  if (q) query = query.or(`name.ilike.%${q}%,name_sr.ilike.%${q}%,part_number.ilike.%${q}%,oem_number.ilike.%${q}%,brand.ilike.%${q}%`);
+  if (q) {
+    const e = escLike(q);
+    query = query.or(`name.ilike.%${e}%,name_sr.ilike.%${e}%,part_number.ilike.%${e}%,oem_number.ilike.%${e}%,brand.ilike.%${e}%`);
+  }
   if (category) query = query.eq('category_id', category);
   if (supplier) query = query.eq('supplier_id', supplier);
   if (min_price !== undefined) query = query.gte('price', min_price);
