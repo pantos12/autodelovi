@@ -5,20 +5,19 @@ import { notFound } from 'next/navigation';
 import { getPartBySlug, getPartById, getRelatedParts } from '@/lib/supabase';
 import type { Part } from '@/lib/types';
 import AddToCartButton from '@/app/components/AddToCartButton';
+import { cache } from 'react';
 
 export const dynamic = 'force-dynamic';
 
-async function fetchPart(id: string): Promise<Part | null> {
-  // Try slug first, then UUID
+const fetchPart = cache(async (id: string): Promise<Part | null> => {
   const bySlug = await getPartBySlug(id);
   if (bySlug) return bySlug;
   return getPartById(id);
-}
+});
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const part = await fetchPart(params.id);
   if (!part) return { title: 'Deo nije pronađen' };
-  const vehicle = part.compatible_vehicles?.[0];
   return {
     title: (part.name_sr || part.name) + ' | AutoDelovi.sale',
     description: part.description_sr || part.description || `${part.name_sr || part.name}. OEM: ${part.oem_number || part.part_number}.`,

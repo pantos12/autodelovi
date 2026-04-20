@@ -2,14 +2,15 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '../components/CartProvider';
+import { computeShipping, FREE_SHIPPING_THRESHOLD } from '@/lib/shipping';
 
 export default function CartPage() {
   const { items, count, subtotal, updateQty, remove, clear } = useCart();
 
   const currency = items[0]?.price_currency || 'RSD';
-  const freeShippingThreshold = 10000;
-  const shipping = subtotal >= freeShippingThreshold ? 0 : 600;
+  const shipping = computeShipping(subtotal);
   const total = subtotal + shipping;
+  const remainingForFree = FREE_SHIPPING_THRESHOLD - subtotal;
 
   if (!items || items.length === 0) {
     return (
@@ -96,9 +97,15 @@ export default function CartPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+                {shipping === 0 ? 'Besplatna dostava' : `${shipping.toLocaleString('sr-RS')} ${currency}`}
               </span>
             </div>
+
+            {shipping > 0 && remainingForFree > 0 && (
+              <p style={{ color: '#888', fontSize: '12px', marginTop: '4px', textAlign: 'right' }}>
+                Jos {remainingForFree.toLocaleString('sr-RS')} {currency} do besplatne dostave
+              </p>
+            )}
 
             <div style={{ height: '1px', background: '#2a2b2f', margin: '14px 0' }} />
 
