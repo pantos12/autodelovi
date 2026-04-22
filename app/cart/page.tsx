@@ -2,13 +2,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '../components/CartProvider';
+import { calculateShipping } from '@/lib/shipping';
 
 export default function CartPage() {
   const { items, count, subtotal, updateQty, remove, clear } = useCart();
 
   const currency = items[0]?.price_currency || 'RSD';
-  const freeShippingThreshold = 10000;
-  const shipping = subtotal >= freeShippingThreshold ? 0 : 600;
+  const shipping = calculateShipping(subtotal);
   const total = subtotal + shipping;
 
   if (!items || items.length === 0) {
@@ -68,9 +68,9 @@ export default function CartPage() {
                   </div>
                   <div className="cart-item-actions" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button onClick={() => updateQty(item.part_id, Math.max(1, item.quantity - 1))} style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                      <button data-testid="qty-dec" onClick={() => updateQty(item.part_id, Math.max(1, item.quantity - 1))} style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
                       <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600, minWidth: '24px', textAlign: 'center' }}>{item.quantity}</span>
-                      <button onClick={() => updateQty(item.part_id, item.quantity + 1)} style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                      <button data-testid="qty-inc" onClick={() => updateQty(item.part_id, item.quantity + 1)} style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
                     </div>
                     <div style={{ color: '#fff', fontSize: '15px', fontWeight: 700 }}>{lineTotal.toLocaleString('sr-RS')} {item.price_currency}</div>
                     <button onClick={() => remove(item.part_id)} aria-label="Ukloni" style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '18px', cursor: 'pointer', padding: '2px 6px' }}>×</button>

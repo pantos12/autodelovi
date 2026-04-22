@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -20,8 +20,6 @@ const STATIC_CATEGORIES = [
 
 const PER_PAGE = 24;
 
-// TODO(v3.4.0): Once /api/parts is extended to return offers[], replace this
-// fallback with `computeBand(part.best_offer)` from lib/confidence.ts.
 function bandForPart(part: Part): Band {
   if ((part.stock_quantity ?? 0) > 0) return 'verified';
   return 'inquiry';
@@ -36,6 +34,7 @@ function bandColor(band: Band): string {
 function BandBadge({ band }: { band: Band }) {
   return (
     <div
+      data-testid="band-badge"
       style={{
         position: 'absolute',
         top: 8,
@@ -104,6 +103,10 @@ function MarketplaceContent() {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
   });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Track whether this is the first render to avoid page-reset on mount
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -113,7 +116,17 @@ function MarketplaceContent() {
     }
   }, [searchParams]);
 
+  // Reset to page 1 when filters change (but not on first render)
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    setPage(1);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+
+  useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       setLoading(true);
       try {
@@ -126,6 +139,7 @@ function MarketplaceContent() {
           params.set('page', String(page));
           const res = await fetch(`/api/search?${params}`);
           const json = await res.json();
+          if (cancelled) return;
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
         } else {
@@ -138,24 +152,20 @@ function MarketplaceContent() {
           params.set('page', String(page));
           const res = await fetch(`/api/parts?${params}`);
           const json = await res.json();
+          if (cancelled) return;
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
         }
       } catch {
-        setParts([]);
+        if (!cancelled) setParts([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     load();
+    return () => { cancelled = true; };
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
-
-  // Persist ?avail=1
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
     if (availOnly) params.set('avail', '1');
@@ -190,7 +200,6 @@ function MarketplaceContent() {
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
   };
 
-  // Client-side avail filter (green + yellow)
   const displayParts = availOnly
     ? parts.filter(p => {
         const b = bandForPart(p);
@@ -211,8 +220,42 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      {/* Mobile filter toggle */}
+      <div
+        className="mp-filter-toggle"
+        style={{
+          display: 'none',
+          padding: '12px 16px',
+          background: '#0c0d0f',
+        }}
+      >
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          style={{
+            width: '100%',
+            padding: '10px',
+            background: '#1a1b1f',
+            border: '1px solid #333',
+            borderRadius: '8px',
+            color: '#fff',
+            fontSize: '14px',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          {sidebarOpen ? '✕ Zatvori filtere' : '☰ Filteri i pretraga'}
+        </button>
+      </div>
+
+      <style>{`
+        @media (max-width: 900px) {
+          .mp-filter-toggle { display: block !important; }
+          .mp-sidebar-wrap { display: ${sidebarOpen ? 'block' : 'none'} !important; }
+        }
+      `}</style>
+
+      <div className="mp-layout" style={s.container}>
+        <div className="mp-sidebar mp-sidebar-wrap" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -221,9 +264,10 @@ function MarketplaceContent() {
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
                 placeholder="Naziv, broj dela, brend..."
+                data-testid="mp-search-input"
                 style={{ ...s.select, flex: 1, padding: '8px 12px' }}
               />
-              <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
+              <button type="submit" data-testid="mp-search-btn" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
                 🔍
               </button>
             </div>
@@ -320,7 +364,7 @@ function MarketplaceContent() {
                 const band = bandForPart(part);
                 const priority = idx < 4;
                 return (
-                  <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
+                  <div key={part.id} data-testid="part-card" style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
                     <div style={{ position: 'relative', background: '#252629', height: '140px', overflow: 'hidden' }}>
                       <SmartImage src={part.images?.[0]} alt={part.name} priority={priority} />
                       <BandBadge band={band} />
@@ -353,7 +397,7 @@ function MarketplaceContent() {
 
                       <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
                         <Link href={partUrl} style={{ flex: 1, padding: '8px', background: '#333', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px' }}>Detalji</Link>
-                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
+                        <button data-testid="compare-toggle" onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
                       <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
@@ -402,6 +446,7 @@ function MarketplaceContent() {
                 <button
                   key={n}
                   onClick={() => setPage(n)}
+                  data-testid={`pagination-${n}`}
                   style={{
                     padding: '8px 12px',
                     background: n === page ? '#ff4d00' : '#252629',
