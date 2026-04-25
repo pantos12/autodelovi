@@ -13,7 +13,6 @@ import {
 export type { CartItem };
 
 interface CartContextType {
-  // New spec
   items: CartItem[];
   count: number;
   subtotal: number;
@@ -23,14 +22,6 @@ interface CartContextType {
   updateQty: (part_id: string, quantity: number) => void;
   remove: (part_id: string) => void;
   clear: () => void;
-
-  // Backwards-compat aliases (for existing pages)
-  cartCount: number;
-  cartTotal: number;
-  addToCart: (item: CartItem) => void;
-  updateQuantity: (part_id: string, quantity: number) => void;
-  removeFromCart: (part_id: string) => void;
-  clearCart: () => void;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -96,14 +87,6 @@ export default function CartProvider({ children }: { children: ReactNode }) {
     updateQty,
     remove,
     clear,
-
-    // Backwards-compat
-    cartCount: totals.count,
-    cartTotal: totals.subtotal,
-    addToCart: addItem,
-    updateQuantity: updateQty,
-    removeFromCart: remove,
-    clearCart: clear,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
