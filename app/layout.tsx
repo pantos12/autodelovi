@@ -1,7 +1,22 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import NavBar from './components/NavBar';
 import CartProvider from './components/CartProvider';
+import ToastProvider from './components/Toast';
+import ScrollToTop from './components/ScrollToTop';
+
+const inter = Inter({
+  subsets: ['latin', 'latin-ext'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#0c0d0f',
+};
 
 export const metadata: Metadata = {
   title: {
@@ -34,12 +49,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="sr">
-      <body style={{ margin: 0, background: '#0c0d0f' }}>
-        <CartProvider>
-          <NavBar />
-          {children}
-        </CartProvider>
+    <html lang="sr" className={inter.variable}>
+      <body style={{ margin: 0, background: '#0c0d0f', fontFamily: 'var(--font-inter), "Helvetica Neue", sans-serif' }}>
+        <ToastProvider>
+          <CartProvider>
+            <NavBar />
+            {children}
+            <ScrollToTop />
+          </CartProvider>
+        </ToastProvider>
       </body>
     </html>
   );
