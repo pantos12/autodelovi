@@ -2,17 +2,18 @@
 import { useState } from 'react';
 import { addToCart, type CartItem } from '@/lib/cart';
 import type { Part } from '@/lib/types';
+import { useToast } from './Toast';
 
 interface Props {
   part: Part;
   label?: string;
   full?: boolean;
-  /** Backwards-compat: disable button when out of stock */
   inStock?: boolean;
 }
 
 export default function AddToCartButton({ part, label, full, inStock }: Props) {
   const [added, setAdded] = useState(false);
+  const { toast } = useToast();
 
   const disabled = inStock === false;
 
@@ -32,6 +33,7 @@ export default function AddToCartButton({ part, label, full, inStock }: Props) {
     };
     addToCart(item);
     setAdded(true);
+    toast(`${part.name_sr || part.name} dodat u korpu`);
     setTimeout(() => setAdded(false), 1500);
   }
 
@@ -64,7 +66,7 @@ export default function AddToCartButton({ part, label, full, inStock }: Props) {
   const defaultLabel = disabled ? 'Nema na stanju' : label || 'Dodaj u korpu';
 
   return (
-    <button onClick={handleAdd} disabled={disabled} style={baseStyle}>
+    <button data-testid="add-to-cart" onClick={handleAdd} disabled={disabled} style={baseStyle}>
       {added ? 'Dodato u korpu ✓' : defaultLabel}
     </button>
   );

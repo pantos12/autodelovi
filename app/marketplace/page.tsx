@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -36,6 +36,7 @@ function bandColor(band: Band): string {
 function BandBadge({ band }: { band: Band }) {
   return (
     <div
+      data-testid="band-badge"
       style={{
         position: 'absolute',
         top: 8,
@@ -58,6 +59,15 @@ function BandBadge({ band }: { band: Band }) {
       <span>{bandLabel(band)}</span>
     </div>
   );
+}
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
 }
 
 function SmartImage({
@@ -89,6 +99,7 @@ function SmartImage({
 function MarketplaceContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const gridRef = useRef<HTMLDivElement>(null);
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -100,10 +111,14 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
   });
+
+  const debouncedMake = useDebounce(filterMake, 300);
+  const debouncedCategory = useDebounce(filterCategory, 300);
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -114,48 +129,54 @@ function MarketplaceContent() {
   }, [searchParams]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const load = async () => {
       setLoading(true);
       try {
         if (searchQuery && searchQuery.length >= 2) {
           const params = new URLSearchParams();
           params.set('q', searchQuery);
-          if (filterCategory) params.set('category', filterCategory);
+          if (debouncedCategory) params.set('category', debouncedCategory);
           if (filterInStock) params.set('in_stock', 'true');
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
-          const res = await fetch(`/api/search?${params}`);
+          const res = await fetch(`/api/search?${params}`, { signal: controller.signal });
           const json = await res.json();
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
         } else {
           const params = new URLSearchParams();
-          if (filterMake) params.set('make', filterMake);
-          if (filterCategory) params.set('category', filterCategory);
+          if (debouncedMake) params.set('make', debouncedMake);
+          if (debouncedCategory) params.set('category', debouncedCategory);
           if (filterInStock) params.set('in_stock', 'true');
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
-          const res = await fetch(`/api/parts?${params}`);
+          const res = await fetch(`/api/parts?${params}`, { signal: controller.signal });
           const json = await res.json();
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
         }
-      } catch {
-        setParts([]);
+      } catch (e: any) {
+        if (e?.name !== 'AbortError') setParts([]);
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
+    return () => controller.abort();
+  }, [debouncedMake, debouncedCategory, filterInStock, sortBy, searchQuery, page]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+  }, [debouncedMake, debouncedCategory, filterInStock, sortBy, searchQuery]);
 
-  // Persist ?avail=1
+  useEffect(() => {
+    if (gridRef.current) {
+      gridRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [page]);
+
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
     if (availOnly) params.set('avail', '1');
@@ -184,10 +205,10 @@ function MarketplaceContent() {
   const s = {
     page: { background: '#0c0d0f', minHeight: '100vh' } as React.CSSProperties,
     container: { maxWidth: '1200px', margin: '0 auto', padding: '24px 16px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' } as React.CSSProperties,
-    sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky', top: '80px' } as React.CSSProperties,
+    sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky' as const, top: '80px' } as React.CSSProperties,
     label: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '4px' } as React.CSSProperties,
     select: { width: '100%', padding: '8px 12px', background: '#0c0d0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' } as React.CSSProperties,
-    card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
+    card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', transition: 'border-color 0.2s, box-shadow 0.2s' } as React.CSSProperties,
   };
 
   // Client-side avail filter (green + yellow)
@@ -211,8 +232,28 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-grid { grid-template-columns: 1fr !important; }
+          .mp-sidebar { position: static !important; display: none; }
+          .mp-sidebar.mp-sidebar-open { display: block; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+      `}</style>
+
+      {/* Mobile filter toggle */}
+      <div className="mp-filter-toggle" style={{ display: 'none', maxWidth: '1200px', margin: '0 auto', padding: '16px 16px 0', justifyContent: 'flex-end' }}>
+        <button
+          onClick={() => setMobileFiltersOpen(v => !v)}
+          style={{ padding: '10px 18px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <span>{mobileFiltersOpen ? '✕' : '☰'}</span>
+          {mobileFiltersOpen ? 'Zatvori filtere' : 'Filteri i pretraga'}
+        </button>
+      </div>
+
+      <div className="mp-grid" style={s.container}>
+        <div className={`mp-sidebar${mobileFiltersOpen ? ' mp-sidebar-open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -287,7 +328,7 @@ function MarketplaceContent() {
             Resetuj sve
           </button>
         </div>
-        <div>
+        <div ref={gridRef}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
             <p style={{ color: '#aaa', fontSize: '14px' }}>
               {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
@@ -320,7 +361,7 @@ function MarketplaceContent() {
                 const band = bandForPart(part);
                 const priority = idx < 4;
                 return (
-                  <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
+                  <div key={part.id} data-testid="part-card" style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
                     <div style={{ position: 'relative', background: '#252629', height: '140px', overflow: 'hidden' }}>
                       <SmartImage src={part.images?.[0]} alt={part.name} priority={priority} />
                       <BandBadge band={band} />
@@ -353,11 +394,13 @@ function MarketplaceContent() {
 
                       <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
                         <Link href={partUrl} style={{ flex: 1, padding: '8px', background: '#333', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px' }}>Detalji</Link>
-                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
+                        <button data-testid="compare-toggle" onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
                       <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
+                        {part.scraped_at
+                          ? `Provereno: ${new Date(part.scraped_at).toLocaleDateString('sr-RS', { day: 'numeric', month: 'short' })}`
+                          : band === 'verified' ? 'Dostupnost potvrđena' : 'Provera u toku'}
                       </p>
                     </div>
                   </div>
@@ -401,6 +444,7 @@ function MarketplaceContent() {
               {pageNumbers().map(n => (
                 <button
                   key={n}
+                  data-testid={`pagination-${n}`}
                   onClick={() => setPage(n)}
                   style={{
                     padding: '8px 12px',
