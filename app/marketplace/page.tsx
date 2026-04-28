@@ -100,6 +100,11 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [minPriceInput, setMinPriceInput] = useState('');
+  const [maxPriceInput, setMaxPriceInput] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -122,6 +127,8 @@ function MarketplaceContent() {
           params.set('q', searchQuery);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (minPrice) params.set('min_price', minPrice);
+          if (maxPrice) params.set('max_price', maxPrice);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
           const res = await fetch(`/api/search?${params}`);
@@ -133,6 +140,8 @@ function MarketplaceContent() {
           if (filterMake) params.set('make', filterMake);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (minPrice) params.set('min_price', minPrice);
+          if (maxPrice) params.set('max_price', maxPrice);
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
@@ -148,12 +157,12 @@ function MarketplaceContent() {
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page, minPrice, maxPrice]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, minPrice, maxPrice]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -180,6 +189,8 @@ function MarketplaceContent() {
     setSearchQuery('');
     setSearchInput('');
   }
+
+  const activeFilterCount = [filterMake, filterCategory, filterInStock, availOnly, minPrice, maxPrice, searchQuery].filter(Boolean).length;
 
   const s = {
     page: { background: '#0c0d0f', minHeight: '100vh' } as React.CSSProperties,
@@ -209,10 +220,52 @@ function MarketplaceContent() {
     return out;
   }
 
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function handlePageChange(newPage: number) {
+    setPage(newPage);
+    scrollToTop();
+  }
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-grid { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none; }
+          .mp-sidebar.mp-sidebar-open {
+            display: block !important;
+            position: fixed;
+            top: 64px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 50;
+            border-radius: 0;
+            overflow-y: auto;
+            animation: slideDown 0.2s ease;
+          }
+          .mp-filter-toggle { display: flex !important; }
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      {/* Mobile filter toggle */}
+      <button
+        className="mp-filter-toggle"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        style={{ display: 'none', position: 'fixed', bottom: '20px', right: '20px', zIndex: 60, padding: '12px 20px', background: '#f9372c', border: 'none', borderRadius: '999px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', alignItems: 'center', gap: '8px', boxShadow: '0 4px 20px rgba(249,55,44,0.4)' }}
+      >
+        {sidebarOpen ? '✕ Zatvori' : `⚙ Filteri${activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}`}
+      </button>
+
+      <div className="mp-grid" style={s.container}>
+        <div className={`mp-sidebar${sidebarOpen ? ' mp-sidebar-open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -283,7 +336,33 @@ function MarketplaceContent() {
             <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={s.label}>Cena (RSD)</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type="number"
+                placeholder="Od"
+                value={minPriceInput}
+                onChange={e => setMinPriceInput(e.target.value)}
+                onBlur={() => setMinPrice(minPriceInput)}
+                onKeyDown={e => { if (e.key === 'Enter') setMinPrice(minPriceInput); }}
+                style={{ ...s.select, padding: '8px 10px', width: '50%' }}
+                min="0"
+              />
+              <span style={{ color: '#555' }}>–</span>
+              <input
+                type="number"
+                placeholder="Do"
+                value={maxPriceInput}
+                onChange={e => setMaxPriceInput(e.target.value)}
+                onBlur={() => setMaxPrice(maxPriceInput)}
+                onKeyDown={e => { if (e.key === 'Enter') setMaxPrice(maxPriceInput); }}
+                style={{ ...s.select, padding: '8px 10px', width: '50%' }}
+                min="0"
+              />
+            </div>
+          </div>
+          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); setMinPrice(''); setMaxPrice(''); setMinPriceInput(''); setMaxPriceInput(''); clearSearch(); setSidebarOpen(false); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
             Resetuj sve
           </button>
         </div>
@@ -384,8 +463,9 @@ function MarketplaceContent() {
           {!loading && totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '32px', flexWrap: 'wrap' }}>
               <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
+                onClick={() => handlePageChange(Math.max(1, page - 1))}
                 disabled={page <= 1}
+                aria-label="Prethodna stranica"
                 style={{
                   padding: '8px 14px',
                   background: page <= 1 ? '#1a1b1f' : '#252629',
@@ -401,7 +481,9 @@ function MarketplaceContent() {
               {pageNumbers().map(n => (
                 <button
                   key={n}
-                  onClick={() => setPage(n)}
+                  onClick={() => handlePageChange(n)}
+                  aria-label={`Stranica ${n}`}
+                  aria-current={n === page ? 'page' : undefined}
                   style={{
                     padding: '8px 12px',
                     background: n === page ? '#ff4d00' : '#252629',
@@ -418,8 +500,9 @@ function MarketplaceContent() {
                 </button>
               ))}
               <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
                 disabled={page >= totalPages}
+                aria-label="Sledeća stranica"
                 style={{
                   padding: '8px 14px',
                   background: page >= totalPages ? '#1a1b1f' : '#252629',
