@@ -100,6 +100,9 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -122,6 +125,8 @@ function MarketplaceContent() {
           params.set('q', searchQuery);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (minPrice) params.set('min_price', minPrice);
+          if (maxPrice) params.set('max_price', maxPrice);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
           const res = await fetch(`/api/search?${params}`);
@@ -133,6 +138,8 @@ function MarketplaceContent() {
           if (filterMake) params.set('make', filterMake);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (minPrice) params.set('min_price', minPrice);
+          if (maxPrice) params.set('max_price', maxPrice);
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
@@ -148,12 +155,11 @@ function MarketplaceContent() {
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, minPrice, maxPrice, page]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, minPrice, maxPrice]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -209,10 +215,35 @@ function MarketplaceContent() {
     return out;
   }
 
+  const activeFilterCount = [filterMake, filterCategory, filterInStock, availOnly, minPrice, maxPrice, searchQuery].filter(Boolean).length;
+
+  function resetAll() {
+    setFilterMake(''); setFilterCategory(''); setFilterInStock(false);
+    setAvailOnly(false); setMinPrice(''); setMaxPrice(''); clearSearch();
+  }
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-grid { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none !important; }
+          .mp-sidebar.mp-sidebar--open { display: block !important; position: fixed; top: 64px; left: 0; right: 0; bottom: 0; z-index: 90; overflow-y: auto; padding-bottom: 80px; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+      `}</style>
+
+      {/* Mobile filter toggle */}
+      <button
+        className="mp-filter-toggle"
+        onClick={() => setFiltersOpen(!filtersOpen)}
+        style={{ display: 'none', alignItems: 'center', justifyContent: 'center', gap: '8px', position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 95, padding: '12px 24px', background: '#f9372c', border: 'none', borderRadius: '28px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 20px rgba(249,55,44,0.4)' }}
+      >
+        {filtersOpen ? '✕ Zatvori' : `⚙ Filteri${activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}`}
+      </button>
+
+      <div className="mp-grid" style={s.container}>
+        <div className={`mp-sidebar${filtersOpen ? ' mp-sidebar--open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -236,28 +267,15 @@ function MarketplaceContent() {
 
           <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '16px' }}>Filteri</h3>
 
-          {/* Availability band filter */}
           <div style={{ marginBottom: '16px' }}>
             <label style={s.label}>Dostupnost</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="avail"
-                  checked={!availOnly}
-                  onChange={() => setAvailOnly(false)}
-                  style={{ accentColor: '#ff4d00' }}
-                />
+                <input type="radio" name="avail" checked={!availOnly} onChange={() => setAvailOnly(false)} style={{ accentColor: '#ff4d00' }} />
                 Sve ponude
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="avail"
-                  checked={availOnly}
-                  onChange={() => setAvailOnly(true)}
-                  style={{ accentColor: '#ff4d00' }}
-                />
+                <input type="radio" name="avail" checked={availOnly} onChange={() => setAvailOnly(true)} style={{ accentColor: '#ff4d00' }} />
                 Samo dostupno (🟢 + 🟡)
               </label>
             </div>
@@ -279,11 +297,36 @@ function MarketplaceContent() {
               {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
             </select>
           </div>
+
+          {/* Price range filter */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={s.label}>Cena (RSD)</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type="number"
+                placeholder="Od"
+                value={minPrice}
+                onChange={e => setMinPrice(e.target.value)}
+                min={0}
+                style={{ ...s.select, padding: '8px 10px', fontSize: '13px' }}
+              />
+              <span style={{ color: '#555' }}>–</span>
+              <input
+                type="number"
+                placeholder="Do"
+                value={maxPrice}
+                onChange={e => setMaxPrice(e.target.value)}
+                min={0}
+                style={{ ...s.select, padding: '8px 10px', fontSize: '13px' }}
+              />
+            </div>
+          </div>
+
           <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+          <button onClick={resetAll} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
             Resetuj sve
           </button>
         </div>

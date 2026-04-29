@@ -1,0 +1,7 @@
+.hover-card {
+  transition: border-color 0.2s, background 0.2s;
+}
+.hover-card:hover {
+  border-color: rgba(249, 55, 44, 0.4) !important;
+  background: rgba(249, 55, 44, 0.06) !important;
+}
