@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { Metadata } from 'next';
 import { vehicleMakes, getModels, getEngines, getYears } from './lib/data';
 
 export default function Home() {
@@ -122,6 +121,23 @@ export default function Home() {
           </div>
         </main>
 
+        {/* STATS */}
+        <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 40px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '48px', flexWrap: 'wrap' }}>
+            {[
+              { value: '50,000+', label: 'Auto delova' },
+              { value: '200+', label: 'Dobavljaca' },
+              { value: '12', label: 'Brendova' },
+              { value: '15+', label: 'Gradova' },
+            ].map((stat, i) => (
+              <div key={i} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '28px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{stat.value}</div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* FEATURES */}
         <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 60px' }}>
           <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
@@ -130,7 +146,9 @@ export default function Home() {
               { title: 'Real-time provera zaliha', desc: 'Live informacije o dostupnosti — bez zastarelih podataka.' },
               { title: 'OE Cross-referencing', desc: 'Automatsko uporedjivanje OEM i aftermarket referenci za svaki deo.' },
             ].map((f, i) => (
-              <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '24px' }}>
+              <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '24px', transition: 'border-color 0.2s' }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.borderColor = 'rgba(249,55,44,0.2)')}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)')}>
                 <div style={{ width: '32px', height: '2px', background: '#f9372c', marginBottom: '16px', borderRadius: '2px' }} />
                 <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>{f.title}</h3>
                 <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>{f.desc}</p>
@@ -162,15 +180,32 @@ export default function Home() {
           </div>
         </section>
 
-        {/* FOOTER */}
-        <footer style={{ position: 'relative', zIndex: 5, borderTop: '1px solid rgba(255,255,255,0.06)', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>© 2026 AutoDelovi.sale</span>
-          <div style={{ display: 'flex', gap: '24px' }}>
-            <Link href="/marketplace" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Marketplace</Link>
-            <Link href="/suppliers" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Dobavljaci</Link>
-            <Link href="/comparison" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Poredenje</Link>
+        {/* POPULAR BRANDS */}
+        <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 60px' }}>
+          <h2 style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: '20px' }}>POPULARNE MARKE</h2>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {['Volkswagen', 'BMW', 'Mercedes', 'Audi', 'Opel', 'Renault', 'Peugeot', 'Fiat', 'Toyota', 'Ford', 'Skoda', 'Seat'].map(brand => (
+              <Link key={brand} href={`/marketplace?make=${brand}`} style={{ textDecoration: 'none' }}>
+                <div style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '8px',
+                  padding: '10px 18px',
+                  color: 'rgba(255,255,255,0.7)',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  transition: 'all 0.2s',
+                  cursor: 'pointer',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(249,55,44,0.4)'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+                >
+                  {brand}
+                </div>
+              </Link>
+            ))}
           </div>
-        </footer>
+        </section>
       </div>
     </>
   );
