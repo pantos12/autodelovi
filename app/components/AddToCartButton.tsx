@@ -46,8 +46,10 @@ export default function AddToCartButton({ part, label, full, inStock }: Props) {
         fontSize: '16px',
         fontWeight: 700,
         cursor: disabled ? 'not-allowed' : 'pointer',
-        transition: 'background 0.2s',
+        transition: 'background 0.2s, transform 0.15s',
         letterSpacing: '0.3px',
+        transform: added ? 'scale(0.98)' : 'scale(1)',
+        marginBottom: '8px',
       }
     : {
         padding: '8px 14px',
@@ -59,6 +61,7 @@ export default function AddToCartButton({ part, label, full, inStock }: Props) {
         fontWeight: 600,
         cursor: disabled ? 'not-allowed' : 'pointer',
         transition: 'all 0.15s',
+        transform: added ? 'scale(0.98)' : 'scale(1)',
       };
 
   const defaultLabel = disabled ? 'Nema na stanju' : label || 'Dodaj u korpu';
