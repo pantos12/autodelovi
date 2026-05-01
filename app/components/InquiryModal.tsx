@@ -55,8 +55,8 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!email.trim()) {
-      setError('Email je obavezan.');
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError('Unesite ispravnu email adresu.');
       return;
     }
     setSubmitting(true);
