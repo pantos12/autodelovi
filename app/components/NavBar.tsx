@@ -53,6 +53,18 @@ export default function NavBar() {
     if (searchOpen && searchRef.current) searchRef.current.focus();
   }, [searchOpen]);
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        const navInput = document.getElementById('nav-search');
+        if (navInput) navInput.focus();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   return (
     <>
       <style>{`
@@ -76,10 +88,11 @@ export default function NavBar() {
         <form onSubmit={handleSearch} className="nav-search-desktop" style={{ display: 'flex', flex: 1, maxWidth: '360px' }}>
           <div style={{ display: 'flex', width: '100%', background: '#1a1b1f', borderRadius: '8px', border: '1px solid #333', overflow: 'hidden' }}>
             <input
+              id="nav-search"
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Pretrazi delove..."
+              placeholder="Pretrazi delove... (Ctrl+K)"
               style={{ flex: 1, padding: '8px 12px', background: 'transparent', border: 'none', color: '#fff', fontSize: '13px', outline: 'none' }}
             />
             <button type="submit" style={{ padding: '8px 14px', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>

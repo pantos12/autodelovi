@@ -1,8 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { Metadata } from 'next';
 import { vehicleMakes, getModels, getEngines, getYears } from './lib/data';
 
 export default function Home() {
@@ -16,6 +15,18 @@ export default function Home() {
   const models = getModels(make);
   const engines = getEngines(make, model);
   const years = getYears();
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        const el = document.getElementById('home-search');
+        if (el) el.focus();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   function handleSearch() {
     const params = new URLSearchParams();
@@ -81,10 +92,11 @@ export default function Home() {
           <form onSubmit={e => { e.preventDefault(); if (textSearch.trim().length >= 2) router.push('/marketplace?q=' + encodeURIComponent(textSearch.trim())); }} style={{ marginBottom: '16px' }}>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
               <input
+                id="home-search"
                 type="text"
                 value={textSearch}
                 onChange={e => setTextSearch(e.target.value)}
-                placeholder="Pretrazi po nazivu, broju dela, brendu..."
+                placeholder="Pretrazi po nazivu, broju dela, brendu... (Ctrl+K)"
                 style={{ flex: 1, padding: '14px 16px', background: 'transparent', border: 'none', color: '#fff', fontSize: '15px', outline: 'none' }}
               />
               <button type="submit" style={{ padding: '14px 24px', background: '#f9372c', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', letterSpacing: '1px' }}>
