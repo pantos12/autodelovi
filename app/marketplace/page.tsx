@@ -209,10 +209,20 @@ function MarketplaceContent() {
     return out;
   }
 
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-layout { grid-template-columns: 1fr !important; }
+          .mp-sidebar { position: static !important; }
+        }
+      `}</style>
+      <div className="mp-layout" style={s.container}>
+        <div className="mp-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -384,7 +394,7 @@ function MarketplaceContent() {
           {!loading && totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '32px', flexWrap: 'wrap' }}>
               <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
+                onClick={() => { setPage(p => Math.max(1, p - 1)); scrollToTop(); }}
                 disabled={page <= 1}
                 style={{
                   padding: '8px 14px',
@@ -401,7 +411,7 @@ function MarketplaceContent() {
               {pageNumbers().map(n => (
                 <button
                   key={n}
-                  onClick={() => setPage(n)}
+                  onClick={() => { setPage(n); scrollToTop(); }}
                   style={{
                     padding: '8px 12px',
                     background: n === page ? '#ff4d00' : '#252629',
@@ -418,7 +428,7 @@ function MarketplaceContent() {
                 </button>
               ))}
               <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                onClick={() => { setPage(p => Math.min(totalPages, p + 1)); scrollToTop(); }}
                 disabled={page >= totalPages}
                 style={{
                   padding: '8px 14px',

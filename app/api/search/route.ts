@@ -6,8 +6,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const q = searchParams.get('q')?.trim();
-  if (!q || q.length < 2) return NextResponse.json({ data: [], meta: { total: 0 } });
+  const rawQ = searchParams.get('q')?.trim();
+  if (!rawQ || rawQ.length < 2) return NextResponse.json({ data: [], meta: { total: 0 } });
+  const q = rawQ.replace(/[%_\\,().]/g, '');
 
   try {
     const page = parseInt(searchParams.get('page') ?? '1');
