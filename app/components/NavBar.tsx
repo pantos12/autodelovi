@@ -53,6 +53,22 @@ export default function NavBar() {
     if (searchOpen && searchRef.current) searchRef.current.focus();
   }, [searchOpen]);
 
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [userMenuOpen]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
   return (
     <>
       <style>{`
@@ -113,8 +129,8 @@ export default function NavBar() {
         </div>
         <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
           {user ? (
-            <div style={{ position: 'relative' }}>
-              <button onClick={() => setUserMenuOpen(!userMenuOpen)} style={{ background: '#f9372c', border: 'none', borderRadius: '50%', width: '34px', height: '34px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div ref={userMenuRef} style={{ position: 'relative' }}>
+              <button aria-expanded={userMenuOpen} aria-haspopup="true" onClick={() => setUserMenuOpen(!userMenuOpen)} style={{ background: '#f9372c', border: 'none', borderRadius: '50%', width: '34px', height: '34px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {user.email?.[0]?.toUpperCase() || 'U'}
               </button>
               {userMenuOpen && (
