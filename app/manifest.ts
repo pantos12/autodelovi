@@ -1,0 +1,20 @@
+import { MetadataRoute } from 'next';
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: 'AutoDelovi.sale',
+    short_name: 'AutoDelovi',
+    description: 'Premium marketplace za auto delove u Srbiji',
+    start_url: '/',
+    display: 'standalone',
+    background_color: '#0c0d0f',
+    theme_color: '#f9372c',
+    icons: [
+      {
+        src: '/images/part-placeholder.svg',
+        sizes: 'any',
+        type: 'image/svg+xml',
+      },
+    ],
+  };
+}

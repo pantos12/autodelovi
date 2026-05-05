@@ -1,7 +1,14 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import NavBar from './components/NavBar';
 import CartProvider from './components/CartProvider';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#0c0d0f',
+};
 
 export const metadata: Metadata = {
   title: {
