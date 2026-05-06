@@ -1,7 +1,14 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import NavBar from './components/NavBar';
 import CartProvider from './components/CartProvider';
+import ErrorBoundary from './components/ErrorBoundary';
+
+export const viewport: Viewport = {
+  themeColor: '#0c0d0f',
+  width: 'device-width',
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: {
@@ -37,8 +44,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="sr">
       <body style={{ margin: 0, background: '#0c0d0f' }}>
         <CartProvider>
+          <a href="#main-content" style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' }}>
+            Preskoči na sadržaj
+          </a>
           <NavBar />
-          {children}
+          <main id="main-content">
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </main>
         </CartProvider>
       </body>
     </html>
