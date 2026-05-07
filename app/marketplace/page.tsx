@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -20,8 +20,6 @@ const STATIC_CATEGORIES = [
 
 const PER_PAGE = 24;
 
-// TODO(v3.4.0): Once /api/parts is extended to return offers[], replace this
-// fallback with `computeBand(part.best_offer)` from lib/confidence.ts.
 function bandForPart(part: Part): Band {
   if ((part.stock_quantity ?? 0) > 0) return 'verified';
   return 'inquiry';
@@ -86,9 +84,14 @@ function SmartImage({
   );
 }
 
+function formatPrice(n: number): string {
+  return n.toLocaleString('sr-RS');
+}
+
 function MarketplaceContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const gridRef = useRef<HTMLDivElement>(null);
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -96,14 +99,19 @@ function MarketplaceContent() {
   const [filterMake, setFilterMake] = useState(searchParams.get('make') || '');
   const [filterCategory, setFilterCategory] = useState(searchParams.get('category') || '');
   const [filterInStock, setFilterInStock] = useState(false);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
   const [sortBy, setSortBy] = useState('price_asc');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
   });
+
+  const activeFilterCount = [filterMake, filterCategory, filterInStock, availOnly, minPrice, maxPrice].filter(Boolean).length;
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -122,6 +130,8 @@ function MarketplaceContent() {
           params.set('q', searchQuery);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (minPrice) params.set('min_price', minPrice);
+          if (maxPrice) params.set('max_price', maxPrice);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
           const res = await fetch(`/api/search?${params}`);
@@ -133,6 +143,8 @@ function MarketplaceContent() {
           if (filterMake) params.set('make', filterMake);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (minPrice) params.set('min_price', minPrice);
+          if (maxPrice) params.set('max_price', maxPrice);
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
@@ -148,14 +160,12 @@ function MarketplaceContent() {
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page, minPrice, maxPrice]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, minPrice, maxPrice]);
 
-  // Persist ?avail=1
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
     if (availOnly) params.set('avail', '1');
@@ -164,6 +174,16 @@ function MarketplaceContent() {
     router.replace(qs ? `/marketplace?${qs}` : '/marketplace', { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availOnly]);
+
+  // Close mobile filters when user navigates away
+  useEffect(() => {
+    if (mobileFiltersOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileFiltersOpen]);
 
   const toggleCompare = (id: string) => {
     setCompareList(prev =>
@@ -174,6 +194,7 @@ function MarketplaceContent() {
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     setSearchQuery(searchInput.trim());
+    setMobileFiltersOpen(false);
   }
 
   function clearSearch() {
@@ -181,16 +202,28 @@ function MarketplaceContent() {
     setSearchInput('');
   }
 
+  function handlePageChange(newPage: number) {
+    setPage(newPage);
+    gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function resetAllFilters() {
+    setFilterMake('');
+    setFilterCategory('');
+    setFilterInStock(false);
+    setAvailOnly(false);
+    setMinPrice('');
+    setMaxPrice('');
+    clearSearch();
+  }
+
   const s = {
     page: { background: '#0c0d0f', minHeight: '100vh' } as React.CSSProperties,
-    container: { maxWidth: '1200px', margin: '0 auto', padding: '24px 16px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' } as React.CSSProperties,
-    sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky', top: '80px' } as React.CSSProperties,
     label: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '4px' } as React.CSSProperties,
     select: { width: '100%', padding: '8px 12px', background: '#0c0d0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' } as React.CSSProperties,
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
   };
 
-  // Client-side avail filter (green + yellow)
   const displayParts = availOnly
     ? parts.filter(p => {
         const b = bandForPart(p);
@@ -209,93 +242,194 @@ function MarketplaceContent() {
     return out;
   }
 
-  return (
-    <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
-          <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
-            <label style={s.label}>Pretraga</label>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <input
-                type="text"
-                value={searchInput}
-                onChange={e => setSearchInput(e.target.value)}
-                placeholder="Naziv, broj dela, brend..."
-                style={{ ...s.select, flex: 1, padding: '8px 12px' }}
-              />
-              <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
-                🔍
-              </button>
-            </div>
-            {searchQuery && (
-              <button type="button" onClick={clearSearch} style={{ marginTop: '8px', background: 'none', border: 'none', color: '#f9372c', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
-                ✕ Obriši pretragu: &quot;{searchQuery}&quot;
-              </button>
-            )}
-          </form>
-
-          <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '16px' }}>Filteri</h3>
-
-          {/* Availability band filter */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={s.label}>Dostupnost</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="avail"
-                  checked={!availOnly}
-                  onChange={() => setAvailOnly(false)}
-                  style={{ accentColor: '#ff4d00' }}
-                />
-                Sve ponude
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="avail"
-                  checked={availOnly}
-                  onChange={() => setAvailOnly(true)}
-                  style={{ accentColor: '#ff4d00' }}
-                />
-                Samo dostupno (🟢 + 🟡)
-              </label>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <label style={s.label}>Marka</label>
-            <select style={s.select} value={filterMake} onChange={e => setFilterMake(e.target.value)}>
-              <option value="">Sve marke</option>
-              {['Volkswagen','BMW','Mercedes','Audi','Opel','Renault','Peugeot','Fiat','Toyota','Ford','Skoda','Seat'].map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={s.label}>Kategorija</label>
-            <select style={s.select} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-              <option value="">Sve kategorije</option>
-              {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-            </select>
-          </div>
-          <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
-            <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
-          </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
-            Resetuj sve
+  const filterContent = (
+    <>
+      <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
+        <label style={s.label}>Pretraga</label>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            placeholder="Naziv, broj dela, brend..."
+            style={{ ...s.select, flex: 1, padding: '8px 12px' }}
+          />
+          <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
+            Trazi
           </button>
         </div>
-        <div>
+        {searchQuery && (
+          <button type="button" onClick={clearSearch} style={{ marginTop: '8px', background: 'none', border: 'none', color: '#f9372c', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
+            X Obrisi pretragu: &quot;{searchQuery}&quot;
+          </button>
+        )}
+      </form>
+
+      <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '16px' }}>Filteri</h3>
+
+      <div style={{ marginBottom: '16px' }}>
+        <label style={s.label}>Dostupnost</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
+            <input type="radio" name="avail" checked={!availOnly} onChange={() => setAvailOnly(false)} style={{ accentColor: '#ff4d00' }} />
+            Sve ponude
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
+            <input type="radio" name="avail" checked={availOnly} onChange={() => setAvailOnly(true)} style={{ accentColor: '#ff4d00' }} />
+            Samo dostupno
+          </label>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '16px' }}>
+        <label style={s.label}>Marka</label>
+        <select style={s.select} value={filterMake} onChange={e => setFilterMake(e.target.value)}>
+          <option value="">Sve marke</option>
+          {['Volkswagen','BMW','Mercedes','Audi','Opel','Renault','Peugeot','Fiat','Toyota','Ford','Skoda','Seat'].map(m => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: '16px' }}>
+        <label style={s.label}>Kategorija</label>
+        <select style={s.select} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+          <option value="">Sve kategorije</option>
+          {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: '16px' }}>
+        <label style={s.label}>Raspon cena (RSD)</label>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <input
+            type="number"
+            placeholder="Od"
+            value={minPrice}
+            onChange={e => setMinPrice(e.target.value)}
+            min={0}
+            style={{ ...s.select, width: '50%', padding: '8px 10px' }}
+          />
+          <span style={{ color: '#555' }}>—</span>
+          <input
+            type="number"
+            placeholder="Do"
+            value={maxPrice}
+            onChange={e => setMaxPrice(e.target.value)}
+            min={0}
+            style={{ ...s.select, width: '50%', padding: '8px 10px' }}
+          />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
+        <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
+      </div>
+
+      <button onClick={() => { resetAllFilters(); setMobileFiltersOpen(false); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+        Resetuj sve
+      </button>
+    </>
+  );
+
+  return (
+    <div style={s.page}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar-desktop { display: none !important; }
+          .mp-mobile-filter-btn { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .mp-mobile-filter-btn { display: none !important; }
+          .mp-mobile-overlay { display: none !important; }
+        }
+      `}</style>
+
+      <div className="mp-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' }}>
+        {/* Desktop sidebar */}
+        <div className="mp-sidebar-desktop" style={{ background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky', top: '80px' }}>
+          {filterContent}
+        </div>
+
+        {/* Mobile filter button */}
+        <button
+          className="mp-mobile-filter-btn"
+          onClick={() => setMobileFiltersOpen(true)}
+          style={{
+            display: 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '12px',
+            background: '#1a1b1f',
+            border: '1px solid #333',
+            borderRadius: '10px',
+            color: '#fff',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 600,
+          }}
+        >
+          <span style={{ fontSize: '16px' }}>Filteri</span>
+          {activeFilterCount > 0 && (
+            <span style={{ background: '#f9372c', color: '#fff', fontSize: '11px', fontWeight: 700, borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+
+        {/* Mobile filter overlay */}
+        {mobileFiltersOpen && (
+          <div
+            className="mp-mobile-overlay"
+            onClick={e => { if (e.target === e.currentTarget) setMobileFiltersOpen(false); }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.6)',
+              zIndex: 200,
+              display: 'flex',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <div
+              className="filter-drawer"
+              style={{
+                width: '100%',
+                maxWidth: '340px',
+                background: '#1a1b1f',
+                height: '100%',
+                overflowY: 'auto',
+                padding: '20px',
+                animation: 'fadeIn 0.2s ease',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, margin: 0 }}>Filteri</h2>
+                <button onClick={() => setMobileFiltersOpen(false)} style={{ background: 'none', border: 'none', color: '#aaa', fontSize: '24px', cursor: 'pointer', padding: '4px 8px' }}>X</button>
+              </div>
+              {filterContent}
+              <button
+                onClick={() => setMobileFiltersOpen(false)}
+                style={{ width: '100%', padding: '12px', background: '#f9372c', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '15px', fontWeight: 700, cursor: 'pointer', marginTop: '16px' }}
+              >
+                Primeni filtere ({total} rezultata)
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div ref={gridRef}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
             <p style={{ color: '#aaa', fontSize: '14px' }}>
-              {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
+              {loading ? 'Ucitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
             </p>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <select style={{ ...s.select, width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                <option value="price_asc">Cena: niža → viša</option>
-                <option value="price_desc">Cena: viša → niža</option>
+                <option value="price_asc">Cena: niza - visa</option>
+                <option value="price_desc">Cena: visa - niza</option>
                 <option value="newest">Najnovije</option>
               </select>
               {compareList.length > 0 && (
@@ -305,9 +439,10 @@ function MarketplaceContent() {
               )}
             </div>
           </div>
+
           {loading ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-              {Array.from({ length: PER_PAGE }).map((_, i) => (
+              {Array.from({ length: 12 }).map((_, i) => (
                 <div key={i} style={{ ...s.card, height: '280px', background: 'linear-gradient(90deg, #1a1b1f 25%, #252629 50%, #1a1b1f 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
               ))}
             </div>
@@ -320,7 +455,7 @@ function MarketplaceContent() {
                 const band = bandForPart(part);
                 const priority = idx < 4;
                 return (
-                  <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
+                  <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent', animation: 'fadeIn 0.3s ease' }}>
                     <div style={{ position: 'relative', background: '#252629', height: '140px', overflow: 'hidden' }}>
                       <SmartImage src={part.images?.[0]} alt={part.name} priority={priority} />
                       <BandBadge band={band} />
@@ -328,7 +463,7 @@ function MarketplaceContent() {
                     <div style={{ padding: '12px' }}>
                       {vehicle && <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{vehicle.make} {vehicle.model}</p>}
                       <h3 style={{ color: '#fff', fontSize: '14px', marginBottom: '8px', lineHeight: '1.3' }}>{part.name_sr || part.name}</h3>
-                      <p style={{ color: '#ff4d00', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{part.price?.toLocaleString('sr-RS')} RSD</p>
+                      <p style={{ color: '#ff4d00', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{formatPrice(part.price)} RSD</p>
                       <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '12px', marginBottom: '10px' }}>{inStock ? 'Na stanju' : 'Nema na stanju'}</p>
 
                       <div style={{ marginBottom: '6px' }}>
@@ -353,7 +488,7 @@ function MarketplaceContent() {
 
                       <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
                         <Link href={partUrl} style={{ flex: 1, padding: '8px', background: '#333', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px' }}>Detalji</Link>
-                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
+                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>~</button>
                       </div>
 
                       <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
@@ -368,13 +503,16 @@ function MarketplaceContent() {
 
           {!loading && displayParts.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <p style={{ fontSize: '48px' }}>🔍</p>
+              <p style={{ fontSize: '48px' }}>Nema rezultata</p>
               <p style={{ fontSize: '18px', color: '#aaa' }}>
                 {searchQuery ? `Nema rezultata za "${searchQuery}"` : 'Nema rezultata za date filtere'}
               </p>
+              <p style={{ color: '#666', fontSize: '14px', marginTop: '8px' }}>
+                Pokusajte sa drugim filterima ili pretragom
+              </p>
               {searchQuery && (
                 <button onClick={clearSearch} style={{ marginTop: '16px', padding: '10px 24px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px' }}>
-                  Obriši pretragu
+                  Obrisi pretragu
                 </button>
               )}
             </div>
@@ -384,7 +522,7 @@ function MarketplaceContent() {
           {!loading && totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '32px', flexWrap: 'wrap' }}>
               <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
+                onClick={() => handlePageChange(Math.max(1, page - 1))}
                 disabled={page <= 1}
                 style={{
                   padding: '8px 14px',
@@ -396,12 +534,12 @@ function MarketplaceContent() {
                   fontSize: '13px',
                 }}
               >
-                ← Prethodna
+                Prethodna
               </button>
               {pageNumbers().map(n => (
                 <button
                   key={n}
-                  onClick={() => setPage(n)}
+                  onClick={() => handlePageChange(n)}
                   style={{
                     padding: '8px 12px',
                     background: n === page ? '#ff4d00' : '#252629',
@@ -418,7 +556,7 @@ function MarketplaceContent() {
                 </button>
               ))}
               <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
                 disabled={page >= totalPages}
                 style={{
                   padding: '8px 14px',
@@ -430,7 +568,7 @@ function MarketplaceContent() {
                   fontSize: '13px',
                 }}
               >
-                Sledeća →
+                Sledeca
               </button>
             </div>
           )}
@@ -442,7 +580,7 @@ function MarketplaceContent() {
 
 export default function Marketplace() {
   return (
-    <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center', color: '#aaa' }}>Učitavanje...</div>}>
+    <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center', color: '#aaa' }}>Ucitavanje...</div>}>
       <MarketplaceContent />
     </Suspense>
   );
