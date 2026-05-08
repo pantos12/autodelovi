@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { Metadata } from 'next';
 import { vehicleMakes, getModels, getEngines, getYears } from './lib/data';
 
 export default function Home() {
@@ -87,10 +86,13 @@ export default function Home() {
                 placeholder="Pretrazi po nazivu, broju dela, brendu..."
                 style={{ flex: 1, padding: '14px 16px', background: 'transparent', border: 'none', color: '#fff', fontSize: '15px', outline: 'none' }}
               />
-              <button type="submit" style={{ padding: '14px 24px', background: '#f9372c', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', letterSpacing: '1px' }}>
+              <button type="submit" disabled={textSearch.trim().length < 2} style={{ padding: '14px 24px', background: textSearch.trim().length < 2 ? '#6b6b6b' : '#f9372c', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: textSearch.trim().length < 2 ? 'default' : 'pointer', letterSpacing: '1px', transition: 'background 0.2s' }}>
                 PRETRAZI
               </button>
             </div>
+            {textSearch.trim().length === 1 && (
+              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', marginTop: '6px', marginLeft: '4px' }}>Unesite bar 2 karaktera za pretragu</p>
+            )}
           </form>
 
           {/* VEHICLE SEARCH */}

@@ -36,7 +36,7 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
       setPhone('');
       setMessage('');
       setSuccess(false);
-    }, 2000);
+    }, 4000);
     return () => clearTimeout(t);
   }, [success, onClose]);
 

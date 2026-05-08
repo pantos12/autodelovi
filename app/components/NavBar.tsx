@@ -53,6 +53,28 @@ export default function NavBar() {
     if (searchOpen && searchRef.current) searchRef.current.focus();
   }, [searchOpen]);
 
+  useEffect(() => {
+    setMenuOpen(false);
+    setUserMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-user-menu]')) setUserMenuOpen(false);
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setUserMenuOpen(false);
+    };
+    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [userMenuOpen]);
+
   return (
     <>
       <style>{`
@@ -113,7 +135,7 @@ export default function NavBar() {
         </div>
         <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
           {user ? (
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative' }} data-user-menu>
               <button onClick={() => setUserMenuOpen(!userMenuOpen)} style={{ background: '#f9372c', border: 'none', borderRadius: '50%', width: '34px', height: '34px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {user.email?.[0]?.toUpperCase() || 'U'}
               </button>

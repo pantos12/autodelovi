@@ -4,6 +4,22 @@ import { supabaseAdmin } from '@/lib/supabase';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW = 60_000;
+const RATE_LIMIT_MAX = 5;
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count++;
+  return true;
+}
+
 interface InquiryBody {
   part_id?: string;
   merchant_id?: string;
@@ -18,6 +34,14 @@ function bad(error: string, status = 400) {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json(
+      { error: 'Previše zahteva. Pokušajte ponovo za minut.' },
+      { status: 429, headers: { 'Retry-After': '60' } }
+    );
+  }
+
   let raw: unknown;
   try {
     raw = await request.json();
