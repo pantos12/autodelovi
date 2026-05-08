@@ -15,13 +15,17 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 
 const isConfigured = () => !!process.env.NEXT_PUBLIC_SUPABASE_URL;
 
+function sanitizeIlike(q: string): string {
+  return q.replace(/[%_\\]/g, c => '\\' + c);
+}
+
 export async function getParts(params: {
   q?: string; category?: string; make?: string; model?: string; year?: number;
   supplier?: string; min_price?: number; max_price?: number;
   in_stock?: boolean; sort?: string; page?: number; per_page?: number;
 } = {}) {
   if (!isConfigured()) {
-    // Supabase not set up yet â return empty results
+    // Supabase not set up yet - return empty results
     return { parts: [] as Part[], total: 0, page: params.page ?? 1, per_page: params.per_page ?? 24, total_pages: 0 };
   }
 
@@ -33,7 +37,10 @@ export async function getParts(params: {
     .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`, { count: 'exact' })
     .eq('status', 'active');
 
-  if (q) query = query.or(`name.ilike.%${q}%,name_sr.ilike.%${q}%,part_number.ilike.%${q}%,oem_number.ilike.%${q}%,brand.ilike.%${q}%`);
+  if (q) {
+    const safe = sanitizeIlike(q);
+    query = query.or(`name.ilike.%${safe}%,name_sr.ilike.%${safe}%,part_number.ilike.%${safe}%,oem_number.ilike.%${safe}%,brand.ilike.%${safe}%`);
+  }
   if (category) query = query.eq('category_id', category);
   if (supplier) query = query.eq('supplier_id', supplier);
   if (min_price !== undefined) query = query.gte('price', min_price);

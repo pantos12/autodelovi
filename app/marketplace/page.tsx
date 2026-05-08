@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -81,7 +81,6 @@ function SmartImage({
       priority={!!priority}
       loading={priority ? undefined : 'lazy'}
       onError={() => setErrored(true)}
-      unoptimized
     />
   );
 }
@@ -91,6 +90,7 @@ function MarketplaceContent() {
   const router = useRouter();
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [compareList, setCompareList] = useState<string[]>([]);
   const [filterMake, setFilterMake] = useState(searchParams.get('make') || '');
@@ -114,8 +114,10 @@ function MarketplaceContent() {
   }, [searchParams]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const load = async () => {
       setLoading(true);
+      setError(null);
       try {
         if (searchQuery && searchQuery.length >= 2) {
           const params = new URLSearchParams();
@@ -124,7 +126,8 @@ function MarketplaceContent() {
           if (filterInStock) params.set('in_stock', 'true');
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
-          const res = await fetch(`/api/search?${params}`);
+          const res = await fetch(`/api/search?${params}`, { signal: controller.signal });
+          if (!res.ok) throw new Error(`Greška servera (${res.status})`);
           const json = await res.json();
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
@@ -136,18 +139,22 @@ function MarketplaceContent() {
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
-          const res = await fetch(`/api/parts?${params}`);
+          const res = await fetch(`/api/parts?${params}`, { signal: controller.signal });
+          if (!res.ok) throw new Error(`Greška servera (${res.status})`);
           const json = await res.json();
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
         }
-      } catch {
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
         setParts([]);
+        setError('Došlo je do greške pri učitavanju. Pokušajte ponovo.');
       } finally {
         setLoading(false);
       }
     };
     load();
+    return () => controller.abort();
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
 
   // Reset to page 1 when filters change
@@ -356,9 +363,11 @@ function MarketplaceContent() {
                         <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
-                      <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
-                      </p>
+                      {part.scraped_at && (
+                        <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
+                          Provereno: {new Date(part.scraped_at).toLocaleDateString('sr-RS')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
@@ -366,7 +375,17 @@ function MarketplaceContent() {
             </div>
           )}
 
-          {!loading && displayParts.length === 0 && (
+          {!loading && error && (
+            <div style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '12px', marginBottom: '16px' }}>
+              <p style={{ fontSize: '32px', marginBottom: '8px' }}>⚠️</p>
+              <p style={{ color: '#ef4444', fontSize: '15px', marginBottom: '16px' }}>{error}</p>
+              <button onClick={() => { setError(null); setLoading(true); }} style={{ padding: '10px 24px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}>
+                Pokušaj ponovo
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && displayParts.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
               <p style={{ fontSize: '48px' }}>🔍</p>
               <p style={{ fontSize: '18px', color: '#aaa' }}>

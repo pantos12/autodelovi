@@ -4,14 +4,18 @@ import { supabase } from '@/lib/supabase';
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
+function sanitizeQuery(q: string): string {
+  return q.replace(/[%_\\]/g, c => '\\' + c);
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q')?.trim();
   if (!q || q.length < 2) return NextResponse.json({ data: [], meta: { total: 0 } });
 
   try {
-    const page = parseInt(searchParams.get('page') ?? '1');
-    const perPage = Math.min(parseInt(searchParams.get('per_page') ?? '20'), 50);
+    const page = Math.max(1, parseInt(searchParams.get('page') ?? '1') || 1);
+    const perPage = Math.min(Math.max(1, parseInt(searchParams.get('per_page') ?? '20') || 20), 50);
     const category = searchParams.get('category') ?? null;
     const minPrice = searchParams.get('min_price') ? parseFloat(searchParams.get('min_price')!) : null;
     const maxPrice = searchParams.get('max_price') ? parseFloat(searchParams.get('max_price')!) : null;
@@ -23,13 +27,26 @@ export async function GET(request: NextRequest) {
     });
 
     if (error) {
-      const { data: fb, count } = await supabase
+      const safe = sanitizeQuery(q);
+      let fallback = supabase
         .from('parts_v2')
-        .select('id,slug,name,brand,part_number,price,price_eur,stock_quantity,images,category_id,supplier_id', { count: 'exact' })
-        .or(`name.ilike.%${q}%,part_number.ilike.%${q}%,brand.ilike.%${q}%`)
-        .in('status', ['active','out_of_stock'])
+        .select('id,slug,name,name_sr,brand,part_number,price,price_eur,stock_quantity,images,category_id,supplier_id', { count: 'exact' })
+        .or(`name.ilike.%${safe}%,name_sr.ilike.%${safe}%,part_number.ilike.%${safe}%,brand.ilike.%${safe}%`)
+        .in('status', ['active','out_of_stock']);
+
+      if (category) fallback = fallback.eq('category_id', category);
+      if (minPrice !== null && !isNaN(minPrice)) fallback = fallback.gte('price', minPrice);
+      if (maxPrice !== null && !isNaN(maxPrice)) fallback = fallback.lte('price', maxPrice);
+      if (inStock) fallback = fallback.gt('stock_quantity', 0);
+
+      const { data: fb, count } = await fallback
+        .order('price', { ascending: true })
         .range((page-1)*perPage, page*perPage-1);
-      return NextResponse.json({ data: fb ?? [], meta: { total: count ?? 0, page, per_page: perPage } });
+
+      return NextResponse.json(
+        { data: fb ?? [], meta: { total: count ?? 0, page, per_page: perPage, total_pages: Math.ceil((count ?? 0)/perPage) } },
+        { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' } }
+      );
     }
 
     const total = data?.[0]?.total_count ?? 0;
