@@ -42,4 +42,39 @@
 body {
   background: var(--background);
   color: var(--on-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.part-card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.part-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(249, 55, 44, 0.35) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #1a1c1e; }
+::-webkit-scrollbar-thumb { background: #44474a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #8f9194; }
+
+@media (max-width: 768px) {
+  .marketplace-layout { grid-template-columns: 1fr !important; }
+  .marketplace-sidebar { position: static !important; }
+  .part-detail-grid { grid-template-columns: 1fr !important; }
+  .part-detail-buy { position: static !important; }
+  .comparison-selector { grid-template-columns: 1fr !important; }
+  .comparison-table { overflow-x: auto; }
 }

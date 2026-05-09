@@ -100,7 +100,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
               const inStock = (part.stock_quantity ?? 0) > 0;
               const imgSrc = part.images?.[0] || '/images/part-placeholder.svg';
               return (
-                <div key={part.id} style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
+                <div key={part.id} className="part-card" style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
                   <div style={{ position: 'relative', background: '#252629', height: '130px', overflow: 'hidden' }}>
                     <Image
                       src={imgSrc}
