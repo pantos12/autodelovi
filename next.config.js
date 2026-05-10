@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  // These packages use runtime dynamic require() that webpack can't analyze.
-  // Mark them as external so Next.js leaves them untouched in the server bundle.
+  poweredByHeader: false,
+  compress: true,
   experimental: {
     serverComponentsExternalPackages: [
       'playwright-extra',
@@ -14,6 +14,7 @@ const nextConfig = {
     ],
   },
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       { protocol: 'https', hostname: 'cdn.spareto.com' },
       { protocol: 'https', hostname: '**.spareto.com' },
@@ -37,6 +38,22 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.polovniautomobili.com' },
     ],
   },
+  headers: async () => [
+    {
+      source: '/:path*',
+      headers: [
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      ],
+    },
+    {
+      source: '/images/:path*',
+      headers: [
+        { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+      ],
+    },
+  ],
 };
 
 module.exports = nextConfig;
