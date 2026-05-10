@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { Metadata } from 'next';
 import { vehicleMakes, getModels, getEngines, getYears } from './lib/data';
 
 export default function Home() {
@@ -53,6 +52,7 @@ export default function Home() {
           .categories-grid { grid-template-columns: 1fr 1fr !important; }
           .hero-pad { padding: 48px 16px 40px !important; }
           .section-pad { padding: 0 16px 48px !important; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
         @media (max-width: 480px) {
           .categories-grid { grid-template-columns: 1fr !important; }
@@ -140,7 +140,7 @@ export default function Home() {
         </section>
 
         {/* CATEGORIES */}
-        <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 80px' }}>
+        <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 60px' }}>
           <h2 style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: '20px' }}>KATEGORIJE</h2>
           <div className="categories-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '12px' }}>
             {[
@@ -162,13 +162,60 @@ export default function Home() {
           </div>
         </section>
 
+        {/* TRUST SIGNALS */}
+        <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 80px' }}>
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '32px 24px' }}>
+            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', textAlign: 'center' }}>
+              {[
+                { value: '200+', label: 'Dobavljača' },
+                { value: '50K+', label: 'Delova' },
+                { value: '15+', label: 'Gradova' },
+                { value: '4.8', label: 'Prosečna ocena' },
+              ].map(stat => (
+                <div key={stat.label}>
+                  <div style={{ fontSize: '28px', fontWeight: 800, color: '#f9372c', marginBottom: '4px' }}>{stat.value}</div>
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.5px' }}>{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* FOOTER */}
-        <footer style={{ position: 'relative', zIndex: 5, borderTop: '1px solid rgba(255,255,255,0.06)', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>© 2026 AutoDelovi.sale</span>
-          <div style={{ display: 'flex', gap: '24px' }}>
-            <Link href="/marketplace" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Marketplace</Link>
-            <Link href="/suppliers" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Dobavljaci</Link>
-            <Link href="/comparison" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Poredenje</Link>
+        <footer style={{ position: 'relative', zIndex: 5, borderTop: '1px solid rgba(255,255,255,0.06)', padding: '32px 24px 24px' }}>
+          <div style={{ maxWidth: '900px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+            <div>
+              <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>AutoDelovi<span style={{ color: '#f9372c' }}>.sale</span></span>
+              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginTop: '8px', lineHeight: 1.5 }}>Premium marketplace za auto delove u Srbiji.</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.5)', letterSpacing: '1px', marginBottom: '10px' }}>NAVIGACIJA</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <Link href="/marketplace" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Marketplace</Link>
+                <Link href="/suppliers" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Dobavljači</Link>
+                <Link href="/vehicle-selection" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Izbor vozila</Link>
+                <Link href="/comparison" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Poređenje</Link>
+              </div>
+            </div>
+            <div>
+              <p style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.5)', letterSpacing: '1px', marginBottom: '10px' }}>KATEGORIJE</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <Link href="/categories/motor" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Motor</Link>
+                <Link href="/categories/kocnice" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Kočnice</Link>
+                <Link href="/categories/elektronika" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Elektronika</Link>
+                <Link href="/categories/karoserija" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Karoserija</Link>
+              </div>
+            </div>
+            <div>
+              <p style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.5)', letterSpacing: '1px', marginBottom: '10px' }}>KONTAKT</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <a href="mailto:info@autodelovi.sale" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>info@autodelovi.sale</a>
+                <a href="mailto:dobavljaci@autodelovi.sale" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Za dobavljače</a>
+              </div>
+            </div>
+          </div>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '16px', textAlign: 'center' }}>
+            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.25)' }}>© 2026 AutoDelovi.sale — Sva prava zadržana</span>
           </div>
         </footer>
       </div>

@@ -100,6 +100,9 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -122,6 +125,8 @@ function MarketplaceContent() {
           params.set('q', searchQuery);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (minPrice) params.set('min_price', minPrice);
+          if (maxPrice) params.set('max_price', maxPrice);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
           const res = await fetch(`/api/search?${params}`);
@@ -133,6 +138,8 @@ function MarketplaceContent() {
           if (filterMake) params.set('make', filterMake);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (minPrice) params.set('min_price', minPrice);
+          if (maxPrice) params.set('max_price', maxPrice);
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
@@ -148,12 +155,12 @@ function MarketplaceContent() {
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, minPrice, maxPrice, page]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, minPrice, maxPrice]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -188,6 +195,7 @@ function MarketplaceContent() {
     label: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '4px' } as React.CSSProperties,
     select: { width: '100%', padding: '8px 12px', background: '#0c0d0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' } as React.CSSProperties,
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
+    priceInput: { width: '100%', padding: '8px 10px', background: '#0c0d0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '13px', outline: 'none' } as React.CSSProperties,
   };
 
   // Client-side avail filter (green + yellow)
@@ -209,83 +217,137 @@ function MarketplaceContent() {
     return out;
   }
 
+  const sidebarContent = (
+    <>
+      <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
+        <label style={s.label}>Pretraga</label>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            placeholder="Naziv, broj dela, brend..."
+            style={{ ...s.select, flex: 1, padding: '8px 12px' }}
+          />
+          <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
+            🔍
+          </button>
+        </div>
+        {searchQuery && (
+          <button type="button" onClick={clearSearch} style={{ marginTop: '8px', background: 'none', border: 'none', color: '#f9372c', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
+            ✕ Obriši pretragu: &quot;{searchQuery}&quot;
+          </button>
+        )}
+      </form>
+
+      <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '16px' }}>Filteri</h3>
+
+      <div style={{ marginBottom: '16px' }}>
+        <label style={s.label}>Dostupnost</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
+            <input type="radio" name="avail" checked={!availOnly} onChange={() => setAvailOnly(false)} style={{ accentColor: '#ff4d00' }} />
+            Sve ponude
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
+            <input type="radio" name="avail" checked={availOnly} onChange={() => setAvailOnly(true)} style={{ accentColor: '#ff4d00' }} />
+            Samo dostupno (🟢 + 🟡)
+          </label>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '16px' }}>
+        <label style={s.label}>Marka</label>
+        <select style={s.select} value={filterMake} onChange={e => setFilterMake(e.target.value)}>
+          <option value="">Sve marke</option>
+          {['Volkswagen','BMW','Mercedes','Audi','Opel','Renault','Peugeot','Fiat','Toyota','Ford','Skoda','Seat'].map(m => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
+      </div>
+      <div style={{ marginBottom: '16px' }}>
+        <label style={s.label}>Kategorija</label>
+        <select style={s.select} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+          <option value="">Sve kategorije</option>
+          {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: '16px' }}>
+        <label style={s.label}>Cena (RSD)</label>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <input
+            type="number"
+            placeholder="Od"
+            value={minPrice}
+            onChange={e => setMinPrice(e.target.value)}
+            style={s.priceInput}
+            min="0"
+          />
+          <span style={{ color: '#555' }}>–</span>
+          <input
+            type="number"
+            placeholder="Do"
+            value={maxPrice}
+            onChange={e => setMaxPrice(e.target.value)}
+            style={s.priceInput}
+            min="0"
+          />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
+        <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
+      </div>
+      <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); setMinPrice(''); setMaxPrice(''); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+        Resetuj sve
+      </button>
+    </>
+  );
+
+  const activeFilterCount = [filterMake, filterCategory, filterInStock, availOnly, minPrice, maxPrice, searchQuery].filter(Boolean).length;
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
-          <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
-            <label style={s.label}>Pretraga</label>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <input
-                type="text"
-                value={searchInput}
-                onChange={e => setSearchInput(e.target.value)}
-                placeholder="Naziv, broj dela, brend..."
-                style={{ ...s.select, flex: 1, padding: '8px 12px' }}
-              />
-              <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
-                🔍
-              </button>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar-desktop { display: none !important; }
+          .mp-mobile-filter-btn { display: flex !important; }
+          .mp-mobile-sidebar { display: block !important; }
+        }
+        @media (min-width: 769px) {
+          .mp-mobile-filter-btn { display: none !important; }
+          .mp-mobile-sidebar { display: none !important; }
+        }
+      `}</style>
+
+      {/* Mobile filter toggle */}
+      <div className="mp-mobile-filter-btn" style={{ display: 'none', position: 'sticky', top: '64px', zIndex: 50, background: '#0c0d0f', padding: '12px 16px', borderBottom: '1px solid #1a1b1f', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', padding: '10px 16px', color: '#fff', cursor: 'pointer', fontSize: '14px' }}>
+          <span>☰ Filteri</span>
+          {activeFilterCount > 0 && <span style={{ background: '#f9372c', color: '#fff', fontSize: '11px', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{activeFilterCount}</span>}
+        </button>
+        <span style={{ color: '#aaa', fontSize: '13px' }}>{loading ? '...' : `${total} delova`}</span>
+      </div>
+
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div className="mp-mobile-sidebar" style={{ display: 'none', position: 'fixed', inset: 0, top: '64px', zIndex: 90, background: 'rgba(0,0,0,0.6)' }} onClick={() => setSidebarOpen(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ ...s.sidebar, position: 'fixed', top: '64px', left: 0, bottom: 0, width: '300px', borderRadius: 0, overflowY: 'auto', zIndex: 91 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ color: '#fff', fontSize: '18px', margin: 0 }}>Filteri</h3>
+              <button onClick={() => setSidebarOpen(false)} style={{ background: 'none', border: 'none', color: '#aaa', fontSize: '24px', cursor: 'pointer' }}>×</button>
             </div>
-            {searchQuery && (
-              <button type="button" onClick={clearSearch} style={{ marginTop: '8px', background: 'none', border: 'none', color: '#f9372c', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
-                ✕ Obriši pretragu: &quot;{searchQuery}&quot;
-              </button>
-            )}
-          </form>
+            {sidebarContent}
+          </div>
+        </div>
+      )}
 
-          <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '16px' }}>Filteri</h3>
-
-          {/* Availability band filter */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={s.label}>Dostupnost</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="avail"
-                  checked={!availOnly}
-                  onChange={() => setAvailOnly(false)}
-                  style={{ accentColor: '#ff4d00' }}
-                />
-                Sve ponude
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="avail"
-                  checked={availOnly}
-                  onChange={() => setAvailOnly(true)}
-                  style={{ accentColor: '#ff4d00' }}
-                />
-                Samo dostupno (🟢 + 🟡)
-              </label>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <label style={s.label}>Marka</label>
-            <select style={s.select} value={filterMake} onChange={e => setFilterMake(e.target.value)}>
-              <option value="">Sve marke</option>
-              {['Volkswagen','BMW','Mercedes','Audi','Opel','Renault','Peugeot','Fiat','Toyota','Ford','Skoda','Seat'].map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={s.label}>Kategorija</label>
-            <select style={s.select} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-              <option value="">Sve kategorije</option>
-              {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-            </select>
-          </div>
-          <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
-            <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
-          </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
-            Resetuj sve
-          </button>
+      <div className="mp-container" style={s.container}>
+        <div className="mp-sidebar-desktop" style={s.sidebar}>
+          {sidebarContent}
         </div>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
