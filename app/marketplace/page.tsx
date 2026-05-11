@@ -18,6 +18,15 @@ const STATIC_CATEGORIES = [
   { slug: 'ostalo', name: 'Ostalo', icon: '📦' },
 ];
 
+const PRICE_RANGES = [
+  { label: 'Sve cene', min: undefined, max: undefined },
+  { label: 'Do 2.000 RSD', min: undefined, max: 2000 },
+  { label: '2.000 – 5.000 RSD', min: 2000, max: 5000 },
+  { label: '5.000 – 15.000 RSD', min: 5000, max: 15000 },
+  { label: '15.000 – 30.000 RSD', min: 15000, max: 30000 },
+  { label: 'Preko 30.000 RSD', min: 30000, max: undefined },
+];
+
 const PER_PAGE = 24;
 
 // TODO(v3.4.0): Once /api/parts is extended to return offers[], replace this
@@ -99,6 +108,8 @@ function MarketplaceContent() {
   const [sortBy, setSortBy] = useState('price_asc');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
+  const [priceRange, setPriceRange] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
@@ -122,6 +133,9 @@ function MarketplaceContent() {
           params.set('q', searchQuery);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          const pr = PRICE_RANGES[priceRange];
+          if (pr?.min !== undefined) params.set('min_price', String(pr.min));
+          if (pr?.max !== undefined) params.set('max_price', String(pr.max));
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
           const res = await fetch(`/api/search?${params}`);
@@ -133,6 +147,9 @@ function MarketplaceContent() {
           if (filterMake) params.set('make', filterMake);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          const pr = PRICE_RANGES[priceRange];
+          if (pr?.min !== undefined) params.set('min_price', String(pr.min));
+          if (pr?.max !== undefined) params.set('max_price', String(pr.max));
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
@@ -148,12 +165,12 @@ function MarketplaceContent() {
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page, priceRange]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, priceRange]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -209,10 +226,31 @@ function MarketplaceContent() {
     return out;
   }
 
+  const activeFilterCount = [filterMake, filterCategory, filterInStock, priceRange > 0, availOnly, searchQuery].filter(Boolean).length;
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 900px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { position: static !important; }
+          .mp-sidebar-inner { display: none; }
+          .mp-sidebar-inner.mp-open { display: block; animation: slideDown 0.25s ease-out; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+      `}</style>
+      <div className="mp-container" style={s.container}>
+        <div className="mp-sidebar" style={s.sidebar}>
+          {/* Mobile toggle */}
+          <button
+            className="mp-filter-toggle"
+            onClick={() => setFiltersOpen(!filtersOpen)}
+            style={{ display: 'none', width: '100%', padding: '12px', background: '#252629', border: '1px solid #333', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600, alignItems: 'center', justifyContent: 'space-between', marginBottom: filtersOpen ? '16px' : 0 }}
+          >
+            <span>Filteri {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}</span>
+            <span style={{ transform: filtersOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+          </button>
+          <div className={`mp-sidebar-inner${filtersOpen ? ' mp-open' : ''}`}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -267,7 +305,7 @@ function MarketplaceContent() {
             <label style={s.label}>Marka</label>
             <select style={s.select} value={filterMake} onChange={e => setFilterMake(e.target.value)}>
               <option value="">Sve marke</option>
-              {['Volkswagen','BMW','Mercedes','Audi','Opel','Renault','Peugeot','Fiat','Toyota','Ford','Skoda','Seat'].map(m => (
+              {['Volkswagen','BMW','Mercedes','Audi','Opel','Renault','Peugeot','Fiat','Toyota','Ford','Skoda','Seat','Hyundai','Citroen','Dacia'].map(m => (
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
@@ -279,13 +317,20 @@ function MarketplaceContent() {
               {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
             </select>
           </div>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={s.label}>Cena</label>
+            <select style={s.select} value={priceRange} onChange={e => setPriceRange(Number(e.target.value))}>
+              {PRICE_RANGES.map((r, i) => <option key={i} value={i}>{r.label}</option>)}
+            </select>
+          </div>
           <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); setPriceRange(0); clearSearch(); setFiltersOpen(false); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
             Resetuj sve
           </button>
+          </div>
         </div>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
@@ -356,9 +401,11 @@ function MarketplaceContent() {
                         <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
-                      <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
-                      </p>
+                      {part.updated_at && (
+                        <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
+                          Ažurirano: {new Date(part.updated_at).toLocaleDateString('sr-RS')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );

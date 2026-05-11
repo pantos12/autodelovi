@@ -43,3 +43,28 @@ body {
   background: var(--background);
   color: var(--on-background);
 }
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 600px; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@media (max-width: 768px) {
+  .detail-grid { grid-template-columns: 1fr !important; }
+  .detail-sticky { position: static !important; }
+  .detail-image { height: 240px !important; }
+}

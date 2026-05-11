@@ -50,7 +50,7 @@ export default function Home() {
           .search-bar { flex-direction: column !important; }
           .search-bar select, .search-bar button { width: 100% !important; flex: none !important; }
           .features-grid { grid-template-columns: 1fr !important; }
-          .categories-grid { grid-template-columns: 1fr 1fr !important; }
+          .categories-grid { grid-template-columns: repeat(2, 1fr) !important; }
           .hero-pad { padding: 48px 16px 40px !important; }
           .section-pad { padding: 0 16px 48px !important; }
         }
@@ -142,19 +142,22 @@ export default function Home() {
         {/* CATEGORIES */}
         <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 80px' }}>
           <h2 style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: '20px' }}>KATEGORIJE</h2>
-          <div className="categories-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '12px' }}>
+          <div className="categories-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
             {[
-              { slug: 'motor', label: 'MOTOR', icon: '⚙️', count: '1,240', large: true },
-              { slug: 'kocnice', label: 'KOCNICE', icon: '🛞', count: '840', large: false },
-              { slug: 'elektronika', label: 'ELEKTRONIKA', icon: '⚡', count: '960', large: false },
-              { slug: 'karoserija', label: 'KAROSERIJA', icon: '🚗', count: '1,100', large: false },
+              { slug: 'motor', label: 'MOTOR', icon: '⚙️', count: '1,240' },
+              { slug: 'kocnice', label: 'KOCNICE', icon: '🛞', count: '840' },
+              { slug: 'elektronika', label: 'ELEKTRONIKA', icon: '⚡', count: '960' },
+              { slug: 'karoserija', label: 'KAROSERIJA', icon: '🚗', count: '1,100' },
+              { slug: 'suspenzija', label: 'SUSPENZIJA', icon: '🔧', count: '720' },
+              { slug: 'transmisija', label: 'TRANSMISIJA', icon: '⚙️', count: '580' },
+              { slug: 'ostalo', label: 'OSTALO', icon: '📦', count: '430' },
             ].map(cat => (
               <Link href={'/categories/' + cat.slug} key={cat.slug} style={{ textDecoration: 'none' }}>
-                <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: cat.large ? '28px' : '24px', cursor: 'pointer', height: '100%', transition: 'border-color 0.2s' }}
+                <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px', cursor: 'pointer', height: '100%', transition: 'border-color 0.2s' }}
                   onMouseEnter={e => ((e.currentTarget as HTMLElement).style.borderColor = 'rgba(249,55,44,0.4)')}
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)')}>
-                  <div style={{ fontSize: cat.large ? '28px' : '22px', marginBottom: '10px' }}>{cat.icon}</div>
-                  <div style={{ fontWeight: 700, fontSize: cat.large ? '16px' : '13px', marginBottom: '6px' }}>{cat.label}</div>
+                  <div style={{ fontSize: '22px', marginBottom: '10px' }}>{cat.icon}</div>
+                  <div style={{ fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>{cat.label}</div>
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{cat.count} delova</div>
                 </div>
               </Link>
@@ -165,9 +168,10 @@ export default function Home() {
         {/* FOOTER */}
         <footer style={{ position: 'relative', zIndex: 5, borderTop: '1px solid rgba(255,255,255,0.06)', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>© 2026 AutoDelovi.sale</span>
-          <div style={{ display: 'flex', gap: '24px' }}>
+          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
             <Link href="/marketplace" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Marketplace</Link>
             <Link href="/suppliers" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Dobavljaci</Link>
+            <Link href="/vehicle-selection" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Izbor Vozila</Link>
             <Link href="/comparison" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Poredenje</Link>
           </div>
         </footer>

@@ -86,6 +86,26 @@ export const vehicleData: Record<string, Record<string, string[]>> = {
     'Ateca': ['1.0 TSI 115ks', '1.5 TSI 150ks', '2.0 TDI 115ks', '2.0 TDI 150ks', '2.0 TSI 190ks'],
     'Toledo': ['1.2 TSI 105ks', '1.6 TDI 90ks', '1.6 TDI 105ks', '2.0 TDI 150ks'],
   },
+  'Hyundai': {
+    'i30': ['1.4 100ks', '1.6 120ks', '1.6 CRDi 110ks', '1.6 CRDi 136ks', '1.6 T-GDi 204ks'],
+    'Tucson': ['1.6 GDi 132ks', '1.6 T-GDi 177ks', '1.6 CRDi 115ks', '2.0 CRDi 185ks'],
+    'i20': ['1.0 T-GDi 100ks', '1.2 84ks', '1.4 100ks', '1.4 CRDi 90ks'],
+    'ix35': ['1.6 GDi 135ks', '2.0 CRDi 136ks', '2.0 CRDi 184ks'],
+    'Santa Fe': ['2.0 CRDi 150ks', '2.2 CRDi 200ks', '2.4 GDi 188ks'],
+  },
+  'Citroen': {
+    'C4': ['1.2 PureTech 110ks', '1.2 PureTech 130ks', '1.5 BlueHDi 130ks', '2.0 BlueHDi 150ks'],
+    'C3': ['1.0 VTi 68ks', '1.2 PureTech 82ks', '1.2 PureTech 110ks', '1.6 BlueHDi 75ks'],
+    'C5': ['1.6 THP 156ks', '2.0 HDi 140ks', '2.0 HDi 163ks', '2.2 HDi 204ks'],
+    'Berlingo': ['1.5 BlueHDi 75ks', '1.5 BlueHDi 100ks', '1.5 BlueHDi 130ks', '1.6 HDi 92ks'],
+    'C-Elysee': ['1.2 VTi 72ks', '1.6 VTi 115ks', '1.6 BlueHDi 100ks'],
+  },
+  'Dacia': {
+    'Duster': ['1.0 TCe 100ks', '1.3 TCe 130ks', '1.3 TCe 150ks', '1.5 dCi 115ks'],
+    'Sandero': ['0.9 TCe 90ks', '1.0 SCe 75ks', '1.0 TCe 100ks', '1.5 dCi 90ks'],
+    'Logan': ['0.9 TCe 90ks', '1.0 SCe 75ks', '1.5 dCi 75ks', '1.5 dCi 90ks'],
+    'Dokker': ['1.5 dCi 75ks', '1.5 dCi 90ks', '1.6 SCe 100ks'],
+  },
 };
 
 export const vehicleMakes = Object.keys(vehicleData);
