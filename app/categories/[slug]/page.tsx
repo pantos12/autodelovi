@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { getParts, getCategories } from '@/lib/supabase';
+import AddToCartButton from '@/app/components/AddToCartButton';
 import type { Metadata } from 'next';
 
 const STATIC_CATEGORIES = [
@@ -122,12 +123,15 @@ export default async function CategoryPage({ params }: { params: { slug: string 
                     <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '12px', marginBottom: '10px' }}>
                       {inStock ? '✓ Na stanju' : '✗ Nema na stanju'}
                     </p>
-                    <Link
-                      href={`/parts/${part.slug || part.id}`}
-                      style={{ display: 'block', padding: '8px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px', fontWeight: 600 }}
-                    >
-                      Vidi više
-                    </Link>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <Link
+                        href={`/parts/${part.slug || part.id}`}
+                        style={{ flex: 1, padding: '8px', background: '#333', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px', fontWeight: 600 }}
+                      >
+                        Detalji
+                      </Link>
+                      <AddToCartButton part={part} inStock={inStock} />
+                    </div>
                   </div>
                 </div>
               );

@@ -27,4 +27,4 @@ export const stripe = new Stripe(
 export const STRIPE_MODE: 'live' | 'test' = secretKey.startsWith('sk_live_') ? 'live' : 'test';
 
 export const isStripeConfigured = (): boolean =>
-  secretKey.startsWith('sk_') && !secretKey.includes('REPLACE_ME');
+  secretKey.startsWith('sk_') && !secretKey.includes('REPLACE_ME') && !secretKey.includes('placeholder');
