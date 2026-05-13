@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase';
-import { stripe, isStripeConfigured } from '@/lib/stripe';
+import { getStripe, isStripeConfigured } from '@/lib/stripe';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
     if (!isStripeConfigured()) {
       console.warn('[checkout] STRIPE_SECRET_KEY missing/placeholder — skipping Stripe session creation.');
       return NextResponse.json({
-        url: `/order/${orderRow.id}?status=pending`,
+        url: `/order/${orderRow.id}?status=pending&order_id=${orderRow.id}&email=${encodeURIComponent(buyer.email)}`,
         order_number: orderRow.order_number,
         order_id: orderRow.id,
         stripe_skipped: true,
@@ -256,11 +256,11 @@ export async function POST(request: NextRequest) {
 
     let session: Stripe.Checkout.Session;
     try {
-      session = await stripe.checkout.sessions.create({
+      session = await getStripe().checkout.sessions.create({
         mode: 'payment',
         line_items,
         customer_email: buyer.email,
-        success_url: `${origin}/order/{CHECKOUT_SESSION_ID}?status=success&order_id=${orderRow.id}`,
+        success_url: `${origin}/order/${orderRow.id}?status=success&order_id=${orderRow.id}&email=${encodeURIComponent(buyer.email)}`,
         cancel_url: `${origin}/checkout?cancelled=1`,
         metadata: {
           order_id: orderRow.id,

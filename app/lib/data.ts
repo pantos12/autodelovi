@@ -99,8 +99,9 @@ export function getEngines(make: string, model: string): string[] {
 }
 
 export function getYears(): string[] {
+  const currentYear = new Date().getFullYear();
   const years: string[] = [];
-  for (let y = 2026; y >= 1995; y--) {
+  for (let y = currentYear + 1; y >= 1995; y--) {
     years.push(y.toString());
   }
   return years;

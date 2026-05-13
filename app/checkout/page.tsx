@@ -19,6 +19,7 @@ export default function CheckoutPage() {
   const { items, subtotal, count } = useCart();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [touched, setTouched] = useState<Partial<Record<keyof BuyerForm, boolean>>>({});
   const [form, setForm] = useState<BuyerForm>({
     name: '',
     email: '',
@@ -42,6 +43,18 @@ export default function CheckoutPage() {
 
   function update<K extends keyof BuyerForm>(key: K, value: BuyerForm[K]) {
     setForm(prev => ({ ...prev, [key]: value }));
+  }
+
+  function markTouched(key: keyof BuyerForm) {
+    setTouched(prev => ({ ...prev, [key]: true }));
+  }
+
+  function fieldError(key: keyof BuyerForm): string | null {
+    if (!touched[key]) return null;
+    const val = form[key].trim();
+    if (['name', 'email', 'phone', 'address', 'city'].includes(key) && !val) return 'Ovo polje je obavezno';
+    if (key === 'email' && val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return 'Unesite ispravan email';
+    return null;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -126,29 +139,34 @@ export default function CheckoutPage() {
 
             <div style={{ marginBottom: '14px' }}>
               <label style={labelStyle}>Ime i prezime *</label>
-              <input type="text" required value={form.name} onChange={e => update('name', e.target.value)} style={inputStyle} />
+              <input type="text" required value={form.name} onChange={e => update('name', e.target.value)} onBlur={() => markTouched('name')} style={{ ...inputStyle, borderColor: fieldError('name') ? '#ef4444' : undefined }} />
+              {fieldError('name') && <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'block' }}>{fieldError('name')}</span>}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <label style={labelStyle}>Email *</label>
-                <input type="email" required value={form.email} onChange={e => update('email', e.target.value)} style={inputStyle} />
+                <input type="email" required value={form.email} onChange={e => update('email', e.target.value)} onBlur={() => markTouched('email')} style={{ ...inputStyle, borderColor: fieldError('email') ? '#ef4444' : undefined }} />
+                {fieldError('email') && <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'block' }}>{fieldError('email')}</span>}
               </div>
               <div>
                 <label style={labelStyle}>Telefon *</label>
-                <input type="tel" required value={form.phone} onChange={e => update('phone', e.target.value)} style={inputStyle} />
+                <input type="tel" required value={form.phone} onChange={e => update('phone', e.target.value)} onBlur={() => markTouched('phone')} placeholder="+381 6x xxx xxxx" style={{ ...inputStyle, borderColor: fieldError('phone') ? '#ef4444' : undefined }} />
+                {fieldError('phone') && <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'block' }}>{fieldError('phone')}</span>}
               </div>
             </div>
 
             <div style={{ marginBottom: '14px' }}>
               <label style={labelStyle}>Adresa za dostavu *</label>
-              <input type="text" required value={form.address} onChange={e => update('address', e.target.value)} style={inputStyle} />
+              <input type="text" required value={form.address} onChange={e => update('address', e.target.value)} onBlur={() => markTouched('address')} style={{ ...inputStyle, borderColor: fieldError('address') ? '#ef4444' : undefined }} />
+              {fieldError('address') && <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'block' }}>{fieldError('address')}</span>}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <label style={labelStyle}>Grad *</label>
-                <input type="text" required value={form.city} onChange={e => update('city', e.target.value)} style={inputStyle} />
+                <input type="text" required value={form.city} onChange={e => update('city', e.target.value)} onBlur={() => markTouched('city')} style={{ ...inputStyle, borderColor: fieldError('city') ? '#ef4444' : undefined }} />
+                {fieldError('city') && <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'block' }}>{fieldError('city')}</span>}
               </div>
               <div>
                 <label style={labelStyle}>Poštanski broj</label>
