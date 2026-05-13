@@ -55,9 +55,16 @@ async function getOrder(id: string): Promise<OrderRow | null> {
   return data as unknown as OrderRow;
 }
 
-export default async function OrderPage({ params }: { params: { id: string } }) {
+export default async function OrderPage({ params, searchParams }: { params: { id: string }; searchParams: { email?: string; order_id?: string } }) {
   const order = await getOrder(params.id);
   if (!order) notFound();
+
+  // Verify the requester owns this order via email param or matching order_id from checkout redirect
+  const emailParam = searchParams.email?.toLowerCase();
+  const orderIdParam = searchParams.order_id;
+  const ownerEmail = order.buyer_email.toLowerCase();
+  const isAuthorized = (emailParam && emailParam === ownerEmail) || (orderIdParam && orderIdParam === order.id);
+  if (!isAuthorized) notFound();
 
   const paid = order.status === 'paid';
   const currency = order.currency || 'RSD';
