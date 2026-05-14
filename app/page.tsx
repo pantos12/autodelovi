@@ -1,8 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { Metadata } from 'next';
 import { vehicleMakes, getModels, getEngines, getYears } from './lib/data';
 
 export default function Home() {
@@ -13,9 +12,21 @@ export default function Home() {
   const [engine, setEngine] = useState('');
   const [textSearch, setTextSearch] = useState('');
 
+  const searchRef = useRef<HTMLInputElement>(null);
   const models = getModels(make);
   const engines = getEngines(make, model);
   const years = getYears();
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   function handleSearch() {
     const params = new URLSearchParams();
@@ -81,6 +92,7 @@ export default function Home() {
           <form onSubmit={e => { e.preventDefault(); if (textSearch.trim().length >= 2) router.push('/marketplace?q=' + encodeURIComponent(textSearch.trim())); }} style={{ marginBottom: '16px' }}>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
               <input
+                ref={searchRef}
                 type="text"
                 value={textSearch}
                 onChange={e => setTextSearch(e.target.value)}

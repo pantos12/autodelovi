@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import NavBar from './components/NavBar';
 import CartProvider from './components/CartProvider';
+import ErrorBoundary from './components/ErrorBoundary';
 
 export const metadata: Metadata = {
   title: {
@@ -36,10 +37,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="sr">
       <body style={{ margin: 0, background: '#0c0d0f' }}>
-        <CartProvider>
-          <NavBar />
-          {children}
-        </CartProvider>
+        <ErrorBoundary>
+          <CartProvider>
+            <NavBar />
+            {children}
+          </CartProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
