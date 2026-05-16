@@ -1,6 +1,6 @@
 {
   "name": "autodelovi",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -15,7 +15,7 @@
     "@stripe/stripe-js": "^9.2.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.49.4",
-    "next": "14.2.29",
+    "next": "^14.2.30",
     "react": "^18",
     "react-dom": "^18",
     "stripe": "^22.0.2"

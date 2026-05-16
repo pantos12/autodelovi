@@ -40,11 +40,20 @@ function ComparisonContent() {
   const [allParts, setAllParts] = useState<Part[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   useEffect(() => {
-    // Load all parts for search
-    fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
-  }, []);
+    if (search.length < 2) { setAllParts([]); return; }
+    const timer = setTimeout(() => {
+      setSearchLoading(true);
+      fetch(`/api/search?q=${encodeURIComponent(search)}&per_page=20`)
+        .then(r => r.json())
+        .then(d => setAllParts(d.data || []))
+        .catch(() => setAllParts([]))
+        .finally(() => setSearchLoading(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     if (selectedIds.length === 0) { setParts([]); return; }
@@ -55,10 +64,7 @@ function ComparisonContent() {
       .finally(() => setLoading(false));
   }, [selectedIds]);
 
-  const filtered = allParts.filter(p =>
-    (p.name_sr || p.name).toLowerCase().includes(search.toLowerCase()) ||
-    (p.brand || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = allParts.filter(p => !selectedIds.includes(p.id));
 
   const addPart = (id: string) => {
     if (selectedIds.length < 3 && !selectedIds.includes(id)) setSelectedIds([...selectedIds, id]);
