@@ -17,7 +17,7 @@ export default function AddToCartButton({ part, label, full, inStock }: Props) {
   const disabled = inStock === false;
 
   function handleAdd() {
-    if (disabled) return;
+    if (disabled || added) return;
     const item: CartItem = {
       part_id: part.id,
       quantity: 1,

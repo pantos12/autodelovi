@@ -13,6 +13,9 @@ interface InquiryBody {
   message?: string;
 }
 
+const recentInquiries = new Map<string, number>();
+const RATE_LIMIT_MS = 60_000;
+
 function bad(error: string, status = 400) {
   return NextResponse.json({ error }, { status });
 }
@@ -30,6 +33,11 @@ export async function POST(request: NextRequest) {
   const email = typeof body.buyer_email === 'string' ? body.buyer_email.trim() : '';
   if (!email) return bad('buyer_email is required');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return bad('buyer_email is invalid');
+
+  const lastSent = recentInquiries.get(email);
+  if (lastSent && Date.now() - lastSent < RATE_LIMIT_MS) {
+    return bad('Previše zahteva. Pokušajte ponovo za minut.', 429);
+  }
 
   const part_id = typeof body.part_id === 'string' && body.part_id.trim() ? body.part_id.trim() : null;
 
@@ -54,6 +62,7 @@ export async function POST(request: NextRequest) {
       return bad(`Failed to create inquiry: ${error?.message ?? 'unknown error'}`, 500);
     }
 
+    recentInquiries.set(email, Date.now());
     return NextResponse.json({ ok: true, id: data.id });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unexpected error';

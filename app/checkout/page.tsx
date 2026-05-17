@@ -53,6 +53,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setError('Unesite validnu email adresu.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       let session_id: string | null = null;
