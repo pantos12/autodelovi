@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { Metadata } from 'next';
 import { vehicleMakes, getModels, getEngines, getYears } from './lib/data';
 
 export default function Home() {
@@ -87,7 +86,7 @@ export default function Home() {
                 placeholder="Pretrazi po nazivu, broju dela, brendu..."
                 style={{ flex: 1, padding: '14px 16px', background: 'transparent', border: 'none', color: '#fff', fontSize: '15px', outline: 'none' }}
               />
-              <button type="submit" style={{ padding: '14px 24px', background: '#f9372c', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', letterSpacing: '1px' }}>
+              <button type="submit" aria-label="Pretrazi" style={{ padding: '14px 24px', background: '#f9372c', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', letterSpacing: '1px' }}>
                 PRETRAZI
               </button>
             </div>
@@ -97,19 +96,19 @@ export default function Home() {
           <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px' }}>
             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '12px' }}>Ili izaberite vozilo</p>
             <div className="search-bar" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <select value={make} onChange={e => { setMake(e.target.value); setModel(''); setEngine(''); }} style={{ ...sel, color: make ? '#fff' : '#888' }}>
+              <select value={make} onChange={e => { setMake(e.target.value); setModel(''); setEngine(''); }} style={{ ...sel, color: make ? '#fff' : '#888' }} aria-label="Izaberite marku vozila">
                 <option value="">MARKA</option>
                 {vehicleMakes.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
-              <select value={model} onChange={e => { setModel(e.target.value); setEngine(''); }} style={{ ...sel, color: model ? '#fff' : '#888' }} disabled={!make}>
+              <select value={model} onChange={e => { setModel(e.target.value); setEngine(''); }} style={{ ...sel, color: model ? '#fff' : '#888' }} disabled={!make} aria-label="Izaberite model vozila">
                 <option value="">MODEL</option>
                 {models.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
-              <select value={year} onChange={e => setYear(e.target.value)} style={{ ...sel, color: year ? '#fff' : '#888' }}>
+              <select value={year} onChange={e => setYear(e.target.value)} style={{ ...sel, color: year ? '#fff' : '#888' }} aria-label="Izaberite godiste vozila">
                 <option value="">GODISTE</option>
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
-              <select value={engine} onChange={e => setEngine(e.target.value)} style={{ ...sel, color: engine ? '#fff' : '#888' }} disabled={!model}>
+              <select value={engine} onChange={e => setEngine(e.target.value)} style={{ ...sel, color: engine ? '#fff' : '#888' }} disabled={!model} aria-label="Izaberite motor vozila">
                 <option value="">MOTOR</option>
                 {engines.map(e => <option key={e} value={e}>{e}</option>)}
               </select>
@@ -162,15 +161,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* FOOTER */}
-        <footer style={{ position: 'relative', zIndex: 5, borderTop: '1px solid rgba(255,255,255,0.06)', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>© 2026 AutoDelovi.sale</span>
-          <div style={{ display: 'flex', gap: '24px' }}>
-            <Link href="/marketplace" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Marketplace</Link>
-            <Link href="/suppliers" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Dobavljaci</Link>
-            <Link href="/comparison" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Poredenje</Link>
-          </div>
-        </footer>
       </div>
     </>
   );
