@@ -211,7 +211,7 @@ export default function CheckoutPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '13px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px' }}>
-                {shipping === 0 ? 'Besplatno' : `${shipping} ${currency}`}
+                {shipping === 0 ? 'Besplatna dostava' : `${shipping.toLocaleString('sr-RS')} ${currency}`}
               </span>
             </div>
 
