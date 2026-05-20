@@ -51,8 +51,34 @@ export default async function PartDetail({ params }: { params: { id: string } })
     { label: 'Dobavljač', value: part.supplier?.name },
   ].filter(s => s.value);
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: part.name_sr || part.name,
+    description: part.description_sr || part.description || `${part.brand} ${part.name}`,
+    sku: part.part_number,
+    mpn: part.oem_number || part.part_number,
+    brand: { '@type': 'Brand', name: part.brand },
+    image: part.images?.[0] || undefined,
+    offers: {
+      '@type': 'Offer',
+      price: part.price,
+      priceCurrency: part.price_currency || 'RSD',
+      availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      seller: part.supplier ? { '@type': 'Organization', name: part.supplier.name } : undefined,
+      url: `https://autodelovi.sale/parts/${part.slug || part.id}`,
+    },
+  };
+
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <style>{`
+        @media (max-width: 900px) {
+          .pdp-grid { grid-template-columns: 1fr !important; }
+          .pdp-buy-card { position: static !important; }
+        }
+      `}</style>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
         {/* Breadcrumb */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px' }}>
@@ -69,7 +95,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
           <span style={{ color: '#fff' }}>{part.name_sr || part.name}</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
+        <div className="pdp-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
           {/* Left column */}
           <div>
             {/* Image */}
@@ -123,7 +149,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
           </div>
 
           {/* Right: Buy card */}
-          <div style={{ position: 'sticky', top: '80px' }}>
+          <div className="pdp-buy-card" style={{ position: 'sticky', top: '80px' }}>
             <div style={{ background: '#1a1b1f', borderRadius: '16px', padding: '24px', border: '1px solid #252629' }}>
               <div style={{ fontSize: '32px', fontWeight: 800, color: '#ff4d00', marginBottom: '4px' }}>
                 {part.price.toLocaleString('sr-RS')} RSD
@@ -137,7 +163,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
               <AddToCartButton part={part} inStock={inStock} full />
               <Link
                 href={`/comparison?ids=${part.id}`}
-                style={{ display: 'block', width: '100%', padding: '12px', background: '#252629', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: 600, textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' as const }}
+                style={{ display: 'block', width: '100%', padding: '12px', marginTop: '10px', background: '#252629', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: 600, textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' as const }}
               >
                 ≈ Uporedi
               </Link>
