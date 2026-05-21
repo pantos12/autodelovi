@@ -24,6 +24,14 @@ export default function NavBar() {
   const searchRef = useRef<HTMLInputElement>(null);
   const { cartCount } = useCart();
 
+  // Close user menu on outside click
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    function handleClick() { setUserMenuOpen(false); }
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [userMenuOpen]);
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setUser(data.user)).catch(() => {});
@@ -53,6 +61,26 @@ export default function NavBar() {
     if (searchOpen && searchRef.current) searchRef.current.focus();
   }, [searchOpen]);
 
+  // Ctrl+K global shortcut to focus nav search
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        if (searchRef.current) {
+          searchRef.current.focus();
+        } else {
+          setSearchOpen(true);
+        }
+      }
+      if (e.key === 'Escape') {
+        setMenuOpen(false);
+        setUserMenuOpen(false);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <>
       <style>{`
@@ -76,10 +104,11 @@ export default function NavBar() {
         <form onSubmit={handleSearch} className="nav-search-desktop" style={{ display: 'flex', flex: 1, maxWidth: '360px' }}>
           <div style={{ display: 'flex', width: '100%', background: '#1a1b1f', borderRadius: '8px', border: '1px solid #333', overflow: 'hidden' }}>
             <input
+              ref={searchRef}
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Pretrazi delove..."
+              placeholder="Pretrazi delove... (Ctrl+K)"
               style={{ flex: 1, padding: '8px 12px', background: 'transparent', border: 'none', color: '#fff', fontSize: '13px', outline: 'none' }}
             />
             <button type="submit" style={{ padding: '8px 14px', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
