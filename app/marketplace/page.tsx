@@ -7,6 +7,7 @@ import type { Part } from '@/lib/types';
 import AddToCartButton from '@/app/components/AddToCartButton';
 import InquiryButton from '@/app/components/InquiryButton';
 import { bandEmoji, bandLabel, type Band } from '@/lib/confidence';
+import { vehicleMakes } from '@/app/lib/data';
 
 const STATIC_CATEGORIES = [
   { slug: 'motor', name: 'Motor', icon: '⚙️' },
@@ -81,7 +82,6 @@ function SmartImage({
       priority={!!priority}
       loading={priority ? undefined : 'lazy'}
       onError={() => setErrored(true)}
-      unoptimized
     />
   );
 }
@@ -96,6 +96,8 @@ function MarketplaceContent() {
   const [filterMake, setFilterMake] = useState(searchParams.get('make') || '');
   const [filterCategory, setFilterCategory] = useState(searchParams.get('category') || '');
   const [filterInStock, setFilterInStock] = useState(false);
+  const [filterMinPrice, setFilterMinPrice] = useState('');
+  const [filterMaxPrice, setFilterMaxPrice] = useState('');
   const [sortBy, setSortBy] = useState('price_asc');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
@@ -122,6 +124,8 @@ function MarketplaceContent() {
           params.set('q', searchQuery);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (filterMinPrice) params.set('min_price', filterMinPrice);
+          if (filterMaxPrice) params.set('max_price', filterMaxPrice);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
           const res = await fetch(`/api/search?${params}`);
@@ -133,6 +137,8 @@ function MarketplaceContent() {
           if (filterMake) params.set('make', filterMake);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (filterMinPrice) params.set('min_price', filterMinPrice);
+          if (filterMaxPrice) params.set('max_price', filterMaxPrice);
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
@@ -148,12 +154,12 @@ function MarketplaceContent() {
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
+  }, [filterMake, filterCategory, filterInStock, filterMinPrice, filterMaxPrice, sortBy, searchQuery, page]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+  }, [filterMake, filterCategory, filterInStock, filterMinPrice, filterMaxPrice, sortBy, searchQuery]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -184,7 +190,7 @@ function MarketplaceContent() {
   const s = {
     page: { background: '#0c0d0f', minHeight: '100vh' } as React.CSSProperties,
     container: { maxWidth: '1200px', margin: '0 auto', padding: '24px 16px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' } as React.CSSProperties,
-    sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky', top: '80px' } as React.CSSProperties,
+    sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky' as const, top: '80px' } as React.CSSProperties,
     label: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '4px' } as React.CSSProperties,
     select: { width: '100%', padding: '8px 12px', background: '#0c0d0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' } as React.CSSProperties,
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
@@ -209,18 +215,52 @@ function MarketplaceContent() {
     return out;
   }
 
+  // Ctrl+K to focus search
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        const input = document.querySelector<HTMLInputElement>('[data-search-input]');
+        input?.focus();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Scroll to top on page change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
+
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  useEffect(() => {
+    function handleScroll() {
+      setShowBackToTop(window.scrollY > 600);
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { position: static !important; }
+        }
+      `}</style>
+      <div className="mp-container" style={s.container}>
+        <div className="mp-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
               <input
+                data-search-input
                 type="text"
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
-                placeholder="Naziv, broj dela, brend..."
+                placeholder="Pretraga... (Ctrl+K)"
                 style={{ ...s.select, flex: 1, padding: '8px 12px' }}
               />
               <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
@@ -267,7 +307,7 @@ function MarketplaceContent() {
             <label style={s.label}>Marka</label>
             <select style={s.select} value={filterMake} onChange={e => setFilterMake(e.target.value)}>
               <option value="">Sve marke</option>
-              {['Volkswagen','BMW','Mercedes','Audi','Opel','Renault','Peugeot','Fiat','Toyota','Ford','Skoda','Seat'].map(m => (
+              {vehicleMakes.map(m => (
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
@@ -279,13 +319,41 @@ function MarketplaceContent() {
               {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
             </select>
           </div>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={s.label}>Cena (RSD)</label>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <input
+                type="number"
+                placeholder="Od"
+                value={filterMinPrice}
+                onChange={e => setFilterMinPrice(e.target.value)}
+                style={{ ...s.select, width: '50%', padding: '6px 8px', fontSize: '13px' }}
+                min={0}
+              />
+              <span style={{ color: '#555' }}>–</span>
+              <input
+                type="number"
+                placeholder="Do"
+                value={filterMaxPrice}
+                onChange={e => setFilterMaxPrice(e.target.value)}
+                style={{ ...s.select, width: '50%', padding: '6px 8px', fontSize: '13px' }}
+                min={0}
+              />
+            </div>
+          </div>
+
           <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
-            Resetuj sve
-          </button>
+          {(() => {
+            const activeCount = [filterMake, filterCategory, filterInStock, availOnly, filterMinPrice, filterMaxPrice, searchQuery].filter(Boolean).length;
+            return (
+              <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setFilterMinPrice(''); setFilterMaxPrice(''); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: activeCount > 0 ? '#f9372c' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: activeCount > 0 ? 600 : 400, transition: 'background 0.2s' }}>
+                Resetuj sve{activeCount > 0 ? ` (${activeCount})` : ''}
+              </button>
+            );
+          })()}
         </div>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
@@ -436,6 +504,22 @@ function MarketplaceContent() {
           )}
         </div>
       </div>
+
+      {showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Vrati se na vrh"
+          style={{
+            position: 'fixed', bottom: '24px', right: '24px', width: '44px', height: '44px',
+            borderRadius: '50%', background: '#f9372c', border: 'none', color: '#fff',
+            fontSize: '20px', cursor: 'pointer', zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'opacity 0.2s', opacity: showBackToTop ? 1 : 0,
+          }}
+        >
+          ↑
+        </button>
+      )}
     </div>
   );
 }

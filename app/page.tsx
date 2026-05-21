@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { Metadata } from 'next';
 import { vehicleMakes, getModels, getEngines, getYears } from './lib/data';
 
 export default function Home() {
@@ -42,8 +41,18 @@ export default function Home() {
     WebkitAppearance: 'none',
   };
 
+  const orgJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'AutoDelovi.sale',
+    url: 'https://autodelovi.sale',
+    description: 'Premium marketplace za auto delove u Srbiji. 50,000+ delova od 200+ dobavljaca.',
+    areaServed: { '@type': 'Country', name: 'Serbia' },
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
       <style>{`
         @media (max-width: 768px) {
           .hero-title { font-size: 44px !important; }
@@ -84,10 +93,11 @@ export default function Home() {
                 type="text"
                 value={textSearch}
                 onChange={e => setTextSearch(e.target.value)}
-                placeholder="Pretrazi po nazivu, broju dela, brendu..."
+                placeholder="Pretrazi po nazivu, broju dela, brendu... (Ctrl+K)"
+                aria-label="Pretraga delova"
                 style={{ flex: 1, padding: '14px 16px', background: 'transparent', border: 'none', color: '#fff', fontSize: '15px', outline: 'none' }}
               />
-              <button type="submit" style={{ padding: '14px 24px', background: '#f9372c', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', letterSpacing: '1px' }}>
+              <button type="submit" disabled={textSearch.trim().length < 2} style={{ padding: '14px 24px', background: textSearch.trim().length < 2 ? '#6b3530' : '#f9372c', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: textSearch.trim().length < 2 ? 'not-allowed' : 'pointer', letterSpacing: '1px', transition: 'background 0.2s' }}>
                 PRETRAZI
               </button>
             </div>
