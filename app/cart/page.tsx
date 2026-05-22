@@ -70,7 +70,7 @@ export default function CartPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <button onClick={() => updateQty(item.part_id, Math.max(1, item.quantity - 1))} style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
                       <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600, minWidth: '24px', textAlign: 'center' }}>{item.quantity}</span>
-                      <button onClick={() => updateQty(item.part_id, item.quantity + 1)} style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                      <button onClick={() => updateQty(item.part_id, Math.min(99, item.quantity + 1))} disabled={item.quantity >= 99} style={{ width: '28px', height: '28px', background: item.quantity >= 99 ? '#1a1b1f' : '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: item.quantity >= 99 ? '#555' : '#fff', fontSize: '16px', cursor: item.quantity >= 99 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
                     </div>
                     <div style={{ color: '#fff', fontSize: '15px', fontWeight: 700 }}>{lineTotal.toLocaleString('sr-RS')} {item.price_currency}</div>
                     <button onClick={() => remove(item.part_id)} aria-label="Ukloni" style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '18px', cursor: 'pointer', padding: '2px 6px' }}>×</button>
@@ -96,9 +96,21 @@ export default function CartPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+                {shipping === 0 ? 'Besplatno' : `${shipping.toLocaleString('sr-RS')} ${currency}`}
               </span>
             </div>
+
+            {/* Free shipping progress */}
+            {shipping > 0 && (
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ background: '#252629', borderRadius: '4px', height: '6px', overflow: 'hidden', marginBottom: '6px' }}>
+                  <div style={{ background: '#22c55e', height: '100%', borderRadius: '4px', transition: 'width 0.3s ease', width: `${Math.min(100, (subtotal / freeShippingThreshold) * 100)}%` }} />
+                </div>
+                <p style={{ color: '#888', fontSize: '11px', margin: 0 }}>
+                  Jos {(freeShippingThreshold - subtotal).toLocaleString('sr-RS')} {currency} do besplatne dostave
+                </p>
+              </div>
+            )}
 
             <div style={{ height: '1px', background: '#2a2b2f', margin: '14px 0' }} />
 

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase-browser';
 import type { Part } from '@/lib/types';
 
 interface Props {
@@ -17,6 +18,17 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Auto-fill email from logged-in user
+  useEffect(() => {
+    if (open && !email) {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data }) => {
+        if (data.user?.email) setEmail(data.user.email);
+      }).catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Reset on open/close
   useEffect(() => {

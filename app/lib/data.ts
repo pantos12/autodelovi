@@ -86,6 +86,47 @@ export const vehicleData: Record<string, Record<string, string[]>> = {
     'Ateca': ['1.0 TSI 115ks', '1.5 TSI 150ks', '2.0 TDI 115ks', '2.0 TDI 150ks', '2.0 TSI 190ks'],
     'Toledo': ['1.2 TSI 105ks', '1.6 TDI 90ks', '1.6 TDI 105ks', '2.0 TDI 150ks'],
   },
+  'Citroen': {
+    'C3': ['1.2 PureTech 83ks', '1.2 PureTech 110ks', '1.5 BlueHDi 100ks'],
+    'C4': ['1.2 PureTech 100ks', '1.2 PureTech 130ks', '1.5 BlueHDi 130ks', '2.0 BlueHDi 150ks'],
+    'C5': ['1.6 THP 155ks', '2.0 HDi 136ks', '2.0 HDi 163ks', '2.2 HDi 200ks'],
+    'Berlingo': ['1.2 PureTech 110ks', '1.5 BlueHDi 75ks', '1.5 BlueHDi 100ks', '1.5 BlueHDi 130ks'],
+    'Jumper': ['2.0 BlueHDi 110ks', '2.0 BlueHDi 130ks', '2.0 BlueHDi 160ks'],
+  },
+  'Hyundai': {
+    'i30': ['1.0 T-GDi 120ks', '1.4 100ks', '1.6 CRDi 110ks', '1.6 CRDi 136ks'],
+    'Tucson': ['1.6 GDi 132ks', '1.6 T-GDi 177ks', '1.6 CRDi 115ks', '2.0 CRDi 185ks'],
+    'i20': ['1.0 T-GDi 100ks', '1.2 84ks', '1.4 100ks', '1.4 CRDi 90ks'],
+    'ix35': ['1.6 GDi 135ks', '2.0 CRDi 136ks', '2.0 CRDi 184ks'],
+    'Santa Fe': ['2.0 CRDi 150ks', '2.2 CRDi 200ks', '2.4 GDi 188ks'],
+  },
+  'Kia': {
+    'Ceed': ['1.0 T-GDi 120ks', '1.4 100ks', '1.6 CRDi 115ks', '1.6 CRDi 136ks'],
+    'Sportage': ['1.6 GDi 132ks', '1.6 T-GDi 177ks', '1.6 CRDi 115ks', '2.0 CRDi 185ks'],
+    'Rio': ['1.0 T-GDi 100ks', '1.2 84ks', '1.4 100ks', '1.4 CRDi 90ks'],
+    'Sorento': ['2.0 CRDi 150ks', '2.2 CRDi 200ks', '2.4 GDi 188ks', '3.3 V6 280ks'],
+    'Picanto': ['1.0 67ks', '1.0 T-GDi 100ks', '1.2 84ks'],
+  },
+  'Dacia': {
+    'Duster': ['1.0 TCe 100ks', '1.3 TCe 130ks', '1.3 TCe 150ks', '1.5 dCi 115ks'],
+    'Sandero': ['0.9 TCe 90ks', '1.0 SCe 75ks', '1.0 TCe 100ks', '1.5 dCi 90ks'],
+    'Logan': ['0.9 TCe 90ks', '1.0 SCe 75ks', '1.5 dCi 75ks', '1.5 dCi 90ks'],
+    'Dokker': ['1.5 dCi 75ks', '1.5 dCi 90ks', '1.6 SCe 100ks'],
+  },
+  'Nissan': {
+    'Qashqai': ['1.2 DIG-T 115ks', '1.3 DIG-T 140ks', '1.5 dCi 110ks', '1.6 dCi 130ks'],
+    'Juke': ['1.0 DIG-T 117ks', '1.2 DIG-T 115ks', '1.5 dCi 110ks', '1.6 DIG-T 190ks'],
+    'X-Trail': ['1.3 DIG-T 160ks', '1.6 DIG-T 163ks', '1.6 dCi 130ks', '2.0 dCi 177ks'],
+    'Micra': ['0.9 IG-T 90ks', '1.0 IG-T 100ks', '1.5 dCi 90ks'],
+    'Navara': ['2.3 dCi 160ks', '2.3 dCi 190ks'],
+  },
+  'Volvo': {
+    'XC60': ['D3 150ks', 'D4 190ks', 'D5 235ks', 'T5 254ks', 'T6 320ks'],
+    'XC90': ['D4 190ks', 'D5 235ks', 'T5 254ks', 'T6 320ks', 'T8 407ks'],
+    'V40': ['D2 120ks', 'D3 150ks', 'D4 190ks', 'T3 152ks', 'T4 190ks'],
+    'S60': ['D3 150ks', 'D4 190ks', 'D5 235ks', 'T4 190ks', 'T5 245ks'],
+    'V60': ['D3 150ks', 'D4 190ks', 'D5 235ks', 'T4 190ks', 'T5 254ks'],
+  },
 };
 
 export const vehicleMakes = Object.keys(vehicleData);
@@ -100,7 +141,8 @@ export function getEngines(make: string, model: string): string[] {
 
 export function getYears(): string[] {
   const years: string[] = [];
-  for (let y = 2026; y >= 1995; y--) {
+  const currentYear = new Date().getFullYear() + 1;
+  for (let y = currentYear; y >= 1990; y--) {
     years.push(y.toString());
   }
   return years;
@@ -147,6 +189,9 @@ export const categories = [
   { slug: 'kocnice', name: 'Kocnice', icon: 'K', description: 'Kocioni diskovi, plocice, celjusti i kompletni sistemi za bezbedno zaustavljanje', count: 840 },
   { slug: 'elektronika', name: 'Elektronika', icon: 'E', description: 'Senzori, alternatori, starteri, lambda sonde i sva elektronika vozila', count: 960 },
   { slug: 'karoserija', name: 'Karoserija', icon: 'C', description: 'Branici, amortizeri, vrata, stakla i svi delovi karoserije vaseg vozila', count: 1100 },
+  { slug: 'suspenzija', name: 'Suspenzija', icon: 'S', description: 'Amortizeri, opruge, spone, selenblokovi i delovi oslanjanja', count: 720 },
+  { slug: 'transmisija', name: 'Transmisija', icon: 'T', description: 'Kvacila, menjaci, kardani, poluosovine i delovi prenosa snage', count: 580 },
+  { slug: 'ostalo', name: 'Ostalo', icon: 'O', description: 'Enterijer, klima, grejanje, brisaci i ostali delovi', count: 650 },
 ];
 
 export const suppliers = [

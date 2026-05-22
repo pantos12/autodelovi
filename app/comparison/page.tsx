@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import type { Part } from '@/lib/types';
@@ -39,10 +39,17 @@ function ComparisonContent() {
   const [parts, setParts] = useState<Part[]>([]);
   const [allParts, setAllParts] = useState<Part[]>([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(value), 250);
+  }
 
   useEffect(() => {
-    // Load all parts for search
     fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
   }, []);
 
@@ -56,8 +63,8 @@ function ComparisonContent() {
   }, [selectedIds]);
 
   const filtered = allParts.filter(p =>
-    (p.name_sr || p.name).toLowerCase().includes(search.toLowerCase()) ||
-    (p.brand || '').toLowerCase().includes(search.toLowerCase())
+    (p.name_sr || p.name).toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+    (p.brand || '').toLowerCase().includes(debouncedSearch.toLowerCase())
   );
 
   const addPart = (id: string) => {
@@ -80,7 +87,7 @@ function ComparisonContent() {
           <p style={{ fontSize: '64px', marginBottom: '16px' }}>⚖️</p>
           <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '12px' }}>Poređenje delova</h1>
           <p style={{ color: '#aaa', marginBottom: '32px' }}>Izaberite do 3 dela za poređenje</p>
-          <input style={{ ...s.input, maxWidth: '400px', margin: '0 auto 16px' }} placeholder="Pretraži delove..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input style={{ ...s.input, maxWidth: '400px', margin: '0 auto 16px' }} placeholder="Pretraži delove..." value={search} onChange={e => handleSearchChange(e.target.value)} />
           <div style={{ maxWidth: '600px', margin: '0 auto', maxHeight: '300px', overflowY: 'auto' }}>
             {filtered.slice(0, 20).map(p => (
               <div key={p.id} onClick={() => addPart(p.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1a1b1f', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer' }}>
@@ -97,6 +104,13 @@ function ComparisonContent() {
 
   return (
     <div style={s.page}>
+      <style>{`
+        @media (max-width: 768px) {
+          .compare-selector { grid-template-columns: 1fr !important; }
+          .compare-table { overflow-x: auto; }
+          .compare-table table { min-width: 600px; }
+        }
+      `}</style>
       <div style={s.container}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: 800 }}>Poređenje delova</h1>
@@ -104,7 +118,7 @@ function ComparisonContent() {
         </div>
 
         {/* Part selector */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
+        <div className="compare-selector" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
           {Array.from({ length: 3 }).map((_, i) => {
             const part = parts[i];
             return (
@@ -118,7 +132,7 @@ function ComparisonContent() {
                 ) : (
                   <>
                     <p style={{ color: '#555', fontSize: '14px', marginBottom: '8px' }}>+ Dodaj deo</p>
-                    <input style={{ ...s.input, fontSize: '12px', padding: '6px 10px' }} placeholder="Pretraži..." value={search} onChange={e => setSearch(e.target.value)} />
+                    <input style={{ ...s.input, fontSize: '12px', padding: '6px 10px' }} placeholder="Pretraži..." value={search} onChange={e => handleSearchChange(e.target.value)} />
                     {search && filtered.slice(0, 5).map(p => (
                       <div key={p.id} onClick={() => addPart(p.id)} style={{ padding: '6px 10px', background: '#252629', borderRadius: '6px', marginTop: '4px', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
                         <span style={{ color: '#fff', fontSize: '12px' }}>{(p.name_sr || p.name).slice(0, 30)}</span>
@@ -133,7 +147,7 @@ function ComparisonContent() {
 
         {/* Comparison table */}
         {parts.length > 0 && (
-          <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
+          <div className="compare-table" style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>

@@ -1,8 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  // These packages use runtime dynamic require() that webpack can't analyze.
-  // Mark them as external so Next.js leaves them untouched in the server bundle.
+  poweredByHeader: false,
   experimental: {
     serverComponentsExternalPackages: [
       'playwright-extra',
@@ -12,6 +11,19 @@ const nextConfig = {
       'clone-deep',
       'merge-deep',
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+        ],
+      },
+    ];
   },
   images: {
     remotePatterns: [

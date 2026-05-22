@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -7,6 +7,7 @@ import type { Part } from '@/lib/types';
 import AddToCartButton from '@/app/components/AddToCartButton';
 import InquiryButton from '@/app/components/InquiryButton';
 import { bandEmoji, bandLabel, type Band } from '@/lib/confidence';
+import { vehicleMakes } from '@/app/lib/data';
 
 const STATIC_CATEGORIES = [
   { slug: 'motor', name: 'Motor', icon: '⚙️' },
@@ -92,6 +93,7 @@ function MarketplaceContent() {
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [compareList, setCompareList] = useState<string[]>([]);
   const [filterMake, setFilterMake] = useState(searchParams.get('make') || '');
   const [filterCategory, setFilterCategory] = useState(searchParams.get('category') || '');
@@ -100,6 +102,8 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -113,47 +117,57 @@ function MarketplaceContent() {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        if (searchQuery && searchQuery.length >= 2) {
-          const params = new URLSearchParams();
-          params.set('q', searchQuery);
-          if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
-          params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
-          const res = await fetch(`/api/search?${params}`);
-          const json = await res.json();
-          setParts(json.data || []);
-          setTotal(json.meta?.total || json.data?.length || 0);
-        } else {
-          const params = new URLSearchParams();
-          if (filterMake) params.set('make', filterMake);
-          if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
-          params.set('sort', sortBy);
-          params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
-          const res = await fetch(`/api/parts?${params}`);
-          const json = await res.json();
-          setParts(json.data || []);
-          setTotal(json.meta?.total || json.data?.length || 0);
-        }
-      } catch {
-        setParts([]);
-      } finally {
-        setLoading(false);
+  const loadParts = useCallback(async () => {
+    setLoading(true);
+    setFetchError(null);
+    try {
+      if (searchQuery && searchQuery.length >= 2) {
+        const params = new URLSearchParams();
+        params.set('q', searchQuery);
+        if (filterCategory) params.set('category', filterCategory);
+        if (filterInStock) params.set('in_stock', 'true');
+        params.set('per_page', String(PER_PAGE));
+        params.set('page', String(page));
+        const res = await fetch(`/api/search?${params}`);
+        if (!res.ok) throw new Error(`Greška servera (${res.status})`);
+        const json = await res.json();
+        setParts(json.data || []);
+        setTotal(json.meta?.total || json.data?.length || 0);
+      } else {
+        const params = new URLSearchParams();
+        if (filterMake) params.set('make', filterMake);
+        if (filterCategory) params.set('category', filterCategory);
+        if (filterInStock) params.set('in_stock', 'true');
+        params.set('sort', sortBy);
+        params.set('per_page', String(PER_PAGE));
+        params.set('page', String(page));
+        const res = await fetch(`/api/parts?${params}`);
+        if (!res.ok) throw new Error(`Greška servera (${res.status})`);
+        const json = await res.json();
+        setParts(json.data || []);
+        setTotal(json.meta?.total || json.data?.length || 0);
       }
-    };
-    load();
+    } catch (err: any) {
+      setParts([]);
+      setFetchError(err?.message || 'Nije moguće učitati delove. Proverite internet konekciju.');
+    } finally {
+      setLoading(false);
+    }
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
+
+  useEffect(() => {
+    loadParts();
+  }, [loadParts]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+
+  // Scroll to top on page change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -176,9 +190,20 @@ function MarketplaceContent() {
     setSearchQuery(searchInput.trim());
   }
 
+  function handleSearchInputChange(value: string) {
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.trim().length >= 3) {
+      debounceRef.current = setTimeout(() => {
+        setSearchQuery(value.trim());
+      }, 400);
+    }
+  }
+
   function clearSearch() {
     setSearchQuery('');
     setSearchInput('');
+    if (debounceRef.current) clearTimeout(debounceRef.current);
   }
 
   const s = {
@@ -187,7 +212,7 @@ function MarketplaceContent() {
     sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky', top: '80px' } as React.CSSProperties,
     label: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '4px' } as React.CSSProperties,
     select: { width: '100%', padding: '8px 12px', background: '#0c0d0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' } as React.CSSProperties,
-    card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
+    card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', transition: 'border-color 0.15s' } as React.CSSProperties,
   };
 
   // Client-side avail filter (green + yellow)
@@ -211,15 +236,30 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-grid { grid-template-columns: 1fr !important; }
+          .mp-sidebar { position: fixed !important; inset: 0 !important; top: 64px !important; z-index: 50 !important; border-radius: 0 !important; overflow-y: auto !important; transform: translateX(-100%); transition: transform 0.25s ease !important; }
+          .mp-sidebar.open { transform: translateX(0) !important; }
+          .mp-filter-toggle { display: flex !important; }
+          .mp-overlay { display: block !important; }
+        }
+      `}</style>
+
+      {/* Mobile filter overlay */}
+      {sidebarOpen && (
+        <div className="mp-overlay" onClick={() => setSidebarOpen(false)} style={{ display: 'none', position: 'fixed', inset: 0, top: '64px', background: 'rgba(0,0,0,0.5)', zIndex: 49 }} />
+      )}
+
+      <div className="mp-grid" style={s.container}>
+        <div className={`mp-sidebar${sidebarOpen ? ' open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
               <input
                 type="text"
                 value={searchInput}
-                onChange={e => setSearchInput(e.target.value)}
+                onChange={e => handleSearchInputChange(e.target.value)}
                 placeholder="Naziv, broj dela, brend..."
                 style={{ ...s.select, flex: 1, padding: '8px 12px' }}
               />
@@ -267,7 +307,7 @@ function MarketplaceContent() {
             <label style={s.label}>Marka</label>
             <select style={s.select} value={filterMake} onChange={e => setFilterMake(e.target.value)}>
               <option value="">Sve marke</option>
-              {['Volkswagen','BMW','Mercedes','Audi','Opel','Renault','Peugeot','Fiat','Toyota','Ford','Skoda','Seat'].map(m => (
+              {vehicleMakes.map(m => (
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
@@ -289,9 +329,14 @@ function MarketplaceContent() {
         </div>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-            <p style={{ color: '#aaa', fontSize: '14px' }}>
-              {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button className="mp-filter-toggle" onClick={() => setSidebarOpen(!sidebarOpen)} style={{ display: 'none', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+                ☰ Filteri
+              </button>
+              <p style={{ color: '#aaa', fontSize: '14px', margin: 0 }}>
+                {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
+              </p>
+            </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <select style={{ ...s.select, width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
                 <option value="price_asc">Cena: niža → viša</option>
@@ -305,13 +350,23 @@ function MarketplaceContent() {
               )}
             </div>
           </div>
-          {loading ? (
+          {fetchError && (
+            <div style={{ textAlign: 'center', padding: '48px 20px', background: '#1a1b1f', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.3)' }}>
+              <p style={{ fontSize: '36px', marginBottom: '12px' }}>⚠️</p>
+              <p style={{ fontSize: '16px', color: '#ef4444', marginBottom: '8px' }}>{fetchError}</p>
+              <button onClick={loadParts} style={{ padding: '10px 24px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}>
+                Pokušaj ponovo
+              </button>
+            </div>
+          )}
+
+          {!fetchError && loading ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
               {Array.from({ length: PER_PAGE }).map((_, i) => (
                 <div key={i} style={{ ...s.card, height: '280px', background: 'linear-gradient(90deg, #1a1b1f 25%, #252629 50%, #1a1b1f 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
               ))}
             </div>
-          ) : (
+          ) : !fetchError ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
               {displayParts.map((part, idx) => {
                 const vehicle = part.compatible_vehicles?.[0];
@@ -364,9 +419,9 @@ function MarketplaceContent() {
                 );
               })}
             </div>
-          )}
+          ) : null}
 
-          {!loading && displayParts.length === 0 && (
+          {!loading && !fetchError && displayParts.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
               <p style={{ fontSize: '48px' }}>🔍</p>
               <p style={{ fontSize: '18px', color: '#aaa' }}>
@@ -381,7 +436,7 @@ function MarketplaceContent() {
           )}
 
           {/* Pagination */}
-          {!loading && totalPages > 1 && (
+          {!loading && !fetchError && totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '32px', flexWrap: 'wrap' }}>
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
