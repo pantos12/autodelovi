@@ -53,6 +53,22 @@ export default function CheckoutPage() {
       return;
     }
 
+    const emailParts = form.email.trim().split('@');
+    if (emailParts.length !== 2 || !emailParts[1]?.includes('.') || emailParts[1].split('.').some(p => !p)) {
+      setError('Unesite validnu email adresu.');
+      return;
+    }
+
+    if (form.phone.trim().replace(/[\s\-()]/g, '').length < 6) {
+      setError('Unesite validan broj telefona.');
+      return;
+    }
+
+    if (form.postal && !/^\d{5}$/.test(form.postal.trim())) {
+      setError('Poštanski broj mora imati 5 cifara.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       let session_id: string | null = null;
@@ -208,12 +224,17 @@ export default function CheckoutPage() {
               <span style={{ color: '#aaa', fontSize: '13px' }}>Subtotal</span>
               <span style={{ color: '#fff', fontSize: '13px' }}>{subtotal.toLocaleString('sr-RS')} {currency}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: shipping > 0 ? '8px' : '12px' }}>
               <span style={{ color: '#aaa', fontSize: '13px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px' }}>
-                {shipping === 0 ? 'Besplatno' : `${shipping} ${currency}`}
+                {shipping === 0 ? 'Besplatno' : `${shipping.toLocaleString('sr-RS')} ${currency}`}
               </span>
             </div>
+            {shipping > 0 && (
+              <p style={{ color: '#888', fontSize: '11px', marginBottom: '12px' }}>
+                Besplatna dostava za porudžbine preko {freeShippingThreshold.toLocaleString('sr-RS')} {currency}
+              </p>
+            )}
 
             <div style={{ height: '1px', background: '#2a2b2f', margin: '12px 0' }} />
 

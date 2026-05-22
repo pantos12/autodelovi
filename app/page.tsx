@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { Metadata } from 'next';
 import { vehicleMakes, getModels, getEngines, getYears } from './lib/data';
 
 export default function Home() {
@@ -74,7 +73,7 @@ export default function Home() {
             <span style={{ color: '#fff', display: 'block' }}>JEDNOM MESTU.</span>
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px', marginBottom: '40px', maxWidth: '480px', lineHeight: 1.6 }}>
-            Agregiramo delimicno skladiste od 50,000+ delova od 200+ proverenih dobavljaca sirom Srbije.
+            Agregiramo skladište od 50,000+ delova od 200+ proverenih dobavljača širom Srbije. Podrška za {vehicleMakes.length}+ marki vozila.
           </p>
 
           {/* TEXT SEARCH */}
