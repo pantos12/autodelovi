@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import type { Part } from '@/lib/types';
@@ -37,14 +37,34 @@ function ComparisonContent() {
   const initialIds = searchParams.get('ids')?.split(',').filter(Boolean) || [];
   const [selectedIds, setSelectedIds] = useState<string[]>(initialIds.slice(0, 3));
   const [parts, setParts] = useState<Part[]>([]);
-  const [allParts, setAllParts] = useState<Part[]>([]);
+  const [searchResults, setSearchResults] = useState<Part[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    // Load all parts for search
-    fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
-  }, []);
+    if (!search.trim() || search.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(search.trim())}&per_page=20`);
+        const json = await res.json();
+        setSearchResults(json.data || []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [search]);
 
   useEffect(() => {
     if (selectedIds.length === 0) { setParts([]); return; }
@@ -55,13 +75,12 @@ function ComparisonContent() {
       .finally(() => setLoading(false));
   }, [selectedIds]);
 
-  const filtered = allParts.filter(p =>
-    (p.name_sr || p.name).toLowerCase().includes(search.toLowerCase()) ||
-    (p.brand || '').toLowerCase().includes(search.toLowerCase())
-  );
-
   const addPart = (id: string) => {
-    if (selectedIds.length < 3 && !selectedIds.includes(id)) setSelectedIds([...selectedIds, id]);
+    if (selectedIds.length < 3 && !selectedIds.includes(id)) {
+      setSelectedIds([...selectedIds, id]);
+      setSearch('');
+      setSearchResults([]);
+    }
   };
   const removePart = (id: string) => setSelectedIds(selectedIds.filter(x => x !== id));
 
@@ -78,18 +97,22 @@ function ComparisonContent() {
       <div style={s.page}>
         <div style={{ ...s.container, textAlign: 'center', paddingTop: '80px' }}>
           <p style={{ fontSize: '64px', marginBottom: '16px' }}>⚖️</p>
-          <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '12px' }}>Poređenje delova</h1>
-          <p style={{ color: '#aaa', marginBottom: '32px' }}>Izaberite do 3 dela za poređenje</p>
-          <input style={{ ...s.input, maxWidth: '400px', margin: '0 auto 16px' }} placeholder="Pretraži delove..." value={search} onChange={e => setSearch(e.target.value)} />
+          <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '12px' }}>Poredjenje delova</h1>
+          <p style={{ color: '#aaa', marginBottom: '32px' }}>Izaberite do 3 dela za poredjenje</p>
+          <div style={{ position: 'relative', maxWidth: '400px', margin: '0 auto 16px' }}>
+            <label htmlFor="compare-search" style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>Pretrazi delove</label>
+            <input id="compare-search" style={s.input} placeholder="Pretrazi delove..." value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
           <div style={{ maxWidth: '600px', margin: '0 auto', maxHeight: '300px', overflowY: 'auto' }}>
-            {filtered.slice(0, 20).map(p => (
+            {searching && <p style={{ color: '#888', fontSize: '13px', padding: '8px' }}>Pretrazujem...</p>}
+            {searchResults.slice(0, 20).map(p => (
               <div key={p.id} onClick={() => addPart(p.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1a1b1f', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer' }}>
                 <span style={{ color: '#fff', fontSize: '14px' }}>{p.name_sr || p.name}</span>
-                <span style={{ color: '#ff4d00', fontSize: '14px', fontWeight: 600 }}>{p.price.toLocaleString('sr-RS')} RSD</span>
+                <span style={{ color: '#ff4d00', fontSize: '14px', fontWeight: 600 }}>{p.price?.toLocaleString('sr-RS')} RSD</span>
               </div>
             ))}
           </div>
-          <Link href="/marketplace" style={{ color: '#ff4d00', textDecoration: 'none', fontSize: '14px' }}>← Nazad na marketplace</Link>
+          <Link href="/marketplace" style={{ color: '#ff4d00', textDecoration: 'none', fontSize: '14px' }}>&larr; Nazad na marketplace</Link>
         </div>
       </div>
     );
@@ -97,14 +120,20 @@ function ComparisonContent() {
 
   return (
     <div style={s.page}>
+      <style>{`
+        @media (max-width: 768px) {
+          .compare-slots { grid-template-columns: 1fr !important; }
+          .compare-table { overflow-x: auto; }
+        }
+      `}</style>
       <div style={s.container}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: 800 }}>Poređenje delova</h1>
-          <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none', fontSize: '14px' }}>← Nazad</Link>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+          <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: 800 }}>Poredjenje delova</h1>
+          <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none', fontSize: '14px' }}>&larr; Nazad</Link>
         </div>
 
         {/* Part selector */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
+        <div className="compare-slots" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
           {Array.from({ length: 3 }).map((_, i) => {
             const part = parts[i];
             return (
@@ -113,13 +142,14 @@ function ComparisonContent() {
                   <>
                     <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>{part.name_sr || part.name}</p>
                     <p style={{ color: '#ff4d00', fontSize: '16px', fontWeight: 700, marginBottom: '12px' }}>{part.price.toLocaleString('sr-RS')} RSD</p>
-                    <button onClick={() => removePart(part.id)} style={{ padding: '6px 12px', background: '#333', border: 'none', borderRadius: '6px', color: '#aaa', cursor: 'pointer', fontSize: '12px' }}>Ukloni</button>
+                    <button onClick={() => removePart(part.id)} aria-label={`Ukloni ${part.name_sr || part.name}`} style={{ padding: '6px 12px', background: '#333', border: 'none', borderRadius: '6px', color: '#aaa', cursor: 'pointer', fontSize: '12px' }}>Ukloni</button>
                   </>
                 ) : (
                   <>
                     <p style={{ color: '#555', fontSize: '14px', marginBottom: '8px' }}>+ Dodaj deo</p>
-                    <input style={{ ...s.input, fontSize: '12px', padding: '6px 10px' }} placeholder="Pretraži..." value={search} onChange={e => setSearch(e.target.value)} />
-                    {search && filtered.slice(0, 5).map(p => (
+                    <input style={{ ...s.input, fontSize: '12px', padding: '6px 10px' }} placeholder="Pretrazi..." value={search} onChange={e => setSearch(e.target.value)} aria-label="Pretrazi delove za poredjenje" />
+                    {searching && <p style={{ color: '#888', fontSize: '11px', marginTop: '4px' }}>Pretrazujem...</p>}
+                    {search && searchResults.slice(0, 5).map(p => (
                       <div key={p.id} onClick={() => addPart(p.id)} style={{ padding: '6px 10px', background: '#252629', borderRadius: '6px', marginTop: '4px', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
                         <span style={{ color: '#fff', fontSize: '12px' }}>{(p.name_sr || p.name).slice(0, 30)}</span>
                       </div>
@@ -133,8 +163,8 @@ function ComparisonContent() {
 
         {/* Comparison table */}
         {parts.length > 0 && (
-          <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="compare-table" style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '500px' }}>
               <thead>
                 <tr>
                   <th style={s.th}>Karakteristika</th>
@@ -166,7 +196,7 @@ function ComparisonContent() {
 
 export default function ComparisonPage() {
   return (
-    <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center', color: '#aaa' }}>Učitavanje...</div>}>
+    <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center', color: '#aaa' }}>Ucitavanje...</div>}>
       <ComparisonContent />
     </Suspense>
   );

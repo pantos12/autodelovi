@@ -142,7 +142,7 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
         ) : (
           <form onSubmit={handleSubmit}>
             {error && (
-              <div style={{
+              <div role="alert" style={{
                 background: 'rgba(239, 68, 68, 0.12)', border: '1px solid #ef4444',
                 borderRadius: '8px', padding: '10px 12px', color: '#ef4444',
                 fontSize: '13px', marginBottom: '14px',
@@ -152,23 +152,24 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
             )}
 
             <div style={{ marginBottom: '12px' }}>
-              <label style={labelStyle}>Ime i prezime</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)} style={inputStyle} />
+              <label htmlFor="inquiry-name" style={labelStyle}>Ime i prezime</label>
+              <input id="inquiry-name" type="text" value={name} onChange={e => setName(e.target.value)} style={inputStyle} autoComplete="name" />
             </div>
 
             <div style={{ marginBottom: '12px' }}>
-              <label style={labelStyle}>Email *</label>
-              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
+              <label htmlFor="inquiry-email" style={labelStyle}>Email *</label>
+              <input id="inquiry-email" type="email" required value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} autoComplete="email" />
             </div>
 
             <div style={{ marginBottom: '12px' }}>
-              <label style={labelStyle}>Telefon</label>
-              <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} style={inputStyle} />
+              <label htmlFor="inquiry-phone" style={labelStyle}>Telefon</label>
+              <input id="inquiry-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} style={inputStyle} autoComplete="tel" />
             </div>
 
             <div style={{ marginBottom: '18px' }}>
-              <label style={labelStyle}>Poruka</label>
+              <label htmlFor="inquiry-message" style={labelStyle}>Poruka</label>
               <textarea
+                id="inquiry-message"
                 rows={4}
                 value={message}
                 onChange={e => setMessage(e.target.value)}
