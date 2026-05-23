@@ -29,7 +29,10 @@ export async function GET(request: NextRequest) {
         .or(`name.ilike.%${q}%,part_number.ilike.%${q}%,brand.ilike.%${q}%`)
         .in('status', ['active','out_of_stock'])
         .range((page-1)*perPage, page*perPage-1);
-      return NextResponse.json({ data: fb ?? [], meta: { total: count ?? 0, page, per_page: perPage } });
+      return NextResponse.json(
+        { data: fb ?? [], meta: { total: count ?? 0, page, per_page: perPage } },
+        { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' } }
+      );
     }
 
     const total = data?.[0]?.total_count ?? 0;

@@ -1,7 +1,16 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import NavBar from './components/NavBar';
 import CartProvider from './components/CartProvider';
+import ErrorBoundary from './components/ErrorBoundary';
+import Footer from './components/Footer';
+
+const inter = Inter({
+  subsets: ['latin', 'latin-ext'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -20,25 +29,33 @@ export const metadata: Metadata = {
     siteName: 'AutoDelovi.sale',
     title: 'AutoDelovi.sale - Premium Auto Delovi Srbija',
     description: 'Agregiramo delimicno skladiste od 50,000+ auto delova od 200+ proverenih dobavljaca sirom Srbije.',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'AutoDelovi.sale - Premium Auto Delovi Srbija' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'AutoDelovi.sale - Premium Auto Delovi Srbija',
     description: 'Pretrazite 50,000+ auto delova od 200+ dobavljaca u Srbiji.',
+    images: ['/og-image.png'],
   },
   robots: {
     index: true,
     follow: true,
   },
+  alternates: {
+    canonical: 'https://autodelovi.sale',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="sr">
-      <body style={{ margin: 0, background: '#0c0d0f' }}>
+    <html lang="sr" className={inter.variable}>
+      <body style={{ margin: 0, background: '#0c0d0f', fontFamily: 'var(--font-inter), "Helvetica Neue", sans-serif' }}>
         <CartProvider>
           <NavBar />
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+          <Footer />
         </CartProvider>
       </body>
     </html>

@@ -31,6 +31,23 @@
   --on-background: #e2e2e5;
   --on-surface: #e2e2e5;
   --on-surface-variant: #c5c6ca;
+
+  --color-bg: #0c0d0f;
+  --color-card: #1a1b1f;
+  --color-border: #252629;
+  --color-border-light: #2a2b2f;
+  --color-primary: #f9372c;
+  --color-accent: #ff4d00;
+  --color-success: #22c55e;
+  --color-danger: #ef4444;
+  --color-warning: #f99e2c;
+  --color-text: #fff;
+  --color-text-muted: #aaa;
+  --color-text-dim: #888;
+  --color-text-faint: #666;
+
+  --free-shipping-threshold: 10000;
+  --shipping-fee: 600;
 }
 
 * {
@@ -42,4 +59,35 @@
 body {
   background: var(--background);
   color: var(--on-background);
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(249, 55, 44, 0.3);
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
