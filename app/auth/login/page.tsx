@@ -64,7 +64,13 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', color: '#888', fontSize: '14px', marginTop: '24px' }}>
+        <div style={{ textAlign: 'center', marginTop: '16px' }}>
+          <Link href="/auth/reset" style={{ color: '#888', textDecoration: 'none', fontSize: '13px' }}>
+            Zaboravili ste lozinku?
+          </Link>
+        </div>
+
+        <p style={{ textAlign: 'center', color: '#888', fontSize: '14px', marginTop: '16px' }}>
           Nemate nalog?{' '}
           <Link href="/auth/signup" style={{ color: '#f9372c', textDecoration: 'none', fontWeight: 600 }}>Registrujte se</Link>
         </p>

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -60,6 +60,15 @@ function BandBadge({ band }: { band: Band }) {
   );
 }
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
 function SmartImage({
   src,
   alt,
@@ -81,7 +90,7 @@ function SmartImage({
       priority={!!priority}
       loading={priority ? undefined : 'lazy'}
       onError={() => setErrored(true)}
-      unoptimized
+      unoptimized={!!src && !src.startsWith('/')}
     />
   );
 }
@@ -100,10 +109,18 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
   });
+
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 600);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -209,10 +226,34 @@ function MarketplaceContent() {
     return out;
   }
 
+  const activeFilterCount = [filterMake, filterCategory, filterInStock, availOnly, searchQuery].filter(Boolean).length;
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 900px) {
+          .mp-grid { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none; }
+          .mp-sidebar.mp-sidebar-open { display: block; position: fixed; top: 64px; left: 0; right: 0; bottom: 0; z-index: 90; background: rgba(12,13,15,0.98); padding: 20px; overflow-y: auto; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+        @media (min-width: 901px) {
+          .mp-filter-toggle { display: none !important; }
+        }
+      `}</style>
+
+      {/* Mobile filter toggle */}
+      <button
+        className="mp-filter-toggle"
+        onClick={() => setFiltersOpen(!filtersOpen)}
+        style={{ display: 'none', position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 95, padding: '10px 20px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '24px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', alignItems: 'center', gap: '8px', boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="12" y1="18" x2="20" y2="18"/></svg>
+        Filteri{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+      </button>
+
+      <div className="mp-grid" style={s.container}>
+        <div className={`mp-sidebar${filtersOpen ? ' mp-sidebar-open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -283,9 +324,14 @@ function MarketplaceContent() {
             <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px', marginBottom: '8px' }}>
             Resetuj sve
           </button>
+          {filtersOpen && (
+            <button onClick={() => setFiltersOpen(false)} style={{ width: '100%', padding: '10px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}>
+              Primeni filtere
+            </button>
+          )}
         </div>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
@@ -357,7 +403,9 @@ function MarketplaceContent() {
                       </div>
 
                       <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
+                        {part.updated_at
+                          ? `Azurirano: ${new Date(part.updated_at).toLocaleDateString('sr-RS')}`
+                          : 'Provereno danas'}
                       </p>
                     </div>
                   </div>
@@ -436,6 +484,17 @@ function MarketplaceContent() {
           )}
         </div>
       </div>
+
+      {/* Back to top */}
+      {showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Nazad na vrh"
+          style={{ position: 'fixed', bottom: '24px', right: '24px', width: '44px', height: '44px', borderRadius: '50%', background: '#1a1b1f', border: '1px solid #333', color: '#fff', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)', zIndex: 50, transition: 'opacity 0.2s', animation: 'fadeIn 0.2s ease' }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+      )}
     </div>
   );
 }

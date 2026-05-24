@@ -29,6 +29,8 @@ export default function CheckoutPage() {
     notes: '',
   });
 
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof BuyerForm, string>>>({});
+
   const currency = items[0]?.price_currency || 'RSD';
   const freeShippingThreshold = 10000;
   const shipping = subtotal >= freeShippingThreshold ? 0 : 600;
@@ -42,16 +44,28 @@ export default function CheckoutPage() {
 
   function update<K extends keyof BuyerForm>(key: K, value: BuyerForm[K]) {
     setForm(prev => ({ ...prev, [key]: value }));
+    if (fieldErrors[key]) setFieldErrors(prev => ({ ...prev, [key]: undefined }));
+  }
+
+  function validateForm(): boolean {
+    const errors: Partial<Record<keyof BuyerForm, string>> = {};
+    if (!form.name.trim()) errors.name = 'Unesite ime i prezime';
+    if (!form.email.trim()) errors.email = 'Unesite email adresu';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.email = 'Unesite ispravan email';
+    if (!form.phone.trim()) errors.phone = 'Unesite broj telefona';
+    else if (form.phone.replace(/[\s\-\+\(\)]/g, '').length < 8) errors.phone = 'Unesite ispravan broj telefona';
+    if (!form.address.trim()) errors.address = 'Unesite adresu za dostavu';
+    if (!form.city.trim()) errors.city = 'Unesite grad';
+    if (form.postal && !/^\d{5}$/.test(form.postal.trim())) errors.postal = 'Postanski broj mora imati 5 cifara';
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!form.name.trim() || !form.email.trim() || !form.phone.trim() || !form.address.trim() || !form.city.trim()) {
-      setError('Molimo popunite sva obavezna polja.');
-      return;
-    }
+    if (!validateForm()) return;
 
     setSubmitting(true);
     try {
@@ -126,33 +140,39 @@ export default function CheckoutPage() {
 
             <div style={{ marginBottom: '14px' }}>
               <label style={labelStyle}>Ime i prezime *</label>
-              <input type="text" required value={form.name} onChange={e => update('name', e.target.value)} style={inputStyle} />
+              <input type="text" required value={form.name} onChange={e => update('name', e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.name ? '#ef4444' : '#2a2b2f' }} />
+              {fieldErrors.name && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{fieldErrors.name}</span>}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <label style={labelStyle}>Email *</label>
-                <input type="email" required value={form.email} onChange={e => update('email', e.target.value)} style={inputStyle} />
+                <input type="email" required value={form.email} onChange={e => update('email', e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.email ? '#ef4444' : '#2a2b2f' }} />
+                {fieldErrors.email && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{fieldErrors.email}</span>}
               </div>
               <div>
                 <label style={labelStyle}>Telefon *</label>
-                <input type="tel" required value={form.phone} onChange={e => update('phone', e.target.value)} style={inputStyle} />
+                <input type="tel" required value={form.phone} onChange={e => update('phone', e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.phone ? '#ef4444' : '#2a2b2f' }} placeholder="+381..." />
+                {fieldErrors.phone && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{fieldErrors.phone}</span>}
               </div>
             </div>
 
             <div style={{ marginBottom: '14px' }}>
               <label style={labelStyle}>Adresa za dostavu *</label>
-              <input type="text" required value={form.address} onChange={e => update('address', e.target.value)} style={inputStyle} />
+              <input type="text" required value={form.address} onChange={e => update('address', e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.address ? '#ef4444' : '#2a2b2f' }} />
+              {fieldErrors.address && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{fieldErrors.address}</span>}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <label style={labelStyle}>Grad *</label>
-                <input type="text" required value={form.city} onChange={e => update('city', e.target.value)} style={inputStyle} />
+                <input type="text" required value={form.city} onChange={e => update('city', e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.city ? '#ef4444' : '#2a2b2f' }} />
+                {fieldErrors.city && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{fieldErrors.city}</span>}
               </div>
               <div>
-                <label style={labelStyle}>Poštanski broj</label>
-                <input type="text" value={form.postal} onChange={e => update('postal', e.target.value)} style={inputStyle} />
+                <label style={labelStyle}>Postanski broj</label>
+                <input type="text" value={form.postal} onChange={e => update('postal', e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.postal ? '#ef4444' : '#2a2b2f' }} placeholder="11000" />
+                {fieldErrors.postal && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{fieldErrors.postal}</span>}
               </div>
             </div>
 
@@ -208,12 +228,17 @@ export default function CheckoutPage() {
               <span style={{ color: '#aaa', fontSize: '13px' }}>Subtotal</span>
               <span style={{ color: '#fff', fontSize: '13px' }}>{subtotal.toLocaleString('sr-RS')} {currency}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
               <span style={{ color: '#aaa', fontSize: '13px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px' }}>
                 {shipping === 0 ? 'Besplatno' : `${shipping} ${currency}`}
               </span>
             </div>
+            {shipping === 0 && (
+              <p style={{ color: '#22c55e', fontSize: '11px', marginBottom: '8px' }}>
+                Ostvarili ste besplatnu dostavu!
+              </p>
+            )}
 
             <div style={{ height: '1px', background: '#2a2b2f', margin: '12px 0' }} />
 

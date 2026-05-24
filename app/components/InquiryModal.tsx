@@ -40,14 +40,18 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
     return () => clearTimeout(t);
   }, [success, onClose]);
 
-  // Escape to close
+  // Escape to close + body scroll lock
   useEffect(() => {
     if (!open) return;
+    document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKey);
+    };
   }, [open, onClose]);
 
   if (!open) return null;
