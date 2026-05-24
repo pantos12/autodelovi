@@ -4,6 +4,15 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import type { Part } from '@/lib/types';
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
 const ATTRS: { key: keyof Part | string; label: string }[] = [
   { key: 'price', label: 'Cena (RSD)' },
   { key: 'category_id', label: 'Kategorija' },
@@ -55,9 +64,11 @@ function ComparisonContent() {
       .finally(() => setLoading(false));
   }, [selectedIds]);
 
+  const debouncedSearch = useDebounce(search, 300);
+
   const filtered = allParts.filter(p =>
-    (p.name_sr || p.name).toLowerCase().includes(search.toLowerCase()) ||
-    (p.brand || '').toLowerCase().includes(search.toLowerCase())
+    (p.name_sr || p.name).toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+    (p.brand || '').toLowerCase().includes(debouncedSearch.toLowerCase())
   );
 
   const addPart = (id: string) => {
