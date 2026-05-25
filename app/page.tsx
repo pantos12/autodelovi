@@ -53,11 +53,26 @@ export default function Home() {
           .categories-grid { grid-template-columns: 1fr 1fr !important; }
           .hero-pad { padding: 48px 16px 40px !important; }
           .section-pad { padding: 0 16px 48px !important; }
+          .hero-stats { flex-direction: column; gap: 12px !important; }
         }
         @media (max-width: 480px) {
           .categories-grid { grid-template-columns: 1fr !important; }
         }
+        .cat-card:hover { border-color: rgba(249,55,44,0.4) !important; transform: translateY(-2px); }
+        .feature-card:hover { border-color: rgba(249,55,44,0.3) !important; }
       `}</style>
+
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'AutoDelovi.sale',
+        url: 'https://autodelovi.sale',
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: 'https://autodelovi.sale/marketplace?q={search_term_string}',
+          'query-input': 'required name=search_term_string',
+        },
+      }) }} />
 
       <div style={{ background: '#0c0d0f', minHeight: '100vh', color: '#fff', fontFamily: "'Inter','Helvetica Neue',sans-serif", position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'fixed', inset: 0, backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '28px 28px', pointerEvents: 'none', zIndex: 0 }} />
@@ -122,6 +137,23 @@ export default function Home() {
           </div>
         </main>
 
+        {/* TRUST STATS */}
+        <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 40px' }}>
+          <div className="hero-stats" style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
+            {[
+              { value: '50,000+', label: 'Delova' },
+              { value: '200+', label: 'Dobavljača' },
+              { value: '12+', label: 'Brendova' },
+              { value: '24/7', label: 'Dostupnost' },
+            ].map((stat, i) => (
+              <div key={i} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '28px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{stat.value}</div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px', letterSpacing: '1px', textTransform: 'uppercase' }}>{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* FEATURES */}
         <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 60px' }}>
           <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
@@ -130,7 +162,7 @@ export default function Home() {
               { title: 'Real-time provera zaliha', desc: 'Live informacije o dostupnosti — bez zastarelih podataka.' },
               { title: 'OE Cross-referencing', desc: 'Automatsko uporedjivanje OEM i aftermarket referenci za svaki deo.' },
             ].map((f, i) => (
-              <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '24px' }}>
+              <div key={i} className="feature-card" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '24px', transition: 'border-color 0.2s' }}>
                 <div style={{ width: '32px', height: '2px', background: '#f9372c', marginBottom: '16px', borderRadius: '2px' }} />
                 <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>{f.title}</h3>
                 <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>{f.desc}</p>
@@ -150,9 +182,7 @@ export default function Home() {
               { slug: 'karoserija', label: 'KAROSERIJA', icon: '🚗', count: '1,100', large: false },
             ].map(cat => (
               <Link href={'/categories/' + cat.slug} key={cat.slug} style={{ textDecoration: 'none' }}>
-                <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: cat.large ? '28px' : '24px', cursor: 'pointer', height: '100%', transition: 'border-color 0.2s' }}
-                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.borderColor = 'rgba(249,55,44,0.4)')}
-                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)')}>
+                <div className="cat-card" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: cat.large ? '28px' : '24px', cursor: 'pointer', height: '100%', transition: 'border-color 0.2s, transform 0.2s' }}>
                   <div style={{ fontSize: cat.large ? '28px' : '22px', marginBottom: '10px' }}>{cat.icon}</div>
                   <div style={{ fontWeight: 700, fontSize: cat.large ? '16px' : '13px', marginBottom: '6px' }}>{cat.label}</div>
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{cat.count} delova</div>

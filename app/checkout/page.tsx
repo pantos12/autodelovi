@@ -103,9 +103,10 @@ export default function CheckoutPage() {
       <style>{`
         @media (max-width: 900px) {
           .checkout-grid { grid-template-columns: 1fr !important; }
-          .checkout-summary { position: static !important; }
+          .checkout-summary { position: static !important; order: -1; }
         }
         input:focus, textarea:focus { border-color: #f9372c !important; }
+        input:invalid:not(:placeholder-shown) { border-color: #ef4444 !important; }
       `}</style>
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 16px' }}>
         <div style={{ marginBottom: '24px' }}>

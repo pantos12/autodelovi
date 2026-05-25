@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -20,8 +20,15 @@ const STATIC_CATEGORIES = [
 
 const PER_PAGE = 24;
 
-// TODO(v3.4.0): Once /api/parts is extended to return offers[], replace this
-// fallback with `computeBand(part.best_offer)` from lib/confidence.ts.
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
+
 function bandForPart(part: Part): Band {
   if ((part.stock_quantity ?? 0) > 0) return 'verified';
   return 'inquiry';
@@ -100,10 +107,12 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
   });
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -114,40 +123,44 @@ function MarketplaceContent() {
   }, [searchParams]);
 
   useEffect(() => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     const load = async () => {
       setLoading(true);
       try {
+        const params = new URLSearchParams();
         if (searchQuery && searchQuery.length >= 2) {
-          const params = new URLSearchParams();
           params.set('q', searchQuery);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
-          const res = await fetch(`/api/search?${params}`);
+          const res = await fetch(`/api/search?${params}`, { signal: controller.signal });
           const json = await res.json();
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
         } else {
-          const params = new URLSearchParams();
           if (filterMake) params.set('make', filterMake);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
-          const res = await fetch(`/api/parts?${params}`);
+          const res = await fetch(`/api/parts?${params}`, { signal: controller.signal });
           const json = await res.json();
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
         }
-      } catch {
-        setParts([]);
+      } catch (err: any) {
+        if (err?.name !== 'AbortError') setParts([]);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
     load();
+    return () => controller.abort();
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
 
   // Reset to page 1 when filters change
@@ -181,13 +194,15 @@ function MarketplaceContent() {
     setSearchInput('');
   }
 
+  const activeFilterCount = [filterMake, filterCategory, filterInStock, availOnly, searchQuery].filter(Boolean).length;
+
   const s = {
     page: { background: '#0c0d0f', minHeight: '100vh' } as React.CSSProperties,
     container: { maxWidth: '1200px', margin: '0 auto', padding: '24px 16px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' } as React.CSSProperties,
     sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky', top: '80px' } as React.CSSProperties,
     label: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '4px' } as React.CSSProperties,
     select: { width: '100%', padding: '8px 12px', background: '#0c0d0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' } as React.CSSProperties,
-    card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
+    card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', transition: 'border-color 0.2s, transform 0.2s' } as React.CSSProperties,
   };
 
   // Client-side avail filter (green + yellow)
@@ -211,8 +226,38 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); }
+          .mp-sidebar.open { display: flex; }
+          .mp-sidebar-inner { width: 300px; max-width: 85vw; height: 100vh; overflow-y: auto; margin-left: auto; }
+          .mp-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .mp-filter-toggle { display: none !important; }
+          .mp-sidebar-inner { width: auto !important; height: auto !important; }
+          .mp-sidebar-close { display: none !important; }
+        }
+        .mp-card:hover { border-color: rgba(249,55,44,0.4) !important; transform: translateY(-2px); }
+      `}</style>
+
+      {/* Mobile filter toggle */}
+      <button
+        className="mp-filter-toggle"
+        onClick={() => setSidebarOpen(true)}
+        style={{ display: 'none', alignItems: 'center', gap: '6px', position: 'fixed', bottom: '20px', right: '20px', zIndex: 100, padding: '12px 20px', background: '#f9372c', border: 'none', borderRadius: '50px', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 16px rgba(249,55,44,0.4)' }}
+      >
+        Filteri {activeFilterCount > 0 && `(${activeFilterCount})`}
+      </button>
+
+      <div className="mp-container" style={s.container}>
+        <div className={`mp-sidebar ${sidebarOpen ? 'open' : ''}`} onClick={e => { if (e.target === e.currentTarget) setSidebarOpen(false); }}>
+        <div className="mp-sidebar-inner" style={s.sidebar}>
+          <button className="mp-sidebar-close" onClick={() => setSidebarOpen(false)} style={{ display: 'block', width: '100%', padding: '10px', background: '#252629', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '14px', cursor: 'pointer', marginBottom: '16px' }}>
+            Zatvori filtere
+          </button>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -287,6 +332,7 @@ function MarketplaceContent() {
             Resetuj sve
           </button>
         </div>
+        </div>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
             <p style={{ color: '#aaa', fontSize: '14px' }}>
@@ -312,7 +358,7 @@ function MarketplaceContent() {
               ))}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+            <div className="mp-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
               {displayParts.map((part, idx) => {
                 const vehicle = part.compatible_vehicles?.[0];
                 const inStock = (part.stock_quantity ?? 0) > 0;
@@ -320,7 +366,7 @@ function MarketplaceContent() {
                 const band = bandForPart(part);
                 const priority = idx < 4;
                 return (
-                  <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
+                  <div key={part.id} className="mp-card" style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
                     <div style={{ position: 'relative', background: '#252629', height: '140px', overflow: 'hidden' }}>
                       <SmartImage src={part.images?.[0]} alt={part.name} priority={priority} />
                       <BandBadge band={band} />
@@ -377,6 +423,15 @@ function MarketplaceContent() {
                   Obriši pretragu
                 </button>
               )}
+            </div>
+          )}
+
+          {/* Scroll to top on page change */}
+          {!loading && displayParts.length > 12 && (
+            <div style={{ textAlign: 'center', marginTop: '24px' }}>
+              <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ padding: '8px 20px', background: 'transparent', border: '1px solid #333', borderRadius: '8px', color: '#aaa', cursor: 'pointer', fontSize: '12px' }}>
+                ↑ Vrati se na vrh
+              </button>
             </div>
           )}
 

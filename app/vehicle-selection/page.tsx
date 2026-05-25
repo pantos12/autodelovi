@@ -132,7 +132,15 @@ export default function VehicleSelection() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
+      <style>{`
+        @media (max-width: 600px) {
+          .vs-container { padding: 24px 12px !important; }
+          .vs-card { padding: 20px !important; }
+          .vs-title { font-size: 22px !important; }
+          .vs-step-line { width: 24px !important; }
+        }
+      `}</style>
+      <div className="vs-container" style={s.container}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>
             Odaberite <span style={{ color: '#ff4d00' }}>Vaše Vozilo</span>
@@ -202,7 +210,7 @@ export default function VehicleSelection() {
                 <span style={{ color: i === step ? '#ff4d00' : i < step ? '#22c55e' : '#555', fontSize: '11px' }}>{s_label}</span>
               </div>
               {i < steps.length - 1 && (
-                <div style={{ width: '48px', height: '2px', background: i < step ? '#22c55e' : '#333', margin: '0 4px 16px' }} />
+                <div className="vs-step-line" style={{ width: '48px', height: '2px', background: i < step ? '#22c55e' : '#333', margin: '0 4px 16px', transition: 'background 0.3s' }} />
               )}
             </div>
           ))}
