@@ -48,6 +48,14 @@ export default async function CategoryPage({ params }: { params: { slug: string 
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .cat-parts-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important; }
+          .cat-hero-content { flex-direction: column; text-align: center; }
+          .cat-hero-content h1 { font-size: 24px !important; }
+        }
+        .cat-part-card:hover { border-color: rgba(249,55,44,0.4) !important; transform: translateY(-2px); }
+      `}</style>
       {/* Hero */}
       <div style={{ background: 'linear-gradient(135deg, #1a1b1f 0%, #0c0d0f 100%)', padding: '48px 16px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -58,7 +66,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
             <span style={{ color: '#555' }}>/</span>
             <span style={{ color: '#fff', fontSize: '14px' }}>{category.name}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="cat-hero-content" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <span style={{ fontSize: '48px' }}>{category.icon}</span>
             <div>
               <h1 style={{ color: '#fff', fontSize: '32px', fontWeight: 800, marginBottom: '8px' }}>{category.name}</h1>
@@ -95,12 +103,12 @@ export default async function CategoryPage({ params }: { params: { slug: string 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 16px' }}>
         <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '24px' }}>{parts.length} delova u kategoriji "{category.name}"</p>
         {parts.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+          <div className="cat-parts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
             {parts.map((part: any, idx: number) => {
               const inStock = (part.stock_quantity ?? 0) > 0;
               const imgSrc = part.images?.[0] || '/images/part-placeholder.svg';
               return (
-                <div key={part.id} style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
+                <div key={part.id} className="cat-part-card" style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629', transition: 'border-color 0.2s, transform 0.2s' }}>
                   <div style={{ position: 'relative', background: '#252629', height: '130px', overflow: 'hidden' }}>
                     <Image
                       src={imgSrc}

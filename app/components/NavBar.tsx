@@ -22,6 +22,7 @@ export default function NavBar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const { cartCount } = useCart();
 
   useEffect(() => {
@@ -32,6 +33,21 @@ export default function NavBar() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [userMenuOpen]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   async function handleLogout() {
     const supabase = createClient();
@@ -65,6 +81,8 @@ export default function NavBar() {
           .nav-mobile-menu { display: none !important; }
           .nav-hamburger { display: none !important; }
         }
+        .nav-link:hover { color: #f9372c !important; }
+        .nav-signup:hover { background: #e02a20 !important; }
       `}</style>
 
       <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', height: '64px', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, zIndex: 100, background: 'rgba(12,13,15,0.97)', backdropFilter: 'blur(12px)', gap: '16px' }}>
@@ -93,7 +111,7 @@ export default function NavBar() {
           {navLinks.map(link => {
             const active = pathname === link.href || pathname.startsWith(link.href + '/');
             return (
-              <Link key={link.href} href={link.href} style={{ color: active ? '#f9372c' : 'rgba(255,255,255,0.55)', fontWeight: active ? 600 : 400, fontSize: '13px', letterSpacing: '1px', textDecoration: 'none', borderBottom: active ? '2px solid #f9372c' : '2px solid transparent', paddingBottom: '2px', transition: 'color 0.15s', whiteSpace: 'nowrap' }}>
+              <Link key={link.href} href={link.href} className="nav-link" style={{ color: active ? '#f9372c' : 'rgba(255,255,255,0.55)', fontWeight: active ? 600 : 400, fontSize: '13px', letterSpacing: '1px', textDecoration: 'none', borderBottom: active ? '2px solid #f9372c' : '2px solid transparent', paddingBottom: '2px', transition: 'color 0.15s', whiteSpace: 'nowrap' }}>
                 {link.label}
               </Link>
             );
@@ -113,7 +131,7 @@ export default function NavBar() {
         </div>
         <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
           {user ? (
-            <div style={{ position: 'relative' }}>
+            <div ref={userMenuRef} style={{ position: 'relative' }}>
               <button onClick={() => setUserMenuOpen(!userMenuOpen)} style={{ background: '#f9372c', border: 'none', borderRadius: '50%', width: '34px', height: '34px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {user.email?.[0]?.toUpperCase() || 'U'}
               </button>
@@ -133,7 +151,7 @@ export default function NavBar() {
               <Link href="/auth/login" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', textDecoration: 'none', fontWeight: 500 }}>
                 Prijava
               </Link>
-              <Link href="/auth/signup" style={{ background: '#f9372c', color: '#fff', padding: '7px 16px', borderRadius: '6px', fontSize: '13px', textDecoration: 'none', fontWeight: 600 }}>
+              <Link href="/auth/signup" className="nav-signup" style={{ background: '#f9372c', color: '#fff', padding: '7px 16px', borderRadius: '6px', fontSize: '13px', textDecoration: 'none', fontWeight: 600, transition: 'background 0.15s' }}>
                 Registracija
               </Link>
             </>
