@@ -103,7 +103,10 @@ export default function CheckoutPage() {
       <style>{`
         @media (max-width: 900px) {
           .checkout-grid { grid-template-columns: 1fr !important; }
-          .checkout-summary { position: static !important; }
+          .checkout-summary { position: static !important; order: -1; }
+        }
+        @media (max-width: 480px) {
+          .checkout-form-row { grid-template-columns: 1fr !important; }
         }
         input:focus, textarea:focus { border-color: #f9372c !important; }
       `}</style>
@@ -129,7 +132,7 @@ export default function CheckoutPage() {
               <input type="text" required value={form.name} onChange={e => update('name', e.target.value)} style={inputStyle} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+            <div className="checkout-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <label style={labelStyle}>Email *</label>
                 <input type="email" required value={form.email} onChange={e => update('email', e.target.value)} style={inputStyle} />
@@ -145,7 +148,7 @@ export default function CheckoutPage() {
               <input type="text" required value={form.address} onChange={e => update('address', e.target.value)} style={inputStyle} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '14px' }}>
+            <div className="checkout-form-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <label style={labelStyle}>Grad *</label>
                 <input type="text" required value={form.city} onChange={e => update('city', e.target.value)} style={inputStyle} />
