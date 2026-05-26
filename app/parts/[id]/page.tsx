@@ -5,11 +5,11 @@ import { notFound } from 'next/navigation';
 import { getPartBySlug, getPartById, getRelatedParts } from '@/lib/supabase';
 import type { Part } from '@/lib/types';
 import AddToCartButton from '@/app/components/AddToCartButton';
+import InquiryButton from '@/app/components/InquiryButton';
 
 export const dynamic = 'force-dynamic';
 
 async function fetchPart(id: string): Promise<Part | null> {
-  // Try slug first, then UUID
   const bySlug = await getPartBySlug(id);
   if (bySlug) return bySlug;
   return getPartById(id);
@@ -18,7 +18,6 @@ async function fetchPart(id: string): Promise<Part | null> {
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const part = await fetchPart(params.id);
   if (!part) return { title: 'Deo nije pronađen' };
-  const vehicle = part.compatible_vehicles?.[0];
   return {
     title: (part.name_sr || part.name) + ' | AutoDelovi.sale',
     description: part.description_sr || part.description || `${part.name_sr || part.name}. OEM: ${part.oem_number || part.part_number}.`,
@@ -53,9 +52,21 @@ export default async function PartDetail({ params }: { params: { id: string } })
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
+      <style>{`
+        @media (max-width: 900px) {
+          .pd-grid { grid-template-columns: 1fr !important; }
+          .pd-buy-card { position: static !important; }
+          .pd-image { height: 240px !important; }
+          .pd-title { font-size: 22px !important; }
+          .pd-related-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 480px) {
+          .pd-related-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
         {/* Breadcrumb */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px', flexWrap: 'wrap' }}>
           <Link href="/" style={{ color: '#aaa', textDecoration: 'none' }}>Početna</Link>
           <span style={{ color: '#555' }}>/</span>
           <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none' }}>Marketplace</Link>
@@ -69,11 +80,11 @@ export default async function PartDetail({ params }: { params: { id: string } })
           <span style={{ color: '#fff' }}>{part.name_sr || part.name}</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
+        <div className="pd-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
           {/* Left column */}
           <div>
             {/* Image */}
-            <div style={{ position: 'relative', background: '#1a1b1f', borderRadius: '16px', height: '320px', marginBottom: '24px', border: '1px solid #252629', overflow: 'hidden' }}>
+            <div className="pd-image" style={{ position: 'relative', background: '#1a1b1f', borderRadius: '16px', height: '320px', marginBottom: '24px', border: '1px solid #252629', overflow: 'hidden' }}>
               <Image
                 src={part.images?.[0] || '/images/part-placeholder.svg'}
                 alt={part.name}
@@ -86,7 +97,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
             </div>
 
             {/* Title */}
-            <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>{part.name_sr || part.name}</h1>
+            <h1 className="pd-title" style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>{part.name_sr || part.name}</h1>
             <p style={{ color: '#aaa', fontSize: '16px', marginBottom: '24px' }}>{part.name_sr ? part.name : part.part_number}</p>
 
             {/* Specs */}
@@ -123,7 +134,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
           </div>
 
           {/* Right: Buy card */}
-          <div style={{ position: 'sticky', top: '80px' }}>
+          <div className="pd-buy-card" style={{ position: 'sticky', top: '80px' }}>
             <div style={{ background: '#1a1b1f', borderRadius: '16px', padding: '24px', border: '1px solid #252629' }}>
               <div style={{ fontSize: '32px', fontWeight: 800, color: '#ff4d00', marginBottom: '4px' }}>
                 {part.price.toLocaleString('sr-RS')} RSD
@@ -134,13 +145,20 @@ export default async function PartDetail({ params }: { params: { id: string } })
               <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '14px', marginBottom: '20px', fontWeight: 600 }}>
                 {inStock ? `✓ Na stanju (${part.stock_quantity} kom)` : '✗ Trenutno nema na stanju'}
               </p>
-              <AddToCartButton part={part} inStock={inStock} full />
+
+              {inStock ? (
+                <AddToCartButton part={part} inStock={inStock} full />
+              ) : (
+                <InquiryButton part={part} label="Pošalji upit za dostupnost" />
+              )}
+
               <Link
                 href={`/comparison?ids=${part.id}`}
-                style={{ display: 'block', width: '100%', padding: '12px', background: '#252629', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: 600, textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' as const }}
+                style={{ display: 'block', width: '100%', padding: '12px', background: '#252629', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: 600, textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' as const, marginTop: '10px' }}
               >
-                ≈ Uporedi
+                ⚖ Uporedi sa drugim delovima
               </Link>
+
               {part.supplier && (
                 <div style={{ marginTop: '20px', padding: '16px', background: '#0c0d0f', borderRadius: '10px' }}>
                   <p style={{ color: '#aaa', fontSize: '13px', marginBottom: '4px' }}>Dobavljač</p>
@@ -153,6 +171,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
                   )}
                 </div>
               )}
+
               {part.source_url && (
                 <a href={part.source_url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center', marginTop: '12px', color: '#aaa', fontSize: '12px', textDecoration: 'none' }}>
                   Pogledaj na sajtu dobavljača →
@@ -166,29 +185,31 @@ export default async function PartDetail({ params }: { params: { id: string } })
         {related.length > 0 && (
           <div style={{ marginTop: '48px' }}>
             <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, marginBottom: '20px' }}>Slični delovi</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-              {related.map((rp, idx) => {
+            <div className="pd-related-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+              {related.map((rp) => {
                 const rpInStock = (rp.stock_quantity ?? 0) > 0;
                 return (
-                  <div key={rp.id} style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
-                    <div style={{ position: 'relative', background: '#252629', height: '120px', overflow: 'hidden' }}>
-                      <Image
-                        src={rp.images?.[0] || '/images/part-placeholder.svg'}
-                        alt={rp.name}
-                        fill
-                        sizes="(max-width: 768px) 50vw, 220px"
-                        style={{ objectFit: 'cover' }}
-                        loading="lazy"
-                        unoptimized
-                      />
+                  <Link key={rp.id} href={`/parts/${rp.slug || rp.id}`} style={{ textDecoration: 'none' }}>
+                    <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629', transition: 'transform 0.15s ease, box-shadow 0.15s ease' }}>
+                      <div style={{ position: 'relative', background: '#252629', height: '120px', overflow: 'hidden' }}>
+                        <Image
+                          src={rp.images?.[0] || '/images/part-placeholder.svg'}
+                          alt={rp.name}
+                          fill
+                          sizes="(max-width: 768px) 50vw, 220px"
+                          style={{ objectFit: 'cover' }}
+                          loading="lazy"
+                          unoptimized
+                        />
+                      </div>
+                      <div style={{ padding: '12px' }}>
+                        <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{rp.brand}</p>
+                        <h3 style={{ color: '#fff', fontSize: '13px', marginBottom: '8px', lineHeight: '1.3' }}>{rp.name_sr || rp.name}</h3>
+                        <p style={{ color: '#ff4d00', fontSize: '16px', fontWeight: 700, marginBottom: '4px' }}>{rp.price.toLocaleString('sr-RS')} RSD</p>
+                        <p style={{ color: rpInStock ? '#22c55e' : '#ef4444', fontSize: '11px' }}>{rpInStock ? 'Na stanju' : 'Nema na stanju'}</p>
+                      </div>
                     </div>
-                    <div style={{ padding: '12px' }}>
-                      <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{rp.brand}</p>
-                      <h3 style={{ color: '#fff', fontSize: '13px', marginBottom: '8px', lineHeight: '1.3' }}>{rp.name_sr || rp.name}</h3>
-                      <p style={{ color: '#ff4d00', fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>{rp.price.toLocaleString('sr-RS')} RSD</p>
-                      <Link href={`/parts/${rp.slug || rp.id}`} style={{ display: 'block', padding: '7px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '12px', fontWeight: 600 }}>Vidi detalje</Link>
-                    </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
