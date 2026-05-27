@@ -4,6 +4,8 @@ import { supabaseAdmin } from '@/lib/supabase';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const recentRequests = new Map<string, number>();
+
 interface InquiryBody {
   part_id?: string;
   merchant_id?: string;
@@ -18,6 +20,18 @@ function bad(error: string, status = 400) {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const now = Date.now();
+  const lastRequest = recentRequests.get(ip);
+  if (lastRequest && now - lastRequest < 10_000) {
+    return bad('Previše zahteva. Sačekajte par sekundi.', 429);
+  }
+  recentRequests.set(ip, now);
+  if (recentRequests.size > 10_000) {
+    for (const [key, ts] of recentRequests) {
+      if (now - ts > 60_000) recentRequests.delete(key);
+    }
+  }
   let raw: unknown;
   try {
     raw = await request.json();
@@ -51,7 +65,8 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error || !data) {
-      return bad(`Failed to create inquiry: ${error?.message ?? 'unknown error'}`, 500);
+      console.error('[inquiries] DB error:', error?.message);
+      return bad('Greška pri slanju upita. Pokušajte ponovo.', 500);
     }
 
     return NextResponse.json({ ok: true, id: data.id });

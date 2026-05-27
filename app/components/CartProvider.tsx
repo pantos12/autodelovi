@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import {
   getCart,
   addToCart as addToCartLib,
@@ -86,7 +86,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
     clearCartLib();
   }, []);
 
-  const value: CartContextType = {
+  const value = useMemo<CartContextType>(() => ({
     items,
     count: totals.count,
     subtotal: totals.subtotal,
@@ -96,15 +96,13 @@ export default function CartProvider({ children }: { children: ReactNode }) {
     updateQty,
     remove,
     clear,
-
-    // Backwards-compat
     cartCount: totals.count,
     cartTotal: totals.subtotal,
     addToCart: addItem,
     updateQuantity: updateQty,
     removeFromCart: remove,
     clearCart: clear,
-  };
+  }), [items, totals, refresh, addItem, updateQty, remove, clear]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

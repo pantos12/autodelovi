@@ -1,8 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { Metadata } from 'next';
 import { vehicleMakes, getModels, getEngines, getYears } from './lib/data';
 
 export default function Home() {
@@ -15,7 +14,7 @@ export default function Home() {
 
   const models = getModels(make);
   const engines = getEngines(make, model);
-  const years = getYears();
+  const years = useMemo(() => getYears(), []);
 
   function handleSearch() {
     const params = new URLSearchParams();
@@ -134,6 +133,23 @@ export default function Home() {
                 <div style={{ width: '32px', height: '2px', background: '#f9372c', marginBottom: '16px', borderRadius: '2px' }} />
                 <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>{f.title}</h3>
                 <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* STATS */}
+        <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 48px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', textAlign: 'center' }}>
+            {[
+              { value: '50,000+', label: 'Delova' },
+              { value: '200+', label: 'Dobavljača' },
+              { value: '12', label: 'Marki vozila' },
+              { value: '24/7', label: 'Dostupnost' },
+            ].map((stat, i) => (
+              <div key={i} style={{ padding: '20px 12px' }}>
+                <div style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: 800, color: '#f9372c', marginBottom: '4px' }}>{stat.value}</div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px' }}>{stat.label}</div>
               </div>
             ))}
           </div>

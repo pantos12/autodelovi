@@ -31,6 +31,11 @@
   --on-background: #e2e2e5;
   --on-surface: #e2e2e5;
   --on-surface-variant: #c5c6ca;
+  --outline: #8f9194;
+  --outline-variant: #44474a;
+  --error: #ffb4ab;
+  --error-container: #93000a;
+  --on-error: #690005;
 }
 
 * {
@@ -42,4 +47,25 @@
 body {
   background: var(--background);
   color: var(--on-background);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface-container-low); }
+::-webkit-scrollbar-thumb { background: var(--outline-variant); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--outline); }
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .marketplace-grid { grid-template-columns: 1fr !important; }
+  .marketplace-sidebar { display: none !important; }
 }
