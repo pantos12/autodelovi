@@ -62,7 +62,7 @@ export default async function SuppliersPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', gap: '16px' }}>
                     <div>
-                      <div style={{ color: '#fff', fontSize: '18px', fontWeight: 700 }}>⭐ {supplier.rating?.toFixed(1) || '5.0'}</div>
+                      <div style={{ color: '#fff', fontSize: '18px', fontWeight: 700 }}>⭐ {supplier.rating ? supplier.rating.toFixed(1) : '-'}</div>
                       <div style={{ color: '#aaa', fontSize: '12px' }}>Ocena</div>
                     </div>
                     <div>

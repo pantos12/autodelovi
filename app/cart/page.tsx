@@ -1,10 +1,12 @@
 'use client';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '../components/CartProvider';
 
 export default function CartPage() {
   const { items, count, subtotal, updateQty, remove, clear } = useCart();
+  const [confirmClear, setConfirmClear] = useState(false);
 
   const currency = items[0]?.price_currency || 'RSD';
   const freeShippingThreshold = 10000;
@@ -37,9 +39,21 @@ export default function CartPage() {
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
           <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, margin: 0 }}>Vaša korpa <span style={{ color: '#aaa', fontWeight: 400, fontSize: '18px' }}>({count})</span></h1>
-          <button onClick={clear} style={{ background: 'none', border: '1px solid #2a2b2f', borderRadius: '8px', padding: '8px 16px', color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>
-            Obriši korpu
-          </button>
+          {confirmClear ? (
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{ color: '#aaa', fontSize: '13px' }}>Sigurno?</span>
+              <button onClick={() => { clear(); setConfirmClear(false); }} style={{ background: '#ef4444', border: 'none', borderRadius: '8px', padding: '8px 16px', color: '#fff', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}>
+                Da, obriši
+              </button>
+              <button onClick={() => setConfirmClear(false)} style={{ background: 'none', border: '1px solid #2a2b2f', borderRadius: '8px', padding: '8px 16px', color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>
+                Otkaži
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmClear(true)} style={{ background: 'none', border: '1px solid #2a2b2f', borderRadius: '8px', padding: '8px 16px', color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>
+              Obriši korpu
+            </button>
+          )}
         </div>
 
         <div className="cart-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '24px', alignItems: 'start' }}>
@@ -56,8 +70,6 @@ export default function CartPage() {
                       fill
                       sizes="60px"
                       style={{ objectFit: 'cover' }}
-                      loading="lazy"
-                      unoptimized
                     />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -96,9 +108,21 @@ export default function CartPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+                {shipping === 0 ? 'Besplatno' : `${shipping.toLocaleString('sr-RS')} ${currency}`}
               </span>
             </div>
+
+            {shipping > 0 && (
+              <div style={{ marginBottom: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span style={{ color: '#888', fontSize: '11px' }}>Do besplatne dostave</span>
+                  <span style={{ color: '#888', fontSize: '11px' }}>{(freeShippingThreshold - subtotal).toLocaleString('sr-RS')} {currency}</span>
+                </div>
+                <div style={{ background: '#252629', borderRadius: '4px', height: '4px', overflow: 'hidden' }}>
+                  <div style={{ background: '#f9372c', height: '100%', borderRadius: '4px', width: `${Math.min(100, (subtotal / freeShippingThreshold) * 100)}%`, transition: 'width 0.3s ease' }} />
+                </div>
+              </div>
+            )}
 
             <div style={{ height: '1px', background: '#2a2b2f', margin: '14px 0' }} />
 

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -81,7 +81,6 @@ function SmartImage({
       priority={!!priority}
       loading={priority ? undefined : 'lazy'}
       onError={() => setErrored(true)}
-      unoptimized
     />
   );
 }
@@ -91,6 +90,7 @@ function MarketplaceContent() {
   const router = useRouter();
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [compareList, setCompareList] = useState<string[]>([]);
   const [filterMake, setFilterMake] = useState(searchParams.get('make') || '');
@@ -100,6 +100,7 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -114,40 +115,44 @@ function MarketplaceContent() {
   }, [searchParams]);
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       setLoading(true);
+      setFetchError(null);
       try {
+        const params = new URLSearchParams();
+        let endpoint = '/api/parts';
+
         if (searchQuery && searchQuery.length >= 2) {
-          const params = new URLSearchParams();
+          endpoint = '/api/search';
           params.set('q', searchQuery);
-          if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
-          params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
-          const res = await fetch(`/api/search?${params}`);
-          const json = await res.json();
-          setParts(json.data || []);
-          setTotal(json.meta?.total || json.data?.length || 0);
         } else {
-          const params = new URLSearchParams();
           if (filterMake) params.set('make', filterMake);
-          if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
           params.set('sort', sortBy);
-          params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
-          const res = await fetch(`/api/parts?${params}`);
-          const json = await res.json();
+        }
+        if (filterCategory) params.set('category', filterCategory);
+        if (filterInStock) params.set('in_stock', 'true');
+        params.set('per_page', String(PER_PAGE));
+        params.set('page', String(page));
+
+        const res = await fetch(`${endpoint}?${params}`);
+        if (!res.ok) throw new Error(`Greška servera (${res.status})`);
+        const json = await res.json();
+        if (!cancelled) {
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
         }
-      } catch {
-        setParts([]);
+      } catch (err: any) {
+        if (!cancelled) {
+          setParts([]);
+          setFetchError(err?.message || 'Greška pri učitavanju delova.');
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     load();
+    return () => { cancelled = true; };
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
 
   // Reset to page 1 when filters change
@@ -211,8 +216,18 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 900px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none !important; }
+          .mp-sidebar.mp-sidebar--open { display: block !important; position: fixed; inset: 0; top: 64px; z-index: 90; overflow-y: auto; border-radius: 0; }
+        }
+        @media (min-width: 901px) {
+          .mp-filter-toggle { display: none !important; }
+        }
+      `}</style>
+      <div className="mp-container" style={s.container}>
+        <div className={`mp-sidebar${mobileFiltersOpen ? ' mp-sidebar--open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -289,9 +304,18 @@ function MarketplaceContent() {
         </div>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-            <p style={{ color: '#aaa', fontSize: '14px' }}>
-              {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button
+                className="mp-filter-toggle"
+                onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+                style={{ padding: '8px 14px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                {mobileFiltersOpen ? '✕ Zatvori' : '☰ Filteri'}
+              </button>
+              <p style={{ color: '#aaa', fontSize: '14px', margin: 0 }}>
+                {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
+              </p>
+            </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <select style={{ ...s.select, width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
                 <option value="price_asc">Cena: niža → viša</option>
@@ -305,6 +329,19 @@ function MarketplaceContent() {
               )}
             </div>
           </div>
+          {fetchError && !loading && (
+            <div style={{ textAlign: 'center', padding: '48px 20px', background: '#1a1b1f', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)' }}>
+              <p style={{ fontSize: '48px', marginBottom: '12px' }}>⚠️</p>
+              <p style={{ color: '#ef4444', fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>{fetchError}</p>
+              <p style={{ color: '#888', fontSize: '13px', marginBottom: '16px' }}>Pokušajte ponovo ili proverite internet konekciju.</p>
+              <button
+                onClick={() => { setFetchError(null); setPage(p => p); }}
+                style={{ padding: '10px 24px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
+              >
+                Pokušaj ponovo
+              </button>
+            </div>
+          )}
           {loading ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
               {Array.from({ length: PER_PAGE }).map((_, i) => (
@@ -356,9 +393,11 @@ function MarketplaceContent() {
                         <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
-                      <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
-                      </p>
+                      {part.updated_at && (
+                        <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
+                          Ažurirano: {new Date(part.updated_at).toLocaleDateString('sr-RS')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );

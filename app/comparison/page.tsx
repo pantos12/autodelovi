@@ -42,9 +42,15 @@ function ComparisonContent() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Load all parts for search
-    fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
-  }, []);
+    if (search.length >= 2) {
+      const timer = setTimeout(() => {
+        fetch(`/api/search?q=${encodeURIComponent(search)}&per_page=20`).then(r => r.json()).then(d => setAllParts(d.data || []));
+      }, 300);
+      return () => clearTimeout(timer);
+    } else if (allParts.length === 0) {
+      fetch('/api/parts?per_page=30').then(r => r.json()).then(d => setAllParts(d.data || []));
+    }
+  }, [search]);
 
   useEffect(() => {
     if (selectedIds.length === 0) { setParts([]); return; }

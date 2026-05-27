@@ -53,6 +53,17 @@ export default function NavBar() {
     if (searchOpen && searchRef.current) searchRef.current.focus();
   }, [searchOpen]);
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(prev => !prev);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   return (
     <>
       <style>{`
@@ -74,14 +85,16 @@ export default function NavBar() {
 
         {/* Desktop search */}
         <form onSubmit={handleSearch} className="nav-search-desktop" style={{ display: 'flex', flex: 1, maxWidth: '360px' }}>
-          <div style={{ display: 'flex', width: '100%', background: '#1a1b1f', borderRadius: '8px', border: '1px solid #333', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', width: '100%', background: '#1a1b1f', borderRadius: '8px', border: '1px solid #333', overflow: 'hidden', alignItems: 'center' }}>
             <input
+              ref={searchRef}
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Pretrazi delove..."
               style={{ flex: 1, padding: '8px 12px', background: 'transparent', border: 'none', color: '#fff', fontSize: '13px', outline: 'none' }}
             />
+            <kbd style={{ margin: '0 6px', padding: '2px 6px', background: '#252629', border: '1px solid #444', borderRadius: '4px', color: '#666', fontSize: '10px', fontFamily: 'inherit', lineHeight: 1.4, flexShrink: 0 }}>⌘K</kbd>
             <button type="submit" style={{ padding: '8px 14px', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
               🔍
             </button>
@@ -167,7 +180,7 @@ export default function NavBar() {
         </form>
 
         {navLinks.map(link => {
-          const active = pathname === link.href;
+          const active = pathname === link.href || pathname.startsWith(link.href + '/');
           return (
             <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)} style={{ display: 'block', padding: '14px 24px', color: active ? '#f9372c' : 'rgba(255,255,255,0.7)', fontWeight: active ? 600 : 400, fontSize: '14px', letterSpacing: '1px', textDecoration: 'none', borderLeft: active ? '3px solid #f9372c' : '3px solid transparent' }}>
               {link.label}
