@@ -6,12 +6,14 @@ import type { Part } from '@/lib/types';
 
 const ATTRS: { key: keyof Part | string; label: string }[] = [
   { key: 'price', label: 'Cena (RSD)' },
+  { key: 'brand', label: 'Brend' },
   { key: 'category_id', label: 'Kategorija' },
-  { key: 'brand', label: 'Marka' },
   { key: 'part_number', label: 'Broj dela' },
   { key: 'oem_number', label: 'OEM broj' },
   { key: 'condition', label: 'Stanje' },
   { key: 'stock_quantity', label: 'Na stanju' },
+  { key: '_supplier', label: 'Dobavljač' },
+  { key: '_vehicle', label: 'Vozilo' },
 ];
 
 function getCellStyle(key: string, value: any, allValues: any[]): React.CSSProperties {
@@ -25,9 +27,23 @@ function getCellStyle(key: string, value: any, allValues: any[]): React.CSSPrope
   return { color: '#fff' };
 }
 
+function getPartAttr(part: Part, key: string): any {
+  if (key === '_supplier') return (part as any).supplier?.name ?? '-';
+  if (key === '_vehicle') {
+    const v = part.compatible_vehicles?.[0];
+    return v ? `${v.make} ${v.model}` : '-';
+  }
+  return (part as any)[key];
+}
+
 function formatValue(key: string, value: any): string {
   if (key === 'price') return typeof value === 'number' ? value.toLocaleString('sr-RS') + ' RSD' : '-';
   if (key === 'stock_quantity') return (value ?? 0) > 0 ? `✓ ${value} kom` : '✗ Nema';
+  if (key === 'condition') {
+    if (value === 'new') return 'Novo';
+    if (value === 'used') return 'Polovno';
+    if (value === 'refurbished') return 'Obnovljeno';
+  }
   if (value === null || value === undefined) return '-';
   return String(value);
 }
@@ -42,9 +58,16 @@ function ComparisonContent() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Load all parts for search
-    fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
-  }, []);
+    if (!search || search.length < 2) { setAllParts([]); return; }
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(search)}&per_page=20`, { signal: controller.signal })
+        .then(r => r.json())
+        .then(d => setAllParts(d.data || []))
+        .catch(() => {});
+    }, 300);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [search]);
 
   useEffect(() => {
     if (selectedIds.length === 0) { setParts([]); return; }
@@ -80,8 +103,11 @@ function ComparisonContent() {
           <p style={{ fontSize: '64px', marginBottom: '16px' }}>⚖️</p>
           <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '12px' }}>Poređenje delova</h1>
           <p style={{ color: '#aaa', marginBottom: '32px' }}>Izaberite do 3 dela za poređenje</p>
-          <input style={{ ...s.input, maxWidth: '400px', margin: '0 auto 16px' }} placeholder="Pretraži delove..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input style={{ ...s.input, maxWidth: '400px', margin: '0 auto 16px' }} placeholder="Pretraži po imenu ili brendu (min 2 karaktera)..." value={search} onChange={e => setSearch(e.target.value)} />
           <div style={{ maxWidth: '600px', margin: '0 auto', maxHeight: '300px', overflowY: 'auto' }}>
+            {search.length > 0 && search.length < 2 && (
+              <p style={{ color: '#666', fontSize: '13px', padding: '8px 0' }}>Unesite bar 2 karaktera za pretragu</p>
+            )}
             {filtered.slice(0, 20).map(p => (
               <div key={p.id} onClick={() => addPart(p.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1a1b1f', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer' }}>
                 <span style={{ color: '#fff', fontSize: '14px' }}>{p.name_sr || p.name}</span>
@@ -143,7 +169,7 @@ function ComparisonContent() {
               </thead>
               <tbody>
                 {ATTRS.map(attr => {
-                  const vals = parts.map(p => (p as any)[attr.key]);
+                  const vals = parts.map(p => getPartAttr(p, attr.key));
                   return (
                     <tr key={attr.key}>
                       <td style={{ ...s.td, color: '#aaa', fontWeight: 500 }}>{attr.label}</td>
