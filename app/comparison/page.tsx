@@ -6,12 +6,12 @@ import type { Part } from '@/lib/types';
 
 const ATTRS: { key: keyof Part | string; label: string }[] = [
   { key: 'price', label: 'Cena (RSD)' },
-  { key: 'category_id', label: 'Kategorija' },
-  { key: 'brand', label: 'Marka' },
+  { key: 'brand', label: 'Brend' },
   { key: 'part_number', label: 'Broj dela' },
   { key: 'oem_number', label: 'OEM broj' },
   { key: 'condition', label: 'Stanje' },
   { key: 'stock_quantity', label: 'Na stanju' },
+  { key: 'category_id', label: 'Kategorija' },
 ];
 
 function getCellStyle(key: string, value: any, allValues: any[]): React.CSSProperties {
@@ -132,7 +132,14 @@ function ComparisonContent() {
         </div>
 
         {/* Comparison table */}
-        {parts.length > 0 && (
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <div style={{ width: '40px', height: '40px', border: '3px solid #333', borderTopColor: '#ff4d00', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+            <p style={{ color: '#aaa', fontSize: '14px' }}>Učitavanje delova...</p>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        )}
+        {!loading && parts.length > 0 && (
           <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>

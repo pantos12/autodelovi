@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { Metadata } from 'next';
 import { vehicleMakes, getModels, getEngines, getYears } from './lib/data';
 
 export default function Home() {
@@ -159,6 +158,46 @@ export default function Home() {
                 </div>
               </Link>
             ))}
+          </div>
+        </section>
+
+        {/* TRUSTED BRANDS */}
+        <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 60px' }}>
+          <h2 style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: '20px' }}>PROVERENI BRENDOVI</h2>
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {['Bosch', 'Brembo', 'MANN-FILTER', 'Valeo', 'NGK', 'Continental', 'LuK', 'TRW', 'SACHS', 'INA'].map(brand => (
+              <Link
+                href={`/marketplace?q=${encodeURIComponent(brand)}`}
+                key={brand}
+                style={{
+                  padding: '10px 20px',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '8px',
+                  color: 'rgba(255,255,255,0.6)',
+                  textDecoration: 'none',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  letterSpacing: '0.5px',
+                  transition: 'border-color 0.2s, color 0.2s',
+                }}
+              >
+                {brand}
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 80px' }}>
+          <div style={{ background: 'linear-gradient(135deg, rgba(249,55,44,0.12) 0%, rgba(249,55,44,0.04) 100%)', border: '1px solid rgba(249,55,44,0.2)', borderRadius: '16px', padding: '40px', textAlign: 'center' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '12px', color: '#fff' }}>Ne možete da nađete deo?</h2>
+            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '15px', marginBottom: '24px', maxWidth: '400px', margin: '0 auto 24px' }}>
+              Pošaljite nam upit i pronaći ćemo deo za vas od naše mreže dobavljača.
+            </p>
+            <Link href="/marketplace" style={{ display: 'inline-block', padding: '12px 32px', background: '#f9372c', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontWeight: 700, fontSize: '15px' }}>
+              Pretraži marketplace
+            </Link>
           </div>
         </section>
 
