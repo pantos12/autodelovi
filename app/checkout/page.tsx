@@ -53,6 +53,18 @@ export default function CheckoutPage() {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(form.email.trim())) {
+      setError('Unesite ispravnu email adresu.');
+      return;
+    }
+
+    const phoneClean = form.phone.replace(/[\s\-\(\)]/g, '');
+    if (phoneClean.length < 9 || !/^\+?\d+$/.test(phoneClean)) {
+      setError('Unesite ispravan broj telefona (npr. 06x xxx xxxx).');
+      return;
+    }
+
     setSubmitting(true);
     try {
       let session_id: string | null = null;
@@ -136,7 +148,7 @@ export default function CheckoutPage() {
               </div>
               <div>
                 <label style={labelStyle}>Telefon *</label>
-                <input type="tel" required value={form.phone} onChange={e => update('phone', e.target.value)} style={inputStyle} />
+                <input type="tel" required value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="06x xxx xxxx" style={inputStyle} />
               </div>
             </div>
 
