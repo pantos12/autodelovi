@@ -57,7 +57,7 @@ export default function CartPage() {
                       sizes="60px"
                       style={{ objectFit: 'cover' }}
                       loading="lazy"
-                      unoptimized
+                      unoptimized={!!item.image_url?.startsWith('http')}
                     />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -88,6 +88,23 @@ export default function CartPage() {
           <div className="cart-summary" style={{ background: '#1a1b1f', borderRadius: '12px', padding: '20px', border: '1px solid #2a2b2f', position: 'sticky', top: '80px' }}>
             <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, margin: '0 0 16px' }}>Pregled porudžbine</h2>
 
+            {/* Free shipping progress */}
+            {subtotal < freeShippingThreshold ? (
+              <div style={{ marginBottom: '16px', padding: '12px', background: '#0c0d0f', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ color: '#aaa', fontSize: '12px' }}>Do besplatne dostave</span>
+                  <span style={{ color: '#22c55e', fontSize: '12px', fontWeight: 600 }}>{(freeShippingThreshold - subtotal).toLocaleString('sr-RS')} RSD</span>
+                </div>
+                <div style={{ height: '4px', background: '#252629', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${Math.min(100, (subtotal / freeShippingThreshold) * 100)}%`, background: 'linear-gradient(90deg, #f9372c, #ff6b3d)', borderRadius: '2px', transition: 'width 0.3s ease' }} />
+                </div>
+              </div>
+            ) : (
+              <div style={{ marginBottom: '16px', padding: '10px 12px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: '#22c55e', fontSize: '13px', fontWeight: 600 }}>Besplatna dostava ostvarena</span>
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Subtotal</span>
               <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600 }}>{subtotal.toLocaleString('sr-RS')} {currency}</span>
@@ -96,7 +113,7 @@ export default function CartPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+                {shipping === 0 ? 'Besplatno' : `${shipping.toLocaleString('sr-RS')} ${currency}`}
               </span>
             </div>
 

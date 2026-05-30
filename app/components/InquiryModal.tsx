@@ -59,6 +59,10 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
       setError('Email je obavezan.');
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
+      setError('Unesite ispravnu email adresu.');
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch('/api/inquiries', {
@@ -105,6 +109,7 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
         className="inquiry-modal"
         role="dialog"
         aria-modal="true"
+        aria-labelledby="inquiry-modal-title"
         style={{
           width: '100%', maxWidth: '460px', background: '#1a1b1f',
           border: '1px solid #2a2b2f', borderRadius: '12px', padding: '24px',
@@ -122,7 +127,7 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
           }}
         >×</button>
 
-        <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, margin: '0 0 6px', paddingRight: '28px' }}>
+        <h2 id="inquiry-modal-title" style={{ color: '#fff', fontSize: '18px', fontWeight: 700, margin: '0 0 6px', paddingRight: '28px' }}>
           Pošalji upit
         </h2>
         {part?.name ? (

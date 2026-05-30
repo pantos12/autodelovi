@@ -110,7 +110,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
                       style={{ objectFit: 'cover' }}
                       priority={idx < 4}
                       loading={idx < 4 ? undefined : 'lazy'}
-                      unoptimized
+                      unoptimized={imgSrc.startsWith('http')}
                     />
                   </div>
                   <div style={{ padding: '12px' }}>
