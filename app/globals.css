@@ -42,4 +42,48 @@
 body {
   background: var(--background);
   color: var(--on-background);
+  font-family: var(--font-inter), 'Inter', 'Helvetica Neue', sans-serif;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.skip-link:focus {
+  position: fixed !important;
+  left: 16px !important;
+  top: 16px !important;
+  width: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+  padding: 12px 24px;
+  background: var(--racing-red);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--racing-red);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .marketplace-layout { grid-template-columns: 1fr !important; }
+  .marketplace-sidebar { position: static !important; }
+  .part-detail-grid { grid-template-columns: 1fr !important; }
+  .part-detail-buy { position: static !important; }
 }
