@@ -7,12 +7,42 @@ interface Props {
   part: Part;
   label?: string;
   full?: boolean;
-  /** Backwards-compat: disable button when out of stock */
   inStock?: boolean;
+}
+
+function Toast({ message, visible }: { message: string; visible: boolean }) {
+  if (!visible) return null;
+  return (
+    <div
+      className="toast-enter"
+      style={{
+        position: 'fixed',
+        bottom: '24px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: '#22c55e',
+        color: '#fff',
+        padding: '12px 24px',
+        borderRadius: '10px',
+        fontSize: '14px',
+        fontWeight: 600,
+        zIndex: 9999,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        pointerEvents: 'none',
+      }}
+    >
+      <span>&#10003;</span>
+      <span>{message}</span>
+    </div>
+  );
 }
 
 export default function AddToCartButton({ part, label, full, inStock }: Props) {
   const [added, setAdded] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   const disabled = inStock === false;
 
@@ -32,7 +62,9 @@ export default function AddToCartButton({ part, label, full, inStock }: Props) {
     };
     addToCart(item);
     setAdded(true);
+    setShowToast(true);
     setTimeout(() => setAdded(false), 1500);
+    setTimeout(() => setShowToast(false), 2500);
   }
 
   const baseStyle: React.CSSProperties = full
@@ -64,8 +96,11 @@ export default function AddToCartButton({ part, label, full, inStock }: Props) {
   const defaultLabel = disabled ? 'Nema na stanju' : label || 'Dodaj u korpu';
 
   return (
-    <button onClick={handleAdd} disabled={disabled} style={baseStyle}>
-      {added ? 'Dodato u korpu ✓' : defaultLabel}
-    </button>
+    <>
+      <button onClick={handleAdd} disabled={disabled} style={baseStyle} aria-label={defaultLabel}>
+        {added ? 'Dodato u korpu ✓' : defaultLabel}
+      </button>
+      <Toast message={`${part.name_sr || part.name} dodato u korpu`} visible={showToast} />
+    </>
   );
 }

@@ -86,6 +86,15 @@ function SmartImage({
   );
 }
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
 function MarketplaceContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -96,6 +105,9 @@ function MarketplaceContent() {
   const [filterMake, setFilterMake] = useState(searchParams.get('make') || '');
   const [filterCategory, setFilterCategory] = useState(searchParams.get('category') || '');
   const [filterInStock, setFilterInStock] = useState(false);
+  const [filterMinPrice, setFilterMinPrice] = useState('');
+  const [filterMaxPrice, setFilterMaxPrice] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sortBy, setSortBy] = useState('price_asc');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
@@ -104,6 +116,8 @@ function MarketplaceContent() {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
   });
+  const debouncedMinPrice = useDebounce(filterMinPrice, 500);
+  const debouncedMaxPrice = useDebounce(filterMaxPrice, 500);
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -114,6 +128,7 @@ function MarketplaceContent() {
   }, [searchParams]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const load = async () => {
       setLoading(true);
       try {
@@ -122,9 +137,11 @@ function MarketplaceContent() {
           params.set('q', searchQuery);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (debouncedMinPrice) params.set('min_price', debouncedMinPrice);
+          if (debouncedMaxPrice) params.set('max_price', debouncedMaxPrice);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
-          const res = await fetch(`/api/search?${params}`);
+          const res = await fetch(`/api/search?${params}`, { signal: controller.signal });
           const json = await res.json();
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
@@ -133,27 +150,30 @@ function MarketplaceContent() {
           if (filterMake) params.set('make', filterMake);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (debouncedMinPrice) params.set('min_price', debouncedMinPrice);
+          if (debouncedMaxPrice) params.set('max_price', debouncedMaxPrice);
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
-          const res = await fetch(`/api/parts?${params}`);
+          const res = await fetch(`/api/parts?${params}`, { signal: controller.signal });
           const json = await res.json();
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
         }
-      } catch {
-        setParts([]);
+      } catch (e: any) {
+        if (e?.name !== 'AbortError') setParts([]);
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
+    return () => controller.abort();
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page, debouncedMinPrice, debouncedMaxPrice]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, debouncedMinPrice, debouncedMaxPrice]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -209,10 +229,61 @@ function MarketplaceContent() {
     return out;
   }
 
+  const activeFilterCount = [filterMake, filterCategory, filterInStock, availOnly, debouncedMinPrice, debouncedMaxPrice].filter(Boolean).length;
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-grid { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none !important; }
+          .mp-sidebar.mp-sidebar-open {
+            display: block !important;
+            position: fixed !important;
+            top: 64px !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            z-index: 90 !important;
+            overflow-y: auto !important;
+            border-radius: 0 !important;
+            background: #1a1b1f !important;
+          }
+          .mp-filter-toggle { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .mp-filter-toggle { display: none !important; }
+        }
+      `}</style>
+      <div className="mp-grid" style={s.container}>
+        {/* Mobile filter toggle */}
+        <button
+          className="mp-filter-toggle"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          style={{
+            display: 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '10px 16px',
+            background: '#1a1b1f',
+            border: '1px solid #333',
+            borderRadius: '8px',
+            color: '#fff',
+            fontSize: '14px',
+            cursor: 'pointer',
+            gridColumn: '1 / -1',
+          }}
+        >
+          <span>Filteri</span>
+          {activeFilterCount > 0 && (
+            <span style={{ background: '#f9372c', color: '#fff', fontSize: '11px', fontWeight: 700, borderRadius: '50%', width: '20px', height: '20px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+
+        <div className={`mp-sidebar ${sidebarOpen ? 'mp-sidebar-open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -283,7 +354,31 @@ function MarketplaceContent() {
             <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+
+          <div style={{ marginBottom: '16px' }}>
+            <label style={s.label}>Raspon cena (RSD)</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type="number"
+                placeholder="Od"
+                value={filterMinPrice}
+                onChange={e => setFilterMinPrice(e.target.value)}
+                min={0}
+                style={{ ...s.select, width: '50%', padding: '8px 10px' }}
+              />
+              <span style={{ color: '#555' }}>–</span>
+              <input
+                type="number"
+                placeholder="Do"
+                value={filterMaxPrice}
+                onChange={e => setFilterMaxPrice(e.target.value)}
+                min={0}
+                style={{ ...s.select, width: '50%', padding: '8px 10px' }}
+              />
+            </div>
+          </div>
+
+          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); setFilterMinPrice(''); setFilterMaxPrice(''); clearSearch(); setSidebarOpen(false); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
             Resetuj sve
           </button>
         </div>

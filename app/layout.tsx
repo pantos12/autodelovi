@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import NavBar from './components/NavBar';
 import CartProvider from './components/CartProvider';
+import ScrollToTop from './components/ScrollToTop';
 
 export const metadata: Metadata = {
   title: {
@@ -34,11 +35,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="sr">
+    <html lang="sr" style={{ scrollBehavior: 'smooth' }}>
       <body style={{ margin: 0, background: '#0c0d0f' }}>
         <CartProvider>
           <NavBar />
           {children}
+          <ScrollToTop />
         </CartProvider>
       </body>
     </html>
