@@ -116,26 +116,31 @@ export async function POST(request: NextRequest) {
     if (typeof parsed === 'string') return bad(parsed);
     const { items, buyer } = parsed;
 
-    // Fetch and validate parts
+    // Batch-fetch all parts in one query
+    const partIds = items.map(i => i.part_id);
+    const { data: partsData, error: partsError } = await supabaseAdmin
+      .from('parts_v2')
+      .select('id, name, part_number, brand, supplier_id, images, price, stock_quantity, supplier:suppliers(name)')
+      .in('id', partIds);
+
+    if (partsError) {
+      return bad(`Failed to load parts: ${partsError.message}`, 500);
+    }
+
+    const partsMap = new Map(
+      (partsData ?? []).map(d => {
+        const raw = d as unknown as PartRow & { supplier: { name: string | null } | { name: string | null }[] | null };
+        const supplier = Array.isArray(raw.supplier) ? (raw.supplier[0] ?? null) : raw.supplier;
+        return [raw.id, { ...raw, supplier } as PartRow];
+      })
+    );
+
     const resolved: ResolvedItem[] = [];
     for (const item of items) {
-      const { data, error } = await supabaseAdmin
-        .from('parts_v2')
-        .select('id, name, part_number, brand, supplier_id, images, price, stock_quantity, supplier:suppliers(name)')
-        .eq('id', item.part_id)
-        .maybeSingle();
-
-      if (error) {
-        return bad(`Failed to load part ${item.part_id}: ${error.message}`, 500);
-      }
-      if (!data) {
+      const normalized = partsMap.get(item.part_id);
+      if (!normalized) {
         return bad(`Part not found: ${item.part_id}`, 404);
       }
-      // supabase-js types join as array-or-object; normalize
-      const part = data as unknown as PartRow & { supplier: { name: string | null } | { name: string | null }[] | null };
-      const supplier = Array.isArray(part.supplier) ? (part.supplier[0] ?? null) : part.supplier;
-      const normalized: PartRow = { ...part, supplier };
-
       if (typeof normalized.price !== 'number' || normalized.price <= 0) {
         return bad(`Part ${normalized.id} has no valid price`, 409);
       }

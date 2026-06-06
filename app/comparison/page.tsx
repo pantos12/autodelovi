@@ -42,8 +42,7 @@ function ComparisonContent() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Load all parts for search
-    fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
+    fetch('/api/parts?per_page=50').then(r => r.json()).then(d => setAllParts(d.data || []));
   }, []);
 
   useEffect(() => {
