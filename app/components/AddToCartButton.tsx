@@ -7,17 +7,17 @@ interface Props {
   part: Part;
   label?: string;
   full?: boolean;
-  /** Backwards-compat: disable button when out of stock */
   inStock?: boolean;
 }
 
 export default function AddToCartButton({ part, label, full, inStock }: Props) {
   const [added, setAdded] = useState(false);
+  const [animating, setAnimating] = useState(false);
 
   const disabled = inStock === false;
 
   function handleAdd() {
-    if (disabled) return;
+    if (disabled || animating) return;
     const item: CartItem = {
       part_id: part.id,
       quantity: 1,
@@ -32,7 +32,8 @@ export default function AddToCartButton({ part, label, full, inStock }: Props) {
     };
     addToCart(item);
     setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
+    setAnimating(true);
+    setTimeout(() => { setAdded(false); setAnimating(false); }, 1500);
   }
 
   const baseStyle: React.CSSProperties = full
