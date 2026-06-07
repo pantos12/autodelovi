@@ -53,6 +53,11 @@ export default function NavBar() {
     if (searchOpen && searchRef.current) searchRef.current.focus();
   }, [searchOpen]);
 
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
   return (
     <>
       <style>{`

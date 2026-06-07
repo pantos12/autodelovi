@@ -140,7 +140,7 @@ export default function Home() {
         </section>
 
         {/* CATEGORIES */}
-        <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 80px' }}>
+        <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 60px' }}>
           <h2 style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: '20px' }}>KATEGORIJE</h2>
           <div className="categories-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '12px' }}>
             {[
@@ -162,15 +162,51 @@ export default function Home() {
           </div>
         </section>
 
-        {/* FOOTER */}
-        <footer style={{ position: 'relative', zIndex: 5, borderTop: '1px solid rgba(255,255,255,0.06)', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>© 2026 AutoDelovi.sale</span>
-          <div style={{ display: 'flex', gap: '24px' }}>
-            <Link href="/marketplace" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Marketplace</Link>
-            <Link href="/suppliers" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Dobavljaci</Link>
-            <Link href="/comparison" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Poredenje</Link>
+        {/* POPULAR BRANDS */}
+        <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 60px' }}>
+          <h2 style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: '20px' }}>POPULARNE MARKE</h2>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {['Volkswagen', 'BMW', 'Mercedes', 'Audi', 'Opel', 'Renault', 'Peugeot', 'Fiat', 'Toyota', 'Ford', 'Skoda', 'Seat'].map(brand => (
+              <Link href={`/marketplace?make=${brand}`} key={brand} style={{ textDecoration: 'none' }}>
+                <div style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '8px',
+                  padding: '10px 20px',
+                  color: 'rgba(255,255,255,0.7)',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  transition: 'all 0.2s',
+                  cursor: 'pointer',
+                }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(249,55,44,0.4)'; (e.currentTarget as HTMLElement).style.color = '#fff'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.7)'; }}
+                >
+                  {brand}
+                </div>
+              </Link>
+            ))}
           </div>
-        </footer>
+        </section>
+
+        {/* CTA */}
+        <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 80px' }}>
+          <div style={{ background: 'linear-gradient(135deg, rgba(249,55,44,0.08) 0%, rgba(249,55,44,0.02) 100%)', border: '1px solid rgba(249,55,44,0.15)', borderRadius: '16px', padding: '40px', textAlign: 'center' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '12px' }}>Niste nasli sto trazite?</h2>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginBottom: '24px', maxWidth: '400px', margin: '0 auto 24px' }}>
+              Koristite naprednu pretragu ili nas kontaktirajte — pomoci cemo vam da pronadjete pravi deo.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link href="/marketplace" style={{ padding: '12px 28px', background: '#f9372c', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontWeight: 700, fontSize: '14px' }}>
+                Pretrazi marketplace
+              </Link>
+              <Link href="/vehicle-selection" style={{ padding: '12px 28px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontWeight: 600, fontSize: '14px' }}>
+                Izaberi po vozilu
+              </Link>
+            </div>
+          </div>
+        </section>
+
       </div>
     </>
   );
