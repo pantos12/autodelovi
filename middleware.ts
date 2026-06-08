@@ -9,6 +9,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const { pathname } = request.nextUrl;
+  if (pathname.startsWith('/api/cron/') || pathname.startsWith('/api/webhook/')) {
+    return NextResponse.next();
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   try {
