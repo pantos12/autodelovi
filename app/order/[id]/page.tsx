@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
 
@@ -137,11 +138,15 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {items.map(item => (
               <div key={item.id} style={{ display: 'flex', gap: '14px', alignItems: 'center', paddingBottom: '12px', borderBottom: '1px solid #2a2b2f' }}>
-                <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: '#252629', flexShrink: 0, overflow: 'hidden' }}>
-                  {item.image_url
-                    ? <img src={item.image_url} alt={item.part_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <img src="/images/part-placeholder.svg" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  }
+                <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: '#252629', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+                  <Image
+                    src={item.image_url || '/images/part-placeholder.svg'}
+                    alt={item.part_name}
+                    fill
+                    sizes="56px"
+                    style={{ objectFit: 'cover' }}
+                    unoptimized
+                  />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: '#fff', fontSize: '14px', fontWeight: 600, marginBottom: '2px' }}>{item.part_name}</div>
