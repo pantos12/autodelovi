@@ -46,7 +46,7 @@ export default async function SuppliersPage() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
             {suppliers.map(supplier => (
-              <div key={supplier.id} style={{ background: '#1a1b1f', borderRadius: '12px', padding: '24px', border: '1px solid #252629' }}>
+              <div key={supplier.id} className="card-hover" style={{ background: '#1a1b1f', borderRadius: '12px', padding: '24px', border: '1px solid #252629' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                   <div>
                     <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>{supplier.name}</h3>

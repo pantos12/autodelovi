@@ -43,3 +43,92 @@ body {
   background: var(--background);
   color: var(--on-background);
 }
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.card-hover {
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  border-color: rgba(249, 55, 44, 0.4) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.btn-hover {
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.btn-hover:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+.btn-hover:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+::selection {
+  background: rgba(249, 55, 44, 0.3);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid #f9372c;
+  outline-offset: 2px;
+}
+
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none;
+  border-color: #f9372c !important;
+}
+
+a {
+  transition: color 0.15s ease;
+}
+
+img {
+  -webkit-user-drag: none;
+}
+
+@media (max-width: 768px) {
+  .responsive-grid-sidebar {
+    grid-template-columns: 1fr !important;
+  }
+  .responsive-sidebar {
+    position: static !important;
+  }
+  .responsive-grid-detail {
+    grid-template-columns: 1fr !important;
+  }
+}
