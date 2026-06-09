@@ -40,11 +40,22 @@ function ComparisonContent() {
   const [allParts, setAllParts] = useState<Part[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   useEffect(() => {
-    // Load all parts for search
-    fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
-  }, []);
+    if (!search || search.length < 2) {
+      setAllParts([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setSearchLoading(true);
+      fetch(`/api/parts?q=${encodeURIComponent(search)}&per_page=20`)
+        .then(r => r.json())
+        .then(d => setAllParts(d.data || []))
+        .finally(() => setSearchLoading(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     if (selectedIds.length === 0) { setParts([]); return; }
