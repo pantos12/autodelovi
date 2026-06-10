@@ -108,9 +108,17 @@ export default function CheckoutPage() {
         input:focus, textarea:focus { border-color: #f9372c !important; }
       `}</style>
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 16px' }}>
+        {/* Progress breadcrumb */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', fontSize: '13px' }}>
+          <Link href="/cart" style={{ color: '#aaa', textDecoration: 'none' }}>Korpa</Link>
+          <span style={{ color: '#555' }}>→</span>
+          <span style={{ color: '#f9372c', fontWeight: 600 }}>Placanje</span>
+          <span style={{ color: '#555' }}>→</span>
+          <span style={{ color: '#555' }}>Potvrda</span>
+        </div>
         <div style={{ marginBottom: '24px' }}>
           <Link href="/cart" style={{ color: '#aaa', fontSize: '13px', textDecoration: 'none' }}>← Nazad u korpu</Link>
-          <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, margin: '8px 0 0' }}>Plaćanje</h1>
+          <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, margin: '8px 0 0' }}>Placanje</h1>
         </div>
 
         <div className="checkout-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '24px', alignItems: 'start' }}>
