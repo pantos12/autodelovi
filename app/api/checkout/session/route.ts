@@ -292,8 +292,7 @@ export async function POST(request: NextRequest) {
       order_id: orderRow.id,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unexpected error';
-    console.error('[checkout] Unhandled error:', message);
+    console.error('[checkout] Unhandled error:', err instanceof Error ? err.message : err);
     return NextResponse.json({ error: 'Checkout failed' }, { status: 500 });
   }
 }

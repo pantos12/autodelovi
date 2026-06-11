@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
+import { createHash } from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,10 @@ interface OrderRow {
   order_items_v2: OrderItem[];
 }
 
+function orderToken(orderId: string, email: string): string {
+  return createHash('sha256').update(`${orderId}:${email}`).digest('hex').slice(0, 16);
+}
+
 async function getOrder(id: string): Promise<OrderRow | null> {
   const { data, error } = await supabaseAdmin
     .from('orders_v2')
@@ -55,9 +60,27 @@ async function getOrder(id: string): Promise<OrderRow | null> {
   return data as unknown as OrderRow;
 }
 
-export default async function OrderPage({ params }: { params: { id: string } }) {
+export default async function OrderPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { [key: string]: string | undefined };
+}) {
   const order = await getOrder(params.id);
   if (!order) notFound();
+
+  const expectedToken = orderToken(order.id, order.buyer_email);
+  const provided = searchParams.token || searchParams.status;
+
+  // Allow access if: token matches, or came from checkout redirect (has status param),
+  // or order_id query param matches (Stripe redirect)
+  const hasAccess = provided === expectedToken
+    || searchParams.status === 'success'
+    || searchParams.status === 'pending'
+    || searchParams.order_id === order.id;
+
+  if (!hasAccess) notFound();
 
   const paid = order.status === 'paid';
   const currency = order.currency || 'RSD';
@@ -69,6 +92,15 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
         <div style={{ marginBottom: '24px' }}>
           <Link href="/marketplace" style={{ color: '#aaa', fontSize: '13px', textDecoration: 'none' }}>← Nazad na marketplace</Link>
         </div>
+
+        {/* Success banner */}
+        {searchParams.status === 'success' && (
+          <div style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid #22c55e', borderRadius: '12px', padding: '20px', marginBottom: '20px', textAlign: 'center' }}>
+            <p style={{ color: '#22c55e', fontSize: '24px', marginBottom: '8px' }}>✓</p>
+            <p style={{ color: '#22c55e', fontSize: '16px', fontWeight: 700, marginBottom: '4px' }}>Hvala na porudžbini!</p>
+            <p style={{ color: '#aaa', fontSize: '13px' }}>Primili smo vašu uplatu i obradićemo porudžbinu u najkraćem roku.</p>
+          </div>
+        )}
 
         {/* Header card */}
         <div style={{ background: '#1a1b1f', borderRadius: '12px', padding: '24px', border: '1px solid #2a2b2f', marginBottom: '16px' }}>
@@ -133,15 +165,16 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
 
         {/* Items */}
         <div style={{ background: '#1a1b1f', borderRadius: '12px', padding: '24px', border: '1px solid #2a2b2f', marginBottom: '16px' }}>
-          <h2 style={{ color: '#fff', fontSize: '16px', fontWeight: 700, margin: '0 0 14px' }}>Stavke</h2>
+          <h2 style={{ color: '#fff', fontSize: '16px', fontWeight: 700, margin: '0 0 14px' }}>Stavke ({items.length})</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {items.map(item => (
-              <div key={item.id} style={{ display: 'flex', gap: '14px', alignItems: 'center', paddingBottom: '12px', borderBottom: '1px solid #2a2b2f' }}>
+            {items.map((item, i) => (
+              <div key={item.id} style={{ display: 'flex', gap: '14px', alignItems: 'center', paddingBottom: i < items.length - 1 ? '12px' : 0, borderBottom: i < items.length - 1 ? '1px solid #2a2b2f' : 'none' }}>
                 <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: '#252629', flexShrink: 0, overflow: 'hidden' }}>
-                  {item.image_url
-                    ? <img src={item.image_url} alt={item.part_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <img src="/images/part-placeholder.svg" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  }
+                  <img
+                    src={item.image_url || '/images/part-placeholder.svg'}
+                    alt={item.part_name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: '#fff', fontSize: '14px', fontWeight: 600, marginBottom: '2px' }}>{item.part_name}</div>
@@ -178,6 +211,13 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
             <span style={{ color: '#fff', fontSize: '16px', fontWeight: 700 }}>Ukupno</span>
             <span style={{ color: '#f9372c', fontSize: '22px', fontWeight: 800 }}>{order.total.toLocaleString('sr-RS')} {currency}</span>
           </div>
+        </div>
+
+        {/* Continue shopping */}
+        <div style={{ textAlign: 'center', marginTop: '32px' }}>
+          <Link href="/marketplace" style={{ padding: '12px 32px', background: '#252629', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontWeight: 600, fontSize: '14px' }}>
+            Nastavi kupovinu
+          </Link>
         </div>
       </div>
     </div>
