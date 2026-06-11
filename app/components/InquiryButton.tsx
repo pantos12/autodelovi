@@ -19,6 +19,7 @@ export default function InquiryButton({ part, merchantId, className, style, labe
       <button
         type="button"
         className={className}
+        data-testid="inquiry-button"
         onClick={() => setOpen(true)}
         style={{
           width: '100%',

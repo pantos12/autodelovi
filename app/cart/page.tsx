@@ -37,7 +37,7 @@ export default function CartPage() {
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
           <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, margin: 0 }}>Vaša korpa <span style={{ color: '#aaa', fontWeight: 400, fontSize: '18px' }}>({count})</span></h1>
-          <button onClick={clear} style={{ background: 'none', border: '1px solid #2a2b2f', borderRadius: '8px', padding: '8px 16px', color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>
+          <button onClick={clear} data-testid="cart-clear" style={{ background: 'none', border: '1px solid #2a2b2f', borderRadius: '8px', padding: '8px 16px', color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>
             Obriši korpu
           </button>
         </div>
@@ -68,9 +68,9 @@ export default function CartPage() {
                   </div>
                   <div className="cart-item-actions" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button onClick={() => updateQty(item.part_id, Math.max(1, item.quantity - 1))} style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
-                      <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600, minWidth: '24px', textAlign: 'center' }}>{item.quantity}</span>
-                      <button onClick={() => updateQty(item.part_id, item.quantity + 1)} style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                      <button data-testid="qty-dec" onClick={() => updateQty(item.part_id, Math.max(1, item.quantity - 1))} aria-label="Smanji količinu" style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                      <span data-testid="qty-value" style={{ color: '#fff', fontSize: '14px', fontWeight: 600, minWidth: '24px', textAlign: 'center' }}>{item.quantity}</span>
+                      <button data-testid="qty-inc" onClick={() => updateQty(item.part_id, item.quantity + 1)} aria-label="Povećaj količinu" style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
                     </div>
                     <div style={{ color: '#fff', fontSize: '15px', fontWeight: 700 }}>{lineTotal.toLocaleString('sr-RS')} {item.price_currency}</div>
                     <button onClick={() => remove(item.part_id)} aria-label="Ukloni" style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '18px', cursor: 'pointer', padding: '2px 6px' }}>×</button>
@@ -96,9 +96,22 @@ export default function CartPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+                {shipping === 0 ? 'Besplatna dostava' : `${shipping.toLocaleString('sr-RS')} RSD`}
               </span>
             </div>
+
+            {/* Free shipping progress */}
+            {subtotal < freeShippingThreshold && (
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ color: '#aaa', fontSize: '12px' }}>Do besplatne dostave</span>
+                  <span style={{ color: '#22c55e', fontSize: '12px', fontWeight: 600 }}>{(freeShippingThreshold - subtotal).toLocaleString('sr-RS')} {currency}</span>
+                </div>
+                <div style={{ height: '4px', background: '#252629', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', background: '#22c55e', borderRadius: '2px', width: `${Math.min(100, (subtotal / freeShippingThreshold) * 100)}%`, transition: 'width 0.3s ease' }} />
+                </div>
+              </div>
+            )}
 
             <div style={{ height: '1px', background: '#2a2b2f', margin: '14px 0' }} />
 
@@ -107,7 +120,7 @@ export default function CartPage() {
               <span style={{ color: '#f9372c', fontSize: '22px', fontWeight: 800 }}>{total.toLocaleString('sr-RS')} {currency}</span>
             </div>
 
-            <Link href="/checkout" style={{ display: 'block', width: '100%', padding: '14px', background: '#f9372c', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '15px', fontWeight: 700, cursor: 'pointer', textDecoration: 'none', textAlign: 'center', boxSizing: 'border-box' }}>
+            <Link href="/checkout" data-testid="checkout-button" style={{ display: 'block', width: '100%', padding: '14px', background: '#f9372c', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '15px', fontWeight: 700, cursor: 'pointer', textDecoration: 'none', textAlign: 'center', boxSizing: 'border-box' }}>
               Poruči
             </Link>
           </div>
