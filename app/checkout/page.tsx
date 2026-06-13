@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '../components/CartProvider';
+import { SHIPPING_FEE_RSD, FREE_SHIPPING_THRESHOLD_RSD } from '@/lib/config';
 
 interface BuyerForm {
   name: string;
@@ -30,8 +31,7 @@ export default function CheckoutPage() {
   });
 
   const currency = items[0]?.price_currency || 'RSD';
-  const freeShippingThreshold = 10000;
-  const shipping = subtotal >= freeShippingThreshold ? 0 : 600;
+  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD_RSD ? 0 : SHIPPING_FEE_RSD;
   const total = subtotal + shipping;
 
   useEffect(() => {

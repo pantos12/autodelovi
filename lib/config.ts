@@ -1,0 +1,2 @@
+export const SHIPPING_FEE_RSD = 600;
+export const FREE_SHIPPING_THRESHOLD_RSD = 10_000;

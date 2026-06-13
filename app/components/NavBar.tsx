@@ -22,7 +22,7 @@ export default function NavBar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
-  const { cartCount } = useCart();
+  const { count } = useCart();
 
   useEffect(() => {
     const supabase = createClient();
@@ -104,9 +104,9 @@ export default function NavBar() {
         <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
           <Link href="/cart" style={{ position: 'relative', textDecoration: 'none', fontSize: '20px', padding: '4px' }}>
             🛒
-            {cartCount > 0 && (
-              <span style={{ position: 'absolute', top: '-4px', right: '-8px', background: '#f9372c', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {cartCount}
+            {count > 0 && (
+              <span data-testid="nav-cart-count" style={{ position: 'absolute', top: '-4px', right: '-8px', background: '#f9372c', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {count}
               </span>
             )}
           </Link>
@@ -178,9 +178,9 @@ export default function NavBar() {
         {/* Mobile cart link */}
         <Link href="/cart" onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px', color: pathname === '/cart' ? '#f9372c' : 'rgba(255,255,255,0.7)', fontWeight: pathname === '/cart' ? 600 : 400, fontSize: '14px', letterSpacing: '1px', textDecoration: 'none', borderLeft: pathname === '/cart' ? '3px solid #f9372c' : '3px solid transparent' }}>
           <span>🛒 KORPA</span>
-          {cartCount > 0 && (
+          {count > 0 && (
             <span style={{ background: '#f9372c', color: '#fff', fontSize: '11px', fontWeight: 700, borderRadius: '10px', padding: '2px 8px', minWidth: '20px', textAlign: 'center' }}>
-              {cartCount}
+              {count}
             </span>
           )}
         </Link>
