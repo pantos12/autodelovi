@@ -277,3 +277,14 @@ export interface Inquiry {
   status: 'pending' | 'responded' | 'closed';
   created_at: string;
 }
+
+export interface PartWithOffer extends Part {
+  best_offer: {
+    price: number;
+    price_currency: string;
+    stock_signal_strength: Offer['stock_signal_strength'];
+    last_check_status: Offer['last_check_status'];
+    last_seen_at: string;
+    band: 'verified' | 'likely' | 'inquiry';
+  } | null;
+}

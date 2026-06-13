@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Part, Category, Supplier, PriceRecord, ScrapingJob, NormalizedPart, PriceAlert, Offer } from './types';
+import type { Part, Category, Supplier, PriceRecord, ScrapingJob, NormalizedPart, PriceAlert, Offer, PartWithOffer } from './types';
 import { computeBand, type Band } from './confidence';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -30,7 +30,7 @@ export async function getParts(params: {
 
   let query = supabase
     .from('parts_v2')
-    .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`, { count: 'exact' })
+    .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url), offers(id,price,price_currency,stock_signal_strength,last_check_status,last_seen_at)`, { count: 'exact' })
     .eq('status', 'active');
 
   if (q) query = query.or(`name.ilike.%${q}%,name_sr.ilike.%${q}%,part_number.ilike.%${q}%,oem_number.ilike.%${q}%,brand.ilike.%${q}%`);
@@ -52,7 +52,34 @@ export async function getParts(params: {
   query = query.range(from, from + per_page - 1);
   const { data, error, count } = await query;
   if (error) throw error;
-  return { parts: data as Part[], total: count ?? 0, page, per_page, total_pages: Math.ceil((count ?? 0) / per_page) };
+
+  const now = new Date();
+  const parts: PartWithOffer[] = ((data ?? []) as Array<Part & { offers?: Offer[] }>).map(row => {
+    const offers = row.offers ?? [];
+    delete (row as any).offers;
+
+    const withBands = offers.map(o => ({ offer: o, band: computeBand(o, now) }));
+    const eligible = withBands.filter(x => x.band !== 'inquiry');
+    const best = eligible.length
+      ? eligible.reduce((min, x) => (x.offer.price < min.offer.price ? x : min), eligible[0])
+      : withBands[0] ?? null;
+
+    return {
+      ...row,
+      best_offer: best
+        ? {
+            price: best.offer.price,
+            price_currency: best.offer.price_currency,
+            stock_signal_strength: best.offer.stock_signal_strength,
+            last_check_status: best.offer.last_check_status,
+            last_seen_at: best.offer.last_seen_at,
+            band: best.band,
+          }
+        : null,
+    };
+  });
+
+  return { parts, total: count ?? 0, page, per_page, total_pages: Math.ceil((count ?? 0) / per_page) };
 }
 export async function getPartById(id: string): Promise<Part | null> {
   if (!isConfigured()) return null;

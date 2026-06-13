@@ -5,11 +5,11 @@ import { notFound } from 'next/navigation';
 import { getPartBySlug, getPartById, getRelatedParts } from '@/lib/supabase';
 import type { Part } from '@/lib/types';
 import AddToCartButton from '@/app/components/AddToCartButton';
+import InquiryButton from '@/app/components/InquiryButton';
 
 export const dynamic = 'force-dynamic';
 
 async function fetchPart(id: string): Promise<Part | null> {
-  // Try slug first, then UUID
   const bySlug = await getPartBySlug(id);
   if (bySlug) return bySlug;
   return getPartById(id);
@@ -17,8 +17,7 @@ async function fetchPart(id: string): Promise<Part | null> {
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const part = await fetchPart(params.id);
-  if (!part) return { title: 'Deo nije pronađen' };
-  const vehicle = part.compatible_vehicles?.[0];
+  if (!part) return { title: 'Deo nije pronadjen' };
   return {
     title: (part.name_sr || part.name) + ' | AutoDelovi.sale',
     description: part.description_sr || part.description || `${part.name_sr || part.name}. OEM: ${part.oem_number || part.part_number}.`,
@@ -26,8 +25,42 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     openGraph: {
       title: part.name_sr || part.name,
       description: `${part.brand} - ${part.price.toLocaleString('sr-RS')} RSD`,
+      images: part.images?.[0] ? [{ url: part.images[0] }] : undefined,
     },
   };
+}
+
+function ProductJsonLd({ part }: { part: Part }) {
+  const inStock = (part.stock_quantity ?? 0) > 0;
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: part.name_sr || part.name,
+    description: part.description_sr || part.description || `${part.brand} ${part.name}`,
+    image: part.images?.[0] || undefined,
+    sku: part.part_number,
+    mpn: part.oem_number || part.part_number,
+    brand: { '@type': 'Brand', name: part.brand },
+    offers: {
+      '@type': 'Offer',
+      url: `https://autodelovi.sale/parts/${part.slug || part.id}`,
+      priceCurrency: 'RSD',
+      price: part.price,
+      availability: inStock
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/OutOfStock',
+      seller: part.supplier
+        ? { '@type': 'Organization', name: part.supplier.name }
+        : undefined,
+    },
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  );
 }
 
 export default async function PartDetail({ params }: { params: { id: string } }) {
@@ -46,17 +79,19 @@ export default async function PartDetail({ params }: { params: { id: string } })
     { label: 'Stanje', value: part.condition === 'new' ? 'Novo' : part.condition === 'used' ? 'Polovno' : 'Obnovljeno' },
     ...(vehicle ? [
       { label: 'Vozilo', value: `${vehicle.make} ${vehicle.model}` },
-      { label: 'Godište', value: `${vehicle.year_from}${vehicle.year_to ? ' – ' + vehicle.year_to : '+'}` },
+      { label: 'Godiste', value: `${vehicle.year_from}${vehicle.year_to ? ' – ' + vehicle.year_to : '+'}` },
     ] : []),
-    { label: 'Dobavljač', value: part.supplier?.name },
+    { label: 'Dobavljac', value: part.supplier?.name },
   ].filter(s => s.value);
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
+      <ProductJsonLd part={part} />
+
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
         {/* Breadcrumb */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px' }}>
-          <Link href="/" style={{ color: '#aaa', textDecoration: 'none' }}>Početna</Link>
+        <nav aria-label="Breadcrumb" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px', flexWrap: 'wrap' }}>
+          <Link href="/" style={{ color: '#aaa', textDecoration: 'none' }}>Pocetna</Link>
           <span style={{ color: '#555' }}>/</span>
           <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none' }}>Marketplace</Link>
           <span style={{ color: '#555' }}>/</span>
@@ -67,12 +102,11 @@ export default async function PartDetail({ params }: { params: { id: string } })
             </>
           )}
           <span style={{ color: '#fff' }}>{part.name_sr || part.name}</span>
-        </div>
+        </nav>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
+        <div className="part-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
           {/* Left column */}
           <div>
-            {/* Image */}
             <div style={{ position: 'relative', background: '#1a1b1f', borderRadius: '16px', height: '320px', marginBottom: '24px', border: '1px solid #252629', overflow: 'hidden' }}>
               <Image
                 src={part.images?.[0] || '/images/part-placeholder.svg'}
@@ -85,11 +119,9 @@ export default async function PartDetail({ params }: { params: { id: string } })
               />
             </div>
 
-            {/* Title */}
             <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>{part.name_sr || part.name}</h1>
             <p style={{ color: '#aaa', fontSize: '16px', marginBottom: '24px' }}>{part.name_sr ? part.name : part.part_number}</p>
 
-            {/* Specs */}
             <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629', marginBottom: '24px' }}>
               <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, padding: '16px 20px', borderBottom: '1px solid #252629' }}>Specifikacije</h2>
               {specs.map((spec, i) => (
@@ -100,7 +132,6 @@ export default async function PartDetail({ params }: { params: { id: string } })
               ))}
             </div>
 
-            {/* Description */}
             {(part.description_sr || part.description) && (
               <div style={{ background: '#1a1b1f', borderRadius: '12px', padding: '20px', border: '1px solid #252629', marginBottom: '24px' }}>
                 <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginBottom: '12px' }}>Opis</h2>
@@ -108,10 +139,9 @@ export default async function PartDetail({ params }: { params: { id: string } })
               </div>
             )}
 
-            {/* Specs map */}
             {part.specs && Object.keys(part.specs).length > 0 && (
               <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629', marginBottom: '24px' }}>
-                <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, padding: '16px 20px', borderBottom: '1px solid #252629' }}>Tehničke karakteristike</h2>
+                <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, padding: '16px 20px', borderBottom: '1px solid #252629' }}>Tehnicke karakteristike</h2>
                 {Object.entries(part.specs).map(([key, val], i, arr) => (
                   <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 20px', borderBottom: i < arr.length - 1 ? '1px solid #252629' : 'none' }}>
                     <span style={{ color: '#aaa', fontSize: '13px', textTransform: 'capitalize' }}>{key.replace(/_/g, ' ')}</span>
@@ -132,30 +162,40 @@ export default async function PartDetail({ params }: { params: { id: string } })
                 <div style={{ color: '#aaa', fontSize: '14px', marginBottom: '8px' }}>≈ €{part.price_eur.toFixed(2)}</div>
               )}
               <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '14px', marginBottom: '20px', fontWeight: 600 }}>
-                {inStock ? `✓ Na stanju (${part.stock_quantity} kom)` : '✗ Trenutno nema na stanju'}
+                {inStock ? `Na stanju (${part.stock_quantity} kom)` : 'Trenutno nema na stanju'}
               </p>
-              <AddToCartButton part={part} inStock={inStock} full />
+
+              {inStock ? (
+                <div style={{ marginBottom: '12px' }}>
+                  <AddToCartButton part={part} inStock={inStock} full />
+                </div>
+              ) : (
+                <div style={{ marginBottom: '12px' }}>
+                  <InquiryButton part={part} label="Posalji upit za dostupnost" />
+                </div>
+              )}
+
               <Link
                 href={`/comparison?ids=${part.id}`}
                 style={{ display: 'block', width: '100%', padding: '12px', background: '#252629', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: 600, textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' as const }}
               >
-                ≈ Uporedi
+                Uporedi
               </Link>
               {part.supplier && (
                 <div style={{ marginTop: '20px', padding: '16px', background: '#0c0d0f', borderRadius: '10px' }}>
-                  <p style={{ color: '#aaa', fontSize: '13px', marginBottom: '4px' }}>Dobavljač</p>
+                  <p style={{ color: '#aaa', fontSize: '13px', marginBottom: '4px' }}>Dobavljac</p>
                   <p style={{ color: '#fff', fontSize: '15px', fontWeight: 600 }}>{part.supplier.name}</p>
-                  {part.supplier.city && <p style={{ color: '#aaa', fontSize: '13px' }}>📍 {part.supplier.city}</p>}
+                  {part.supplier.city && <p style={{ color: '#aaa', fontSize: '13px' }}>{part.supplier.city}</p>}
                   {part.supplier.is_verified && (
                     <span style={{ display: 'inline-block', marginTop: '8px', background: 'rgba(34,197,94,0.15)', color: '#22c55e', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>
-                      ✓ Verifikovan
+                      Verifikovan
                     </span>
                   )}
                 </div>
               )}
               {part.source_url && (
                 <a href={part.source_url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center', marginTop: '12px', color: '#aaa', fontSize: '12px', textDecoration: 'none' }}>
-                  Pogledaj na sajtu dobavljača →
+                  Pogledaj na sajtu dobavljaca →
                 </a>
               )}
             </div>
@@ -165,9 +205,9 @@ export default async function PartDetail({ params }: { params: { id: string } })
         {/* Related parts */}
         {related.length > 0 && (
           <div style={{ marginTop: '48px' }}>
-            <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, marginBottom: '20px' }}>Slični delovi</h2>
+            <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, marginBottom: '20px' }}>Slicni delovi</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-              {related.map((rp, idx) => {
+              {related.map(rp => {
                 const rpInStock = (rp.stock_quantity ?? 0) > 0;
                 return (
                   <div key={rp.id} style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
