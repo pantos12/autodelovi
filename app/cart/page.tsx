@@ -10,6 +10,8 @@ export default function CartPage() {
   const freeShippingThreshold = 10000;
   const shipping = subtotal >= freeShippingThreshold ? 0 : 600;
   const total = subtotal + shipping;
+  const shippingProgress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
+  const remaining = freeShippingThreshold - subtotal;
 
   if (!items || items.length === 0) {
     return (
@@ -80,13 +82,31 @@ export default function CartPage() {
             })}
 
             <Link href="/marketplace" style={{ display: 'inline-block', marginTop: '8px', color: '#aaa', fontSize: '13px', textDecoration: 'none' }}>
-              ← Nastavi kupovinu
+              &larr; Nastavi kupovinu
             </Link>
           </div>
 
           {/* Summary */}
           <div className="cart-summary" style={{ background: '#1a1b1f', borderRadius: '12px', padding: '20px', border: '1px solid #2a2b2f', position: 'sticky', top: '80px' }}>
             <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, margin: '0 0 16px' }}>Pregled porudžbine</h2>
+
+            {/* Free shipping progress */}
+            <div style={{ marginBottom: '16px', padding: '12px', background: '#0c0d0f', borderRadius: '10px' }}>
+              {shipping === 0 ? (
+                <p style={{ color: '#22c55e', fontSize: '13px', fontWeight: 600, textAlign: 'center', margin: 0 }}>
+                  ✓ Besplatna dostava!
+                </p>
+              ) : (
+                <>
+                  <p style={{ color: '#aaa', fontSize: '12px', marginBottom: '8px', textAlign: 'center' }}>
+                    Još <span style={{ color: '#fff', fontWeight: 600 }}>{remaining.toLocaleString('sr-RS')} {currency}</span> do besplatne dostave
+                  </p>
+                  <div style={{ height: '4px', background: '#252629', borderRadius: '2px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: shippingProgress > 60 ? '#eab308' : '#f9372c', borderRadius: '2px', width: `${shippingProgress}%`, transition: 'width 0.3s ease' }} />
+                  </div>
+                </>
+              )}
+            </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Subtotal</span>
@@ -96,7 +116,7 @@ export default function CartPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+                {shipping === 0 ? 'Besplatno' : `${shipping.toLocaleString('sr-RS')} ${currency}`}
               </span>
             </div>
 
@@ -110,6 +130,10 @@ export default function CartPage() {
             <Link href="/checkout" style={{ display: 'block', width: '100%', padding: '14px', background: '#f9372c', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '15px', fontWeight: 700, cursor: 'pointer', textDecoration: 'none', textAlign: 'center', boxSizing: 'border-box' }}>
               Poruči
             </Link>
+
+            <p style={{ color: '#555', fontSize: '11px', textAlign: 'center', marginTop: '10px', margin: '10px 0 0' }}>
+              Bezbedno plaćanje preko Stripe platforme
+            </p>
           </div>
         </div>
       </div>

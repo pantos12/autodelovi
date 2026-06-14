@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -20,8 +20,6 @@ const STATIC_CATEGORIES = [
 
 const PER_PAGE = 24;
 
-// TODO(v3.4.0): Once /api/parts is extended to return offers[], replace this
-// fallback with `computeBand(part.best_offer)` from lib/confidence.ts.
 function bandForPart(part: Part): Band {
   if ((part.stock_quantity ?? 0) > 0) return 'verified';
   return 'inquiry';
@@ -104,6 +102,7 @@ function MarketplaceContent() {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
   });
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -113,47 +112,49 @@ function MarketplaceContent() {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        if (searchQuery && searchQuery.length >= 2) {
-          const params = new URLSearchParams();
-          params.set('q', searchQuery);
-          if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
-          params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
-          const res = await fetch(`/api/search?${params}`);
-          const json = await res.json();
-          setParts(json.data || []);
-          setTotal(json.meta?.total || json.data?.length || 0);
-        } else {
-          const params = new URLSearchParams();
-          if (filterMake) params.set('make', filterMake);
-          if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
-          params.set('sort', sortBy);
-          params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
-          const res = await fetch(`/api/parts?${params}`);
-          const json = await res.json();
-          setParts(json.data || []);
-          setTotal(json.meta?.total || json.data?.length || 0);
-        }
-      } catch {
-        setParts([]);
-      } finally {
-        setLoading(false);
+  const fetchData = useCallback(async (currentPage: number) => {
+    setLoading(true);
+    try {
+      if (searchQuery && searchQuery.length >= 2) {
+        const params = new URLSearchParams();
+        params.set('q', searchQuery);
+        if (filterCategory) params.set('category', filterCategory);
+        if (filterInStock) params.set('in_stock', 'true');
+        params.set('per_page', String(PER_PAGE));
+        params.set('page', String(currentPage));
+        const res = await fetch(`/api/search?${params}`);
+        const json = await res.json();
+        setParts(json.data || []);
+        setTotal(json.meta?.total || json.data?.length || 0);
+      } else {
+        const params = new URLSearchParams();
+        if (filterMake) params.set('make', filterMake);
+        if (filterCategory) params.set('category', filterCategory);
+        if (filterInStock) params.set('in_stock', 'true');
+        params.set('sort', sortBy);
+        params.set('per_page', String(PER_PAGE));
+        params.set('page', String(currentPage));
+        const res = await fetch(`/api/parts?${params}`);
+        const json = await res.json();
+        setParts(json.data || []);
+        setTotal(json.meta?.total || json.data?.length || 0);
       }
-    };
-    load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
+    } catch {
+      setParts([]);
+    } finally {
+      setLoading(false);
+    }
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+
+  useEffect(() => {
+    fetchData(page);
+  }, [fetchData, page]);
+
+  // Reset to page 1 when filters change (without double-fetching)
+  const handleFilterChange = useCallback((setter: (v: any) => void, value: any) => {
+    setter(value);
+    setPage(1);
+  }, []);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -174,16 +175,26 @@ function MarketplaceContent() {
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     setSearchQuery(searchInput.trim());
+    setPage(1);
   }
 
   function clearSearch() {
     setSearchQuery('');
     setSearchInput('');
+    setPage(1);
+  }
+
+  function resetAll() {
+    setFilterMake('');
+    setFilterCategory('');
+    setFilterInStock(false);
+    setAvailOnly(false);
+    clearSearch();
   }
 
   const s = {
     page: { background: '#0c0d0f', minHeight: '100vh' } as React.CSSProperties,
-    container: { maxWidth: '1200px', margin: '0 auto', padding: '24px 16px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' } as React.CSSProperties,
+    container: { maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' } as React.CSSProperties,
     sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky', top: '80px' } as React.CSSProperties,
     label: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '4px' } as React.CSSProperties,
     select: { width: '100%', padding: '8px 12px', background: '#0c0d0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' } as React.CSSProperties,
@@ -209,91 +220,148 @@ function MarketplaceContent() {
     return out;
   }
 
+  const activeFilterCount = [filterMake, filterCategory, filterInStock, availOnly, searchQuery].filter(Boolean).length;
+
+  const filterPanel = (
+    <>
+      <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
+        <label style={s.label}>Pretraga</label>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            placeholder="Naziv, broj dela, brend..."
+            style={{ ...s.select, flex: 1, padding: '8px 12px' }}
+          />
+          <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
+            🔍
+          </button>
+        </div>
+        {searchQuery && (
+          <button type="button" onClick={clearSearch} style={{ marginTop: '8px', background: 'none', border: 'none', color: '#f9372c', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
+            ✕ Obriši pretragu: &quot;{searchQuery}&quot;
+          </button>
+        )}
+      </form>
+
+      <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '16px' }}>Filteri</h3>
+
+      {/* Availability band filter */}
+      <div style={{ marginBottom: '16px' }}>
+        <label style={s.label}>Dostupnost</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
+            <input
+              type="radio"
+              name="avail"
+              checked={!availOnly}
+              onChange={() => setAvailOnly(false)}
+              style={{ accentColor: '#ff4d00' }}
+            />
+            Sve ponude
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
+            <input
+              type="radio"
+              name="avail"
+              checked={availOnly}
+              onChange={() => setAvailOnly(true)}
+              style={{ accentColor: '#ff4d00' }}
+            />
+            Samo dostupno (🟢 + 🟡)
+          </label>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '16px' }}>
+        <label style={s.label}>Marka</label>
+        <select style={s.select} value={filterMake} onChange={e => handleFilterChange(setFilterMake, e.target.value)}>
+          <option value="">Sve marke</option>
+          {['Volkswagen','BMW','Mercedes','Audi','Opel','Renault','Peugeot','Fiat','Toyota','Ford','Skoda','Seat'].map(m => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
+      </div>
+      <div style={{ marginBottom: '16px' }}>
+        <label style={s.label}>Kategorija</label>
+        <select style={s.select} value={filterCategory} onChange={e => handleFilterChange(setFilterCategory, e.target.value)}>
+          <option value="">Sve kategorije</option>
+          {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+        </select>
+      </div>
+      <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <input type="checkbox" id="instock" checked={filterInStock} onChange={e => handleFilterChange(setFilterInStock, e.target.checked)} style={{ accentColor: '#ff4d00' }} />
+        <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
+      </div>
+      <button onClick={resetAll} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+        Resetuj sve
+      </button>
+    </>
+  );
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
-          <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
-            <label style={s.label}>Pretraga</label>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <input
-                type="text"
-                value={searchInput}
-                onChange={e => setSearchInput(e.target.value)}
-                placeholder="Naziv, broj dela, brend..."
-                style={{ ...s.select, flex: 1, padding: '8px 12px' }}
-              />
-              <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
-                🔍
-              </button>
-            </div>
-            {searchQuery && (
-              <button type="button" onClick={clearSearch} style={{ marginTop: '8px', background: 'none', border: 'none', color: '#f9372c', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
-                ✕ Obriši pretragu: &quot;{searchQuery}&quot;
-              </button>
-            )}
-          </form>
+      <style>{`
+        @media (max-width: 768px) {
+          .marketplace-grid { grid-template-columns: 1fr !important; }
+          .marketplace-sidebar { display: none; }
+          .marketplace-sidebar.open { display: block !important; position: fixed; top: 64px; left: 0; right: 0; bottom: 0; z-index: 50; overflow-y: auto; border-radius: 0; padding: 20px; }
+          .mobile-filter-btn { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .mobile-filter-btn { display: none !important; }
+          .filter-overlay { display: none !important; }
+        }
+      `}</style>
 
-          <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '16px' }}>Filteri</h3>
+      {/* Mobile filter overlay */}
+      {filtersOpen && (
+        <div
+          className="filter-overlay"
+          onClick={() => setFiltersOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 49 }}
+        />
+      )}
 
-          {/* Availability band filter */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={s.label}>Dostupnost</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="avail"
-                  checked={!availOnly}
-                  onChange={() => setAvailOnly(false)}
-                  style={{ accentColor: '#ff4d00' }}
-                />
-                Sve ponude
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="avail"
-                  checked={availOnly}
-                  onChange={() => setAvailOnly(true)}
-                  style={{ accentColor: '#ff4d00' }}
-                />
-                Samo dostupno (🟢 + 🟡)
-              </label>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <label style={s.label}>Marka</label>
-            <select style={s.select} value={filterMake} onChange={e => setFilterMake(e.target.value)}>
-              <option value="">Sve marke</option>
-              {['Volkswagen','BMW','Mercedes','Audi','Opel','Renault','Peugeot','Fiat','Toyota','Ford','Skoda','Seat'].map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={s.label}>Kategorija</label>
-            <select style={s.select} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-              <option value="">Sve kategorije</option>
-              {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-            </select>
-          </div>
-          <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
-            <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
-          </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
-            Resetuj sve
-          </button>
+      <div className="marketplace-grid" style={{ ...s.container, display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' }}>
+        {/* Sidebar - hidden on mobile unless open */}
+        <div className={`marketplace-sidebar ${filtersOpen ? 'open' : ''}`} style={s.sidebar}>
+          {filterPanel}
         </div>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-            <p style={{ color: '#aaa', fontSize: '14px' }}>
-              {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Mobile filter toggle */}
+              <button
+                className="mobile-filter-btn"
+                onClick={() => setFiltersOpen(!filtersOpen)}
+                style={{
+                  display: 'none',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 14px',
+                  background: '#1a1b1f',
+                  border: '1px solid #333',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                }}
+              >
+                <span>☰ Filteri</span>
+                {activeFilterCount > 0 && (
+                  <span style={{ background: '#f9372c', color: '#fff', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700 }}>
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+              <p style={{ color: '#aaa', fontSize: '14px', margin: 0 }}>
+                {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
+              </p>
+            </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-              <select style={{ ...s.select, width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              <select style={{ ...s.select, width: 'auto' }} value={sortBy} onChange={e => handleFilterChange(setSortBy, e.target.value)}>
                 <option value="price_asc">Cena: niža → viša</option>
                 <option value="price_desc">Cena: viša → niža</option>
                 <option value="newest">Najnovije</option>
@@ -320,14 +388,18 @@ function MarketplaceContent() {
                 const band = bandForPart(part);
                 const priority = idx < 4;
                 return (
-                  <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
-                    <div style={{ position: 'relative', background: '#252629', height: '140px', overflow: 'hidden' }}>
-                      <SmartImage src={part.images?.[0]} alt={part.name} priority={priority} />
-                      <BandBadge band={band} />
-                    </div>
+                  <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent', transition: 'transform 0.15s, box-shadow 0.15s' }}>
+                    <Link href={partUrl} style={{ textDecoration: 'none', color: 'inherit' }}>
+                      <div style={{ position: 'relative', background: '#252629', height: '140px', overflow: 'hidden' }}>
+                        <SmartImage src={part.images?.[0]} alt={part.name} priority={priority} />
+                        <BandBadge band={band} />
+                      </div>
+                    </Link>
                     <div style={{ padding: '12px' }}>
                       {vehicle && <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{vehicle.make} {vehicle.model}</p>}
-                      <h3 style={{ color: '#fff', fontSize: '14px', marginBottom: '8px', lineHeight: '1.3' }}>{part.name_sr || part.name}</h3>
+                      <Link href={partUrl} style={{ textDecoration: 'none' }}>
+                        <h3 style={{ color: '#fff', fontSize: '14px', marginBottom: '8px', lineHeight: '1.3' }}>{part.name_sr || part.name}</h3>
+                      </Link>
                       <p style={{ color: '#ff4d00', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{part.price?.toLocaleString('sr-RS')} RSD</p>
                       <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '12px', marginBottom: '10px' }}>{inStock ? 'Na stanju' : 'Nema na stanju'}</p>
 
@@ -353,12 +425,8 @@ function MarketplaceContent() {
 
                       <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
                         <Link href={partUrl} style={{ flex: 1, padding: '8px', background: '#333', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px' }}>Detalji</Link>
-                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
+                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>&asymp;</button>
                       </div>
-
-                      <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
-                      </p>
                     </div>
                   </div>
                 );
@@ -369,12 +437,19 @@ function MarketplaceContent() {
           {!loading && displayParts.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
               <p style={{ fontSize: '48px' }}>🔍</p>
-              <p style={{ fontSize: '18px', color: '#aaa' }}>
+              <p style={{ fontSize: '18px', color: '#aaa', marginBottom: '8px' }}>
                 {searchQuery ? `Nema rezultata za "${searchQuery}"` : 'Nema rezultata za date filtere'}
               </p>
-              {searchQuery && (
-                <button onClick={clearSearch} style={{ marginTop: '16px', padding: '10px 24px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px' }}>
+              <p style={{ fontSize: '14px', color: '#666', marginBottom: '16px' }}>
+                Pokušajte da promenite filtere ili pretražite drugim terminom
+              </p>
+              {searchQuery ? (
+                <button onClick={clearSearch} style={{ padding: '10px 24px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px' }}>
                   Obriši pretragu
+                </button>
+              ) : (
+                <button onClick={resetAll} style={{ padding: '10px 24px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px' }}>
+                  Resetuj filtere
                 </button>
               )}
             </div>
@@ -396,7 +471,7 @@ function MarketplaceContent() {
                   fontSize: '13px',
                 }}
               >
-                ← Prethodna
+                &larr; Prethodna
               </button>
               {pageNumbers().map(n => (
                 <button
@@ -430,9 +505,16 @@ function MarketplaceContent() {
                   fontSize: '13px',
                 }}
               >
-                Sledeća →
+                Sledeća &rarr;
               </button>
             </div>
+          )}
+
+          {/* Results summary */}
+          {!loading && total > 0 && (
+            <p style={{ textAlign: 'center', color: '#555', fontSize: '12px', marginTop: '16px' }}>
+              Prikazuje {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, total)} od {total} delova
+            </p>
           )}
         </div>
       </div>
