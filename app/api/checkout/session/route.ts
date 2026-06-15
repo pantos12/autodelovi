@@ -23,9 +23,11 @@ interface BuyerInput {
 }
 
 interface CheckoutBody {
-  session_id: string;
+  session_id?: string;
+  payment_method?: 'stripe' | 'cod';
   items: CheckoutItemInput[];
   buyer: BuyerInput;
+  total_rsd?: number;
 }
 
 interface PartRow {
@@ -63,8 +65,12 @@ function validateBody(body: unknown): CheckoutBody | string {
   if (!body || typeof body !== 'object') return 'Invalid request body';
   const b = body as Record<string, unknown>;
 
-  if (typeof b.session_id !== 'string' || !b.session_id.trim()) {
-    return 'session_id is required';
+  const paymentMethod = b.payment_method === 'cod' ? 'cod' : 'stripe';
+
+  if (paymentMethod === 'stripe') {
+    if (typeof b.session_id !== 'string' || !b.session_id.trim()) {
+      return 'session_id is required';
+    }
   }
   if (!Array.isArray(b.items) || b.items.length === 0) {
     return 'items must be a non-empty array';
@@ -84,12 +90,12 @@ function validateBody(body: unknown): CheckoutBody | string {
     const v = buyer[key];
     if (typeof v !== 'string' || !v.trim()) return `buyer.${key} is required`;
   }
-  // Minimal email sanity check
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyer.email as string)) {
     return 'buyer.email is invalid';
   }
   return {
-    session_id: b.session_id,
+    session_id: typeof b.session_id === 'string' ? b.session_id : undefined,
+    payment_method: paymentMethod,
     items: b.items as CheckoutItemInput[],
     buyer: {
       name: (buyer.name as string).trim(),
@@ -100,6 +106,7 @@ function validateBody(body: unknown): CheckoutBody | string {
       postal: typeof buyer.postal === 'string' ? buyer.postal.trim() || undefined : undefined,
       notes: typeof buyer.notes === 'string' ? buyer.notes.trim() || undefined : undefined,
     },
+    total_rsd: typeof b.total_rsd === 'number' ? b.total_rsd : undefined,
   };
 }
 
@@ -114,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     const parsed = validateBody(rawBody);
     if (typeof parsed === 'string') return bad(parsed);
-    const { items, buyer } = parsed;
+    const { items, buyer, payment_method } = parsed;
 
     // Fetch and validate parts
     const resolved: ResolvedItem[] = [];
@@ -175,8 +182,8 @@ export async function POST(request: NextRequest) {
         shipping_fee,
         total,
         currency,
-        status: 'pending',
-        payment_method: 'stripe',
+        status: payment_method === 'cod' ? 'confirmed' : 'pending',
+        payment_method: payment_method ?? 'stripe',
       })
       .select('id, order_number')
       .single();
@@ -206,6 +213,15 @@ export async function POST(request: NextRequest) {
     }
 
     const origin = new URL(request.url).origin;
+
+    // COD orders are complete — no Stripe needed
+    if (payment_method === 'cod') {
+      return NextResponse.json({
+        order_id: orderRow.id,
+        order_number: orderRow.order_number,
+        payment_method: 'cod',
+      });
+    }
 
     // If Stripe is not configured, return pending order (dev fallback)
     if (!isStripeConfigured()) {
