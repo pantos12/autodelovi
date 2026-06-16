@@ -143,7 +143,7 @@ function ComparisonContent() {
               </thead>
               <tbody>
                 {ATTRS.map(attr => {
-                  const vals = parts.map(p => (p as any)[attr.key]);
+                  const vals = parts.map(p => (p as unknown as Record<string, unknown>)[attr.key]);
                   return (
                     <tr key={attr.key}>
                       <td style={{ ...s.td, color: '#aaa', fontWeight: 500 }}>{attr.label}</td>

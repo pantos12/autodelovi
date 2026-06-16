@@ -57,7 +57,11 @@ export default function CheckoutPage() {
     try {
       let session_id: string | null = null;
       if (typeof window !== 'undefined') {
-        session_id = localStorage.getItem('ads_cart_session');
+        try {
+          session_id = localStorage.getItem('ads_cart_session');
+        } catch {
+          session_id = null;
+        }
         if (!session_id) {
           session_id = `ads_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
           try { localStorage.setItem('ads_cart_session', session_id); } catch {}
@@ -125,40 +129,40 @@ export default function CheckoutPage() {
             )}
 
             <div style={{ marginBottom: '14px' }}>
-              <label style={labelStyle}>Ime i prezime *</label>
-              <input type="text" required value={form.name} onChange={e => update('name', e.target.value)} style={inputStyle} />
+              <label htmlFor="checkout-name" style={labelStyle}>Ime i prezime *</label>
+              <input id="checkout-name" type="text" required value={form.name} onChange={e => update('name', e.target.value)} style={inputStyle} autoComplete="name" />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
-                <label style={labelStyle}>Email *</label>
-                <input type="email" required value={form.email} onChange={e => update('email', e.target.value)} style={inputStyle} />
+                <label htmlFor="checkout-email" style={labelStyle}>Email *</label>
+                <input id="checkout-email" type="email" required value={form.email} onChange={e => update('email', e.target.value)} style={inputStyle} autoComplete="email" />
               </div>
               <div>
-                <label style={labelStyle}>Telefon *</label>
-                <input type="tel" required value={form.phone} onChange={e => update('phone', e.target.value)} style={inputStyle} />
+                <label htmlFor="checkout-phone" style={labelStyle}>Telefon *</label>
+                <input id="checkout-phone" type="tel" required value={form.phone} onChange={e => update('phone', e.target.value)} style={inputStyle} autoComplete="tel" />
               </div>
             </div>
 
             <div style={{ marginBottom: '14px' }}>
-              <label style={labelStyle}>Adresa za dostavu *</label>
-              <input type="text" required value={form.address} onChange={e => update('address', e.target.value)} style={inputStyle} />
+              <label htmlFor="checkout-address" style={labelStyle}>Adresa za dostavu *</label>
+              <input id="checkout-address" type="text" required value={form.address} onChange={e => update('address', e.target.value)} style={inputStyle} autoComplete="street-address" />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
-                <label style={labelStyle}>Grad *</label>
-                <input type="text" required value={form.city} onChange={e => update('city', e.target.value)} style={inputStyle} />
+                <label htmlFor="checkout-city" style={labelStyle}>Grad *</label>
+                <input id="checkout-city" type="text" required value={form.city} onChange={e => update('city', e.target.value)} style={inputStyle} autoComplete="address-level2" />
               </div>
               <div>
-                <label style={labelStyle}>Poštanski broj</label>
-                <input type="text" value={form.postal} onChange={e => update('postal', e.target.value)} style={inputStyle} />
+                <label htmlFor="checkout-postal" style={labelStyle}>Poštanski broj</label>
+                <input id="checkout-postal" type="text" value={form.postal} onChange={e => update('postal', e.target.value)} style={inputStyle} autoComplete="postal-code" />
               </div>
             </div>
 
             <div style={{ marginBottom: '20px' }}>
-              <label style={labelStyle}>Napomena</label>
-              <textarea rows={3} value={form.notes} onChange={e => update('notes', e.target.value)} style={{ ...inputStyle, resize: 'vertical', minHeight: '80px' }} />
+              <label htmlFor="checkout-notes" style={labelStyle}>Napomena</label>
+              <textarea id="checkout-notes" rows={3} value={form.notes} onChange={e => update('notes', e.target.value)} style={{ ...inputStyle, resize: 'vertical', minHeight: '80px' }} />
             </div>
 
             <button type="submit" disabled={submitting} style={{ width: '100%', padding: '14px', background: submitting ? '#6b6b6b' : '#f9372c', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '15px', fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}>

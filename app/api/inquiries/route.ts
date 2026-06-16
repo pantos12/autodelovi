@@ -31,15 +31,24 @@ export async function POST(request: NextRequest) {
   if (!email) return bad('buyer_email is required');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return bad('buyer_email is invalid');
 
+  const phone = typeof body.buyer_phone === 'string' ? body.buyer_phone.trim() : '';
+  if (phone && !/^\+?[0-9\-\s()]{7,20}$/.test(phone)) return bad('buyer_phone format is invalid');
+
+  const message = typeof body.message === 'string' ? body.message.trim() : '';
+  if (message.length > 2000) return bad('message is too long (max 2000 characters)');
+
+  const buyerName = typeof body.buyer_name === 'string' ? body.buyer_name.trim() : '';
+  if (buyerName.length > 200) return bad('buyer_name is too long (max 200 characters)');
+
   const part_id = typeof body.part_id === 'string' && body.part_id.trim() ? body.part_id.trim() : null;
 
   const payload = {
     part_id,
     merchant_id: typeof body.merchant_id === 'string' && body.merchant_id.trim() ? body.merchant_id.trim() : null,
-    buyer_name: typeof body.buyer_name === 'string' && body.buyer_name.trim() ? body.buyer_name.trim() : null,
+    buyer_name: buyerName || null,
     buyer_email: email,
-    buyer_phone: typeof body.buyer_phone === 'string' && body.buyer_phone.trim() ? body.buyer_phone.trim() : null,
-    message: typeof body.message === 'string' && body.message.trim() ? body.message.trim() : null,
+    buyer_phone: phone || null,
+    message: message || null,
     status: 'new',
   };
 
