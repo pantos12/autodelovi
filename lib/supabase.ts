@@ -57,14 +57,20 @@ export async function getParts(params: {
 export async function getPartById(id: string): Promise<Part | null> {
   if (!isConfigured()) return null;
   const { data, error } = await supabase.from('parts_v2').select(`*, category:categories(*), supplier:suppliers(*)`).eq('id', id).single();
-  if (error) return null;
+  if (error) {
+    console.warn('[supabase] getPartById failed:', error.message);
+    return null;
+  }
   return data as Part;
 }
 
 export async function getPartBySlug(slug: string): Promise<Part | null> {
   if (!isConfigured()) return null;
   const { data, error } = await supabase.from('parts_v2').select(`*, category:categories(*), supplier:suppliers(*)`).eq('slug', slug).single();
-  if (error) return null;
+  if (error) {
+    console.warn('[supabase] getPartBySlug failed:', error.message);
+    return null;
+  }
   return data as Part;
 }
 
