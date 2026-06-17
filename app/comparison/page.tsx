@@ -42,9 +42,14 @@ function ComparisonContent() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Load all parts for search
-    fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
-  }, []);
+    if (search.length < 2) return;
+    const controller = new AbortController();
+    fetch(`/api/search?q=${encodeURIComponent(search)}&per_page=20`, { signal: controller.signal })
+      .then(r => r.json())
+      .then(d => setAllParts(d.data || []))
+      .catch(() => {});
+    return () => controller.abort();
+  }, [search]);
 
   useEffect(() => {
     if (selectedIds.length === 0) { setParts([]); return; }
