@@ -64,7 +64,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
   const items = order.order_items_v2 || [];
 
   return (
-    <div style={{ background: '#0c0d0f', minHeight: '100vh', fontFamily: 'Inter, "Helvetica Neue", sans-serif' }}>
+    <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 16px' }}>
         <div style={{ marginBottom: '24px' }}>
           <Link href="/marketplace" style={{ color: '#aaa', fontSize: '13px', textDecoration: 'none' }}>← Nazad na marketplace</Link>

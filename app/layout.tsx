@@ -1,7 +1,20 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import NavBar from './components/NavBar';
 import CartProvider from './components/CartProvider';
+
+const inter = Inter({
+  subsets: ['latin', 'latin-ext'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
+export const viewport: Viewport = {
+  themeColor: '#0c0d0f',
+  width: 'device-width',
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: {
@@ -34,8 +47,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="sr">
-      <body style={{ margin: 0, background: '#0c0d0f' }}>
+    <html lang="sr" className={inter.variable}>
+      <body style={{ margin: 0, background: '#0c0d0f' }} className={inter.className}>
         <CartProvider>
           <NavBar />
           {children}

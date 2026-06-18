@@ -13,7 +13,7 @@ export default function CartPage() {
 
   if (!items || items.length === 0) {
     return (
-      <div style={{ background: '#0c0d0f', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px', fontFamily: 'Inter, "Helvetica Neue", sans-serif', padding: '24px' }}>
+      <div style={{ background: '#0c0d0f', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px', padding: '24px' }}>
         <span style={{ fontSize: '64px' }}>🛒</span>
         <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: 700, margin: 0 }}>Korpa je prazna</h1>
         <p style={{ color: '#aaa', fontSize: '14px', margin: 0 }}>Dodajte delove iz marketplace-a</p>
@@ -25,7 +25,7 @@ export default function CartPage() {
   }
 
   return (
-    <div style={{ background: '#0c0d0f', minHeight: '100vh', fontFamily: 'Inter, "Helvetica Neue", sans-serif' }}>
+    <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
       <style>{`
         @media (max-width: 900px) {
           .cart-grid { grid-template-columns: 1fr !important; }
@@ -57,7 +57,6 @@ export default function CartPage() {
                       sizes="60px"
                       style={{ objectFit: 'cover' }}
                       loading="lazy"
-                      unoptimized
                     />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>

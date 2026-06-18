@@ -95,7 +95,6 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
         position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         zIndex: 1000, padding: '16px',
-        fontFamily: 'Inter, "Helvetica Neue", sans-serif',
       }}
     >
       <style>{`

@@ -81,7 +81,6 @@ function SmartImage({
       priority={!!priority}
       loading={priority ? undefined : 'lazy'}
       onError={() => setErrored(true)}
-      unoptimized
     />
   );
 }
@@ -95,8 +94,8 @@ function MarketplaceContent() {
   const [compareList, setCompareList] = useState<string[]>([]);
   const [filterMake, setFilterMake] = useState(searchParams.get('make') || '');
   const [filterCategory, setFilterCategory] = useState(searchParams.get('category') || '');
-  const [filterInStock, setFilterInStock] = useState(false);
-  const [sortBy, setSortBy] = useState('price_asc');
+  const [filterInStock, setFilterInStock] = useState(searchParams.get('in_stock') === '1');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'price_asc');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
@@ -155,15 +154,20 @@ function MarketplaceContent() {
     setPage(1);
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
 
-  // Persist ?avail=1
+  // Persist all filters in URL
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('q', searchQuery);
+    if (filterMake) params.set('make', filterMake);
+    if (filterCategory) params.set('category', filterCategory);
+    if (filterInStock) params.set('in_stock', '1');
     if (availOnly) params.set('avail', '1');
-    else params.delete('avail');
+    if (sortBy && sortBy !== 'price_asc') params.set('sort', sortBy);
+    if (page > 1) params.set('page', String(page));
     const qs = params.toString();
     router.replace(qs ? `/marketplace?${qs}` : '/marketplace', { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availOnly]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, availOnly, page]);
 
   const toggleCompare = (id: string) => {
     setCompareList(prev =>
@@ -211,8 +215,18 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        @media (max-width: 768px) {
+          .marketplace-layout { grid-template-columns: 1fr !important; }
+          .marketplace-sidebar { position: static !important; }
+        }
+      `}</style>
+      <div style={s.container} className="marketplace-layout">
+        <div style={s.sidebar} className="marketplace-sidebar">
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
