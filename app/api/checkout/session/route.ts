@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase';
 import { stripe, isStripeConfigured } from '@/lib/stripe';
+import { SHIPPING_COST_RSD, FREE_SHIPPING_THRESHOLD, MAX_CART_ITEMS, MAX_ITEM_QUANTITY } from '@/lib/constants';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -69,12 +70,18 @@ function validateBody(body: unknown): CheckoutBody | string {
   if (!Array.isArray(b.items) || b.items.length === 0) {
     return 'items must be a non-empty array';
   }
+  if (b.items.length > MAX_CART_ITEMS) {
+    return `Maximum ${MAX_CART_ITEMS} items per order`;
+  }
   for (const raw of b.items) {
     if (!raw || typeof raw !== 'object') return 'Invalid item';
     const it = raw as Record<string, unknown>;
     if (typeof it.part_id !== 'string' || !it.part_id) return 'item.part_id is required';
     if (typeof it.quantity !== 'number' || !Number.isFinite(it.quantity) || it.quantity <= 0) {
       return 'item.quantity must be a positive number';
+    }
+    if (it.quantity > MAX_ITEM_QUANTITY) {
+      return `Maximum quantity per item is ${MAX_ITEM_QUANTITY}`;
     }
   }
   if (!b.buyer || typeof b.buyer !== 'object') return 'buyer is required';
@@ -153,7 +160,7 @@ export async function POST(request: NextRequest) {
     const subtotal = Number(
       resolved.reduce((acc, r) => acc + r.lineTotal, 0).toFixed(2)
     );
-    const shipping_fee = subtotal >= 10000 ? 0 : 600;
+    const shipping_fee = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST_RSD;
     const total = Number((subtotal + shipping_fee).toFixed(2));
     const order_number = generateOrderNumber();
     const currency = 'RSD';

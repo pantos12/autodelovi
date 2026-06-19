@@ -67,12 +67,22 @@ export function getSessionId(): string {
     const id =
       typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
         ? crypto.randomUUID()
-        : `sess_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
+        : `sess_${Date.now().toString(36)}_${Array.from(crypto.getRandomValues(new Uint8Array(8)), b => b.toString(16).padStart(2, '0')).join('')}`;
     window.localStorage.setItem(SESSION_KEY, id);
     return id;
   } catch {
     return '';
   }
+}
+
+// ─── Debounced sync ────────────────────────────────────────
+
+let syncTimer: ReturnType<typeof setTimeout> | undefined;
+function debouncedSync(items: CartItem[]): void {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    syncToSupabase(items).catch(() => {});
+  }, 1000);
 }
 
 // ─── Cart operations ────────────────────────────────────────
@@ -93,8 +103,7 @@ export function addToCart(item: CartItem): CartItem[] {
     items.push({ ...item, quantity: item.quantity || 1 });
   }
   const next = writeItems(items);
-  // fire-and-forget sync
-  syncToSupabase(next).catch(() => {});
+  debouncedSync(next);
   return next;
 }
 
@@ -107,14 +116,14 @@ export function updateQuantity(part_id: string, quantity: number): CartItem[] {
     next = items.map(i => (i.part_id === part_id ? { ...i, quantity } : i));
   }
   const written = writeItems(next);
-  syncToSupabase(written).catch(() => {});
+  debouncedSync(written);
   return written;
 }
 
 export function removeFromCart(part_id: string): CartItem[] {
   const next = readItems().filter(i => i.part_id !== part_id);
   const written = writeItems(next);
-  syncToSupabase(written).catch(() => {});
+  debouncedSync(written);
   return written;
 }
 
@@ -126,6 +135,7 @@ export function clearCart(): void {
     /* noop */
   }
   emitUpdate();
+  clearTimeout(syncTimer);
   syncToSupabase([]).catch(() => {});
 }
 
