@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -91,6 +91,7 @@ function MarketplaceContent() {
   const router = useRouter();
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [compareList, setCompareList] = useState<string[]>([]);
   const [filterMake, setFilterMake] = useState(searchParams.get('make') || '');
@@ -104,6 +105,8 @@ function MarketplaceContent() {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
   });
+  const abortRef = useRef<AbortController | null>(null);
+  const urlTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -114,40 +117,46 @@ function MarketplaceContent() {
   }, [searchParams]);
 
   useEffect(() => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     const load = async () => {
       setLoading(true);
+      setFetchError(null);
       try {
+        const params = new URLSearchParams();
+        let endpoint = '/api/parts';
+
         if (searchQuery && searchQuery.length >= 2) {
-          const params = new URLSearchParams();
+          endpoint = '/api/search';
           params.set('q', searchQuery);
-          if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
-          params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
-          const res = await fetch(`/api/search?${params}`);
-          const json = await res.json();
-          setParts(json.data || []);
-          setTotal(json.meta?.total || json.data?.length || 0);
         } else {
-          const params = new URLSearchParams();
           if (filterMake) params.set('make', filterMake);
-          if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
           params.set('sort', sortBy);
-          params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
-          const res = await fetch(`/api/parts?${params}`);
-          const json = await res.json();
+        }
+        if (filterCategory) params.set('category', filterCategory);
+        if (filterInStock) params.set('in_stock', 'true');
+        params.set('per_page', String(PER_PAGE));
+        params.set('page', String(page));
+
+        const res = await fetch(`${endpoint}?${params}`, { signal: controller.signal });
+        if (!res.ok) throw new Error(`Greška servera (${res.status})`);
+        const json = await res.json();
+        if (!controller.signal.aborted) {
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
         }
-      } catch {
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setParts([]);
+        setFetchError('Greška pri učitavanju. Pokušajte ponovo.');
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
     load();
+    return () => controller.abort();
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
 
   // Reset to page 1 when filters change
@@ -155,13 +164,17 @@ function MarketplaceContent() {
     setPage(1);
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
 
-  // Persist ?avail=1
+  // Debounced URL sync for avail filter
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (availOnly) params.set('avail', '1');
-    else params.delete('avail');
-    const qs = params.toString();
-    router.replace(qs ? `/marketplace?${qs}` : '/marketplace', { scroll: false });
+    clearTimeout(urlTimerRef.current);
+    urlTimerRef.current = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (availOnly) params.set('avail', '1');
+      else params.delete('avail');
+      const qs = params.toString();
+      router.replace(qs ? `/marketplace?${qs}` : '/marketplace', { scroll: false });
+    }, 300);
+    return () => clearTimeout(urlTimerRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availOnly]);
 
@@ -211,8 +224,14 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 900px) {
+          .mp-grid { grid-template-columns: 1fr !important; }
+          .mp-sidebar { position: static !important; }
+        }
+      `}</style>
+      <div className="mp-grid" style={s.container}>
+        <div className="mp-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -366,9 +385,19 @@ function MarketplaceContent() {
             </div>
           )}
 
-          {!loading && displayParts.length === 0 && (
+          {!loading && fetchError && (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <p style={{ fontSize: '48px' }}>🔍</p>
+              <p style={{ fontSize: '48px' }} aria-hidden="true">⚠️</p>
+              <p style={{ fontSize: '16px', color: '#ef4444', marginBottom: '16px' }}>{fetchError}</p>
+              <button onClick={() => { setFetchError(null); setPage(p => p); }} style={{ padding: '10px 24px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px' }}>
+                Pokušaj ponovo
+              </button>
+            </div>
+          )}
+
+          {!loading && !fetchError && displayParts.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <p style={{ fontSize: '48px' }} aria-hidden="true">🔍</p>
               <p style={{ fontSize: '18px', color: '#aaa' }}>
                 {searchQuery ? `Nema rezultata za "${searchQuery}"` : 'Nema rezultata za date filtere'}
               </p>
