@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'AutoDelovi.sale' }],
   creator: 'AutoDelovi.sale',
   metadataBase: new URL('https://autodelovi.sale'),
+  viewport: { width: 'device-width', initialScale: 1, maximumScale: 5 },
   openGraph: {
     type: 'website',
     locale: 'sr_RS',
