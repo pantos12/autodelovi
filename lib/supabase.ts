@@ -33,7 +33,10 @@ export async function getParts(params: {
     .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`, { count: 'exact' })
     .eq('status', 'active');
 
-  if (q) query = query.or(`name.ilike.%${q}%,name_sr.ilike.%${q}%,part_number.ilike.%${q}%,oem_number.ilike.%${q}%,brand.ilike.%${q}%`);
+  if (q) {
+    const safeQ = q.replace(/[%_\\]/g, c => '\\' + c);
+    query = query.or(`name.ilike.%${safeQ}%,name_sr.ilike.%${safeQ}%,part_number.ilike.%${safeQ}%,oem_number.ilike.%${safeQ}%,brand.ilike.%${safeQ}%`);
+  }
   if (category) query = query.eq('category_id', category);
   if (supplier) query = query.eq('supplier_id', supplier);
   if (min_price !== undefined) query = query.gte('price', min_price);
@@ -93,16 +96,55 @@ export async function getPriceHistory(partId: string, days = 30): Promise<PriceR
 }
 
 export async function detectPriceChanges(parts: Array<{ id: string; price: number; part_number: string; supplier_id: string }>): Promise<PriceAlert[]> {
-  if (!isConfigured()) return [];
-  const alerts: PriceAlert[] = [];
-  for (const part of parts) {
-    const { data: latest } = await supabase.from('price_history').select('price').eq('part_id', part.id).order('recorded_at', { ascending: false }).limit(1).single();
-    if (latest && Math.abs(latest.price - part.price) / latest.price > 0.05) {
-      const { data: pf } = await supabase.from('parts_v2').select('name, supplier:suppliers(name)').eq('id', part.id).single();
-      alerts.push({ part_id: part.id, part_name: (pf as any)?.name ?? part.part_number, old_price: latest.price, new_price: part.price, change_pct: ((part.price - latest.price) / latest.price) * 100, supplier_name: (pf as any)?.supplier?.name ?? '', currency: 'RSD' });
+  if (!isConfigured() || parts.length === 0) return [];
+
+  const partIds = parts.map(p => p.id);
+  const partMap = new Map(parts.map(p => [p.id, p]));
+
+  const { data: allHistory } = await supabase
+    .from('price_history')
+    .select('part_id, price, recorded_at')
+    .in('part_id', partIds)
+    .order('recorded_at', { ascending: false });
+
+  const latestByPart = new Map<string, number>();
+  for (const row of allHistory ?? []) {
+    if (!latestByPart.has(row.part_id)) {
+      latestByPart.set(row.part_id, row.price);
     }
   }
-  return alerts;
+
+  const changedIds: string[] = [];
+  for (const part of parts) {
+    const oldPrice = latestByPart.get(part.id);
+    if (oldPrice !== undefined && Math.abs(oldPrice - part.price) / oldPrice > 0.05) {
+      changedIds.push(part.id);
+    }
+  }
+
+  if (changedIds.length === 0) return [];
+
+  const { data: partDetails } = await supabase
+    .from('parts_v2')
+    .select('id, name, supplier:suppliers(name)')
+    .in('id', changedIds);
+
+  const detailMap = new Map((partDetails ?? []).map((p: any) => [p.id, p]));
+
+  return changedIds.map(id => {
+    const part = partMap.get(id)!;
+    const oldPrice = latestByPart.get(id)!;
+    const detail = detailMap.get(id);
+    return {
+      part_id: id,
+      part_name: detail?.name ?? part.part_number,
+      old_price: oldPrice,
+      new_price: part.price,
+      change_pct: ((part.price - oldPrice) / oldPrice) * 100,
+      supplier_name: (detail as any)?.supplier?.name ?? '',
+      currency: 'RSD',
+    };
+  });
 }
 
 export async function getCategories(): Promise<Category[]> {
