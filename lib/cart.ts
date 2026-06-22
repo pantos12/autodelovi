@@ -75,6 +75,17 @@ export function getSessionId(): string {
   }
 }
 
+// ─── Debounced sync ────────────────────────────────────────
+
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+function debouncedSync(items: CartItem[]): void {
+  if (!isBrowser()) return;
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    syncToSupabase(items).catch(() => {});
+  }, 500);
+}
+
 // ─── Cart operations ────────────────────────────────────────
 
 export function getCart(): CartItem[] {
@@ -93,8 +104,8 @@ export function addToCart(item: CartItem): CartItem[] {
     items.push({ ...item, quantity: item.quantity || 1 });
   }
   const next = writeItems(items);
-  // fire-and-forget sync
-  syncToSupabase(next).catch(() => {});
+  // fire-and-forget sync (debounced)
+  debouncedSync(next);
   return next;
 }
 
@@ -107,14 +118,14 @@ export function updateQuantity(part_id: string, quantity: number): CartItem[] {
     next = items.map(i => (i.part_id === part_id ? { ...i, quantity } : i));
   }
   const written = writeItems(next);
-  syncToSupabase(written).catch(() => {});
+  debouncedSync(written);
   return written;
 }
 
 export function removeFromCart(part_id: string): CartItem[] {
   const next = readItems().filter(i => i.part_id !== part_id);
   const written = writeItems(next);
-  syncToSupabase(written).catch(() => {});
+  debouncedSync(written);
   return written;
 }
 
@@ -126,7 +137,7 @@ export function clearCart(): void {
     /* noop */
   }
   emitUpdate();
-  syncToSupabase([]).catch(() => {});
+  debouncedSync([]);
 }
 
 export function getCartTotal(): { subtotal: number; count: number; currency: string } {
