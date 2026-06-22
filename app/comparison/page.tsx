@@ -42,9 +42,18 @@ function ComparisonContent() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Load all parts for search
-    fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
-  }, []);
+    if (!search || search.length < 2) {
+      setAllParts([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(search)}&per_page=20`)
+        .then(r => r.json())
+        .then(d => setAllParts(d.data || []))
+        .catch(() => setAllParts([]));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     if (selectedIds.length === 0) { setParts([]); return; }
@@ -55,10 +64,7 @@ function ComparisonContent() {
       .finally(() => setLoading(false));
   }, [selectedIds]);
 
-  const filtered = allParts.filter(p =>
-    (p.name_sr || p.name).toLowerCase().includes(search.toLowerCase()) ||
-    (p.brand || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = allParts;
 
   const addPart = (id: string) => {
     if (selectedIds.length < 3 && !selectedIds.includes(id)) setSelectedIds([...selectedIds, id]);
