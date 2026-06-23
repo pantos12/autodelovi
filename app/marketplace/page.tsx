@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -20,8 +20,15 @@ const STATIC_CATEGORIES = [
 
 const PER_PAGE = 24;
 
-// TODO(v3.4.0): Once /api/parts is extended to return offers[], replace this
-// fallback with `computeBand(part.best_offer)` from lib/confidence.ts.
+function useDebounce<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(id);
+  }, [value, delayMs]);
+  return debounced;
+}
+
 function bandForPart(part: Part): Band {
   if ((part.stock_quantity ?? 0) > 0) return 'verified';
   return 'inquiry';
@@ -36,6 +43,7 @@ function bandColor(band: Band): string {
 function BandBadge({ band }: { band: Band }) {
   return (
     <div
+      data-testid="band-badge"
       style={{
         position: 'absolute',
         top: 8,
@@ -86,6 +94,34 @@ function SmartImage({
   );
 }
 
+function ScrollToTopButton() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    function onScroll() {
+      setVisible(window.scrollY > 600);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  if (!visible) return null;
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      aria-label="Vrati se na vrh"
+      style={{
+        position: 'fixed', bottom: '24px', right: '24px', zIndex: 50,
+        width: '44px', height: '44px', borderRadius: '50%',
+        background: '#f9372c', border: 'none', color: '#fff',
+        fontSize: '18px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'opacity 0.2s', opacity: 0.9,
+      }}
+    >
+      ↑
+    </button>
+  );
+}
+
 function MarketplaceContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -99,6 +135,7 @@ function MarketplaceContent() {
   const [sortBy, setSortBy] = useState('price_asc');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
+  const debouncedInput = useDebounce(searchInput, 350);
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
@@ -112,6 +149,14 @@ function MarketplaceContent() {
       setSearchInput(q);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (debouncedInput.trim().length >= 2) {
+      setSearchQuery(debouncedInput.trim());
+    } else if (debouncedInput.trim().length === 0 && searchQuery) {
+      setSearchQuery('');
+    }
+  }, [debouncedInput]);
 
   useEffect(() => {
     const load = async () => {
@@ -150,10 +195,13 @@ function MarketplaceContent() {
     load();
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -184,7 +232,7 @@ function MarketplaceContent() {
   const s = {
     page: { background: '#0c0d0f', minHeight: '100vh' } as React.CSSProperties,
     container: { maxWidth: '1200px', margin: '0 auto', padding: '24px 16px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' } as React.CSSProperties,
-    sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky', top: '80px' } as React.CSSProperties,
+    sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky' as const, top: '80px' } as React.CSSProperties,
     label: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '4px' } as React.CSSProperties,
     select: { width: '100%', padding: '8px 12px', background: '#0c0d0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' } as React.CSSProperties,
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
@@ -211,8 +259,8 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <div className="marketplace-layout" style={s.container}>
+        <div className="marketplace-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -320,7 +368,7 @@ function MarketplaceContent() {
                 const band = bandForPart(part);
                 const priority = idx < 4;
                 return (
-                  <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
+                  <div key={part.id} data-testid="part-card" style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
                     <div style={{ position: 'relative', background: '#252629', height: '140px', overflow: 'hidden' }}>
                       <SmartImage src={part.images?.[0]} alt={part.name} priority={priority} />
                       <BandBadge band={band} />
@@ -353,7 +401,7 @@ function MarketplaceContent() {
 
                       <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
                         <Link href={partUrl} style={{ flex: 1, padding: '8px', background: '#333', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px' }}>Detalji</Link>
-                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
+                        <button onClick={() => toggleCompare(part.id)} data-testid="compare-toggle" aria-label="Uporedi deo" style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
                       <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
@@ -380,6 +428,8 @@ function MarketplaceContent() {
             </div>
           )}
 
+          <ScrollToTopButton />
+
           {/* Pagination */}
           {!loading && totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '32px', flexWrap: 'wrap' }}>
@@ -401,6 +451,7 @@ function MarketplaceContent() {
               {pageNumbers().map(n => (
                 <button
                   key={n}
+                  data-testid={`pagination-${n}`}
                   onClick={() => setPage(n)}
                   style={{
                     padding: '8px 12px',
