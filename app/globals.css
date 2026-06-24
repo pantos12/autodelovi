@@ -42,4 +42,16 @@
 body {
   background: var(--background);
   color: var(--on-background);
+  font-family: var(--font-inter), 'Helvetica Neue', Arial, sans-serif;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #1a1b1f 25%, #252629 50%, #1a1b1f 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
