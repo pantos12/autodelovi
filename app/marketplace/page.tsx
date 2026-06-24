@@ -81,7 +81,6 @@ function SmartImage({
       priority={!!priority}
       loading={priority ? undefined : 'lazy'}
       onError={() => setErrored(true)}
-      unoptimized
     />
   );
 }
@@ -100,6 +99,7 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -209,10 +209,32 @@ function MarketplaceContent() {
     return out;
   }
 
+  const activeFilterCount = [filterMake, filterCategory, filterInStock, availOnly, searchQuery].filter(Boolean).length;
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none; }
+          .mp-sidebar.mp-sidebar-open { display: block; position: fixed; top: 64px; left: 0; right: 0; bottom: 0; z-index: 50; overflow-y: auto; border-radius: 0 !important; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .mp-filter-toggle { display: none !important; }
+        }
+      `}</style>
+
+      <button
+        className="mp-filter-toggle"
+        onClick={() => setFiltersOpen(!filtersOpen)}
+        style={{ display: 'none', position: 'fixed', bottom: '20px', right: '20px', zIndex: 60, padding: '14px 20px', background: '#f9372c', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', alignItems: 'center', gap: '8px', boxShadow: '0 4px 20px rgba(249,55,44,0.4)' }}
+      >
+        {filtersOpen ? '✕ Zatvori' : `Filteri${activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}`}
+      </button>
+
+      <div className="mp-container" style={s.container}>
+        <div className={`mp-sidebar${filtersOpen ? ' mp-sidebar-open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -283,7 +305,7 @@ function MarketplaceContent() {
             <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); setFiltersOpen(false); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
             Resetuj sve
           </button>
         </div>
