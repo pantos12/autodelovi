@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -100,10 +100,13 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
   });
+
+  const activeFilterCount = [filterMake, filterCategory, filterInStock, availOnly, searchQuery].filter(Boolean).length;
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -211,8 +214,108 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-grid { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none !important; }
+          .mp-filter-btn { display: flex !important; }
+        }
+        .mp-filter-overlay {
+          position: fixed; inset: 0; z-index: 200;
+          background: rgba(0,0,0,0.6);
+          backdrop-filter: blur(4px);
+          opacity: 0; pointer-events: none;
+          transition: opacity 0.2s;
+        }
+        .mp-filter-overlay.open { opacity: 1; pointer-events: auto; }
+        .mp-filter-sheet {
+          position: fixed; top: 0; right: 0; bottom: 0;
+          width: min(340px, 85vw); z-index: 201;
+          background: #1a1b1f; padding: 20px;
+          overflow-y: auto;
+          transform: translateX(100%);
+          transition: transform 0.25s ease;
+        }
+        .mp-filter-sheet.open { transform: translateX(0); }
+      `}</style>
+
+      {/* Mobile filter button */}
+      <button
+        className="mp-filter-btn"
+        onClick={() => setFiltersOpen(true)}
+        style={{
+          display: 'none', alignItems: 'center', gap: '8px',
+          position: 'fixed', bottom: '20px', right: '20px', zIndex: 100,
+          padding: '12px 20px', background: '#f9372c', border: 'none',
+          borderRadius: '24px', color: '#fff', fontSize: '14px',
+          fontWeight: 600, cursor: 'pointer',
+          boxShadow: '0 4px 20px rgba(249,55,44,0.4)',
+        }}
+      >
+        ⚙ Filteri{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+      </button>
+
+      {/* Mobile filter overlay */}
+      <div className={`mp-filter-overlay ${filtersOpen ? 'open' : ''}`} onClick={() => setFiltersOpen(false)} />
+      <div className={`mp-filter-sheet ${filtersOpen ? 'open' : ''}`}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, margin: 0 }}>Filteri</h3>
+          <button onClick={() => setFiltersOpen(false)} style={{ background: 'none', border: 'none', color: '#aaa', fontSize: '24px', cursor: 'pointer', padding: '4px' }}>×</button>
+        </div>
+
+        <form onSubmit={(e) => { handleSearch(e); setFiltersOpen(false); }} style={{ marginBottom: '20px' }}>
+          <label style={s.label}>Pretraga</label>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <input type="text" value={searchInput} onChange={e => setSearchInput(e.target.value)} placeholder="Naziv, broj dela, brend..." style={{ ...s.select, flex: 1 }} />
+            <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>🔍</button>
+          </div>
+        </form>
+
+        <div style={{ marginBottom: '16px' }}>
+          <label style={s.label}>Dostupnost</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
+              <input type="radio" name="avail-m" checked={!availOnly} onChange={() => setAvailOnly(false)} style={{ accentColor: '#ff4d00' }} />
+              Sve ponude
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
+              <input type="radio" name="avail-m" checked={availOnly} onChange={() => setAvailOnly(true)} style={{ accentColor: '#ff4d00' }} />
+              Samo dostupno (🟢 + 🟡)
+            </label>
+          </div>
+        </div>
+        <div style={{ marginBottom: '16px' }}>
+          <label style={s.label}>Marka</label>
+          <select style={s.select} value={filterMake} onChange={e => setFilterMake(e.target.value)}>
+            <option value="">Sve marke</option>
+            {['Volkswagen','BMW','Mercedes','Audi','Opel','Renault','Peugeot','Fiat','Toyota','Ford','Skoda','Seat'].map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
+        <div style={{ marginBottom: '16px' }}>
+          <label style={s.label}>Kategorija</label>
+          <select style={s.select} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+            <option value="">Sve kategorije</option>
+            {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+          </select>
+        </div>
+        <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <input type="checkbox" id="instock-m" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
+          <label htmlFor="instock-m" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ flex: 1, padding: '10px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+            Resetuj
+          </button>
+          <button onClick={() => setFiltersOpen(false)} style={{ flex: 1, padding: '10px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+            Primeni
+          </button>
+        </div>
+      </div>
+
+      <div className="mp-grid" style={s.container}>
+        <div className="mp-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
