@@ -53,9 +53,114 @@ export default async function PartDetail({ params }: { params: { id: string } })
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
+      <style>{`
+        .part-detail-grid {
+          display: grid;
+          grid-template-columns: 1fr 360px;
+          gap: 32px;
+          align-items: start;
+        }
+        .part-detail-buycard {
+          position: sticky;
+          top: 80px;
+        }
+        .part-detail-image {
+          height: 320px;
+        }
+        .part-detail-title {
+          font-size: 28px;
+        }
+        .part-detail-price {
+          font-size: 32px;
+        }
+        .part-detail-breadcrumb {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          margin-bottom: 24px;
+          font-size: 14px;
+          flex-wrap: wrap;
+        }
+        .part-detail-related-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 16px;
+        }
+        .part-detail-container {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 24px 16px;
+        }
+        .part-detail-spec-row {
+          padding: 12px 20px;
+        }
+        .part-detail-section-heading {
+          font-size: 18px;
+          padding: 16px 20px;
+        }
+
+        @media (max-width: 899px) {
+          .part-detail-grid {
+            grid-template-columns: 1fr;
+            gap: 24px;
+          }
+          .part-detail-buycard {
+            position: static;
+          }
+          .part-detail-container {
+            padding: 16px 12px;
+          }
+          .part-detail-image {
+            height: 240px;
+          }
+          .part-detail-title {
+            font-size: 22px;
+          }
+          .part-detail-price {
+            font-size: 26px;
+          }
+          .part-detail-breadcrumb {
+            font-size: 13px;
+            gap: 6px;
+            margin-bottom: 16px;
+          }
+          .part-detail-spec-row {
+            padding: 10px 14px;
+          }
+          .part-detail-section-heading {
+            font-size: 16px;
+            padding: 14px 14px;
+          }
+          .part-detail-related-grid {
+            display: flex;
+            overflow-x: auto;
+            gap: 12px;
+            padding-bottom: 8px;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x mandatory;
+          }
+          .part-detail-related-grid > * {
+            min-width: 200px;
+            max-width: 220px;
+            flex-shrink: 0;
+            scroll-snap-align: start;
+          }
+          .part-detail-related-grid::-webkit-scrollbar {
+            height: 4px;
+          }
+          .part-detail-related-grid::-webkit-scrollbar-track {
+            background: #1a1b1f;
+            border-radius: 2px;
+          }
+          .part-detail-related-grid::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 2px;
+          }
+        }
+      `}</style>
+      <div className="part-detail-container">
         {/* Breadcrumb */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px' }}>
+        <div className="part-detail-breadcrumb">
           <Link href="/" style={{ color: '#aaa', textDecoration: 'none' }}>Početna</Link>
           <span style={{ color: '#555' }}>/</span>
           <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none' }}>Marketplace</Link>
@@ -69,11 +174,11 @@ export default async function PartDetail({ params }: { params: { id: string } })
           <span style={{ color: '#fff' }}>{part.name_sr || part.name}</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
+        <div className="part-detail-grid">
           {/* Left column */}
           <div>
             {/* Image */}
-            <div style={{ position: 'relative', background: '#1a1b1f', borderRadius: '16px', height: '320px', marginBottom: '24px', border: '1px solid #252629', overflow: 'hidden' }}>
+            <div className="part-detail-image" style={{ position: 'relative', background: '#1a1b1f', borderRadius: '16px', marginBottom: '24px', border: '1px solid #252629', overflow: 'hidden' }}>
               <Image
                 src={part.images?.[0] || '/images/part-placeholder.svg'}
                 alt={part.name}
@@ -86,14 +191,14 @@ export default async function PartDetail({ params }: { params: { id: string } })
             </div>
 
             {/* Title */}
-            <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>{part.name_sr || part.name}</h1>
+            <h1 className="part-detail-title" style={{ color: '#fff', fontWeight: 800, marginBottom: '8px' }}>{part.name_sr || part.name}</h1>
             <p style={{ color: '#aaa', fontSize: '16px', marginBottom: '24px' }}>{part.name_sr ? part.name : part.part_number}</p>
 
             {/* Specs */}
             <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629', marginBottom: '24px' }}>
-              <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, padding: '16px 20px', borderBottom: '1px solid #252629' }}>Specifikacije</h2>
+              <h2 className="part-detail-section-heading" style={{ color: '#fff', fontWeight: 700, borderBottom: '1px solid #252629' }}>Specifikacije</h2>
               {specs.map((spec, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 20px', borderBottom: i < specs.length - 1 ? '1px solid #252629' : 'none', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                <div key={i} className="part-detail-spec-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: i < specs.length - 1 ? '1px solid #252629' : 'none', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
                   <span style={{ color: '#aaa', fontSize: '14px' }}>{spec.label}</span>
                   <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500 }}>{spec.value}</span>
                 </div>
@@ -111,7 +216,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
             {/* Specs map */}
             {part.specs && Object.keys(part.specs).length > 0 && (
               <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629', marginBottom: '24px' }}>
-                <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, padding: '16px 20px', borderBottom: '1px solid #252629' }}>Tehničke karakteristike</h2>
+                <h2 className="part-detail-section-heading" style={{ color: '#fff', fontWeight: 700, borderBottom: '1px solid #252629' }}>Tehničke karakteristike</h2>
                 {Object.entries(part.specs).map(([key, val], i, arr) => (
                   <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 20px', borderBottom: i < arr.length - 1 ? '1px solid #252629' : 'none' }}>
                     <span style={{ color: '#aaa', fontSize: '13px', textTransform: 'capitalize' }}>{key.replace(/_/g, ' ')}</span>
@@ -123,9 +228,9 @@ export default async function PartDetail({ params }: { params: { id: string } })
           </div>
 
           {/* Right: Buy card */}
-          <div style={{ position: 'sticky', top: '80px' }}>
+          <div className="part-detail-buycard">
             <div style={{ background: '#1a1b1f', borderRadius: '16px', padding: '24px', border: '1px solid #252629' }}>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: '#ff4d00', marginBottom: '4px' }}>
+              <div className="part-detail-price" style={{ fontWeight: 800, color: '#ff4d00', marginBottom: '4px' }}>
                 {part.price.toLocaleString('sr-RS')} RSD
               </div>
               {part.price_eur && (
@@ -166,7 +271,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
         {related.length > 0 && (
           <div style={{ marginTop: '48px' }}>
             <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, marginBottom: '20px' }}>Slični delovi</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+            <div className="part-detail-related-grid">
               {related.map((rp, idx) => {
                 const rpInStock = (rp.stock_quantity ?? 0) > 0;
                 return (

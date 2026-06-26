@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { Metadata } from 'next';
 import { vehicleMakes, getModels, getEngines, getYears } from './lib/data';
 
 export default function Home() {
@@ -162,13 +161,72 @@ export default function Home() {
           </div>
         </section>
 
+        {/* HOW IT WORKS */}
+        <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 80px' }}>
+          <h2 style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: '32px', textAlign: 'center' }}>KAKO FUNKCIONISE</h2>
+          <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
+            {[
+              { step: '01', title: 'Pretrazite', desc: 'Unesite vozilo ili naziv dela i pretrazite 200+ dobavljaca istovremeno.' },
+              { step: '02', title: 'Uporedite', desc: 'Uporedite cene, stanje zaliha i ocene dobavljaca na jednom mestu.' },
+              { step: '03', title: 'Narucite', desc: 'Sigurno platite karticom i primite deo na kucnu adresu.' },
+            ].map((s, i) => (
+              <div key={i} style={{ textAlign: 'center', padding: '20px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(249,55,44,0.12)', border: '1px solid rgba(249,55,44,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#f9372c', fontSize: '16px', fontWeight: 800 }}>{s.step}</div>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px', color: '#fff' }}>{s.title}</h3>
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* TRUST STATS */}
+        <section style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 80px' }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '32px', display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '24px' }}>
+            {[
+              { value: '50,000+', label: 'Auto delova' },
+              { value: '200+', label: 'Dobavljaca' },
+              { value: '15+', label: 'Gradova' },
+              { value: '24/7', label: 'Online narudzba' },
+            ].map((stat, i) => (
+              <div key={i} style={{ textAlign: 'center', minWidth: '100px' }}>
+                <div style={{ fontSize: '28px', fontWeight: 800, color: '#f9372c', marginBottom: '4px' }}>{stat.value}</div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.5px' }}>{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* FOOTER */}
-        <footer style={{ position: 'relative', zIndex: 5, borderTop: '1px solid rgba(255,255,255,0.06)', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>© 2026 AutoDelovi.sale</span>
-          <div style={{ display: 'flex', gap: '24px' }}>
-            <Link href="/marketplace" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Marketplace</Link>
-            <Link href="/suppliers" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Dobavljaci</Link>
-            <Link href="/comparison" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Poredenje</Link>
+        <footer style={{ position: 'relative', zIndex: 5, borderTop: '1px solid rgba(255,255,255,0.06)', padding: '32px 24px' }}>
+          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '24px', marginBottom: '24px' }}>
+              <div>
+                <span style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>AutoDelovi<span style={{ color: '#f9372c' }}>.sale</span></span>
+                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginTop: '8px', maxWidth: '240px', lineHeight: 1.5 }}>Premium marketplace za auto delove u Srbiji.</p>
+              </div>
+              <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
+                <div>
+                  <p style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.5)', letterSpacing: '1px', marginBottom: '10px', textTransform: 'uppercase' }}>Navigacija</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <Link href="/marketplace" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Marketplace</Link>
+                    <Link href="/suppliers" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Dobavljaci</Link>
+                    <Link href="/comparison" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Poredenje</Link>
+                  </div>
+                </div>
+                <div>
+                  <p style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.5)', letterSpacing: '1px', marginBottom: '10px', textTransform: 'uppercase' }}>Podrska</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <Link href="/vehicle-selection" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Izbor vozila</Link>
+                    <Link href="/auth/login" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Prijava</Link>
+                    <a href="mailto:info@autodelovi.sale" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Kontakt</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.25)' }}>&copy; 2026 AutoDelovi.sale. Sva prava zadrzana.</span>
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)' }}>Bezbedno placanje preko Stripe-a</span>
+            </div>
           </div>
         </footer>
       </div>
