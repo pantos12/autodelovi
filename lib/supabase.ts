@@ -30,7 +30,7 @@ export async function getParts(params: {
 
   let query = supabase
     .from('parts_v2')
-    .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`, { count: 'exact' })
+    .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url), offers(id,price,price_currency,price_eur,stock_signal_strength,last_check_status,last_seen_at,merchant_id)`, { count: 'exact' })
     .eq('status', 'active');
 
   if (q) query = query.or(`name.ilike.%${q}%,name_sr.ilike.%${q}%,part_number.ilike.%${q}%,oem_number.ilike.%${q}%,brand.ilike.%${q}%`);

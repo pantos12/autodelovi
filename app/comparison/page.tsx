@@ -4,14 +4,24 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import type { Part } from '@/lib/types';
 
-const ATTRS: { key: keyof Part | string; label: string }[] = [
+const ATTRS: { key: string; label: string; format?: (val: any, part: Part) => string }[] = [
   { key: 'price', label: 'Cena (RSD)' },
-  { key: 'category_id', label: 'Kategorija' },
   { key: 'brand', label: 'Marka' },
   { key: 'part_number', label: 'Broj dela' },
   { key: 'oem_number', label: 'OEM broj' },
-  { key: 'condition', label: 'Stanje' },
+  { key: 'condition', label: 'Stanje', format: (v) => v === 'new' ? 'Novo' : v === 'used' ? 'Polovno' : v === 'refurbished' ? 'Obnovljeno' : '-' },
   { key: 'stock_quantity', label: 'Na stanju' },
+  { key: '_supplier', label: 'Dobavljač', format: (_v, p) => p.supplier?.name || '-' },
+  { key: '_supplier_city', label: 'Grad dobavljača', format: (_v, p) => p.supplier?.city || '-' },
+  { key: '_supplier_verified', label: 'Verifikovan', format: (_v, p) => p.supplier?.is_verified ? 'Da' : 'Ne' },
+  { key: '_vehicle', label: 'Vozilo', format: (_v, p) => {
+    const v = p.compatible_vehicles?.[0];
+    return v ? `${v.make} ${v.model}` : '-';
+  }},
+  { key: '_year_range', label: 'Godište', format: (_v, p) => {
+    const v = p.compatible_vehicles?.[0];
+    return v ? `${v.year_from}${v.year_to ? ' – ' + v.year_to : '+'}` : '-';
+  }},
 ];
 
 function getCellStyle(key: string, value: any, allValues: any[]): React.CSSProperties {
@@ -143,15 +153,19 @@ function ComparisonContent() {
               </thead>
               <tbody>
                 {ATTRS.map(attr => {
-                  const vals = parts.map(p => (p as any)[attr.key]);
+                  const vals = parts.map(p => attr.key.startsWith('_') ? null : (p as any)[attr.key]);
                   return (
                     <tr key={attr.key}>
                       <td style={{ ...s.td, color: '#aaa', fontWeight: 500 }}>{attr.label}</td>
-                      {vals.map((val, i) => (
-                        <td key={i} style={{ ...s.td, ...getCellStyle(attr.key, val, vals) }}>
-                          {formatValue(attr.key, val)}
-                        </td>
-                      ))}
+                      {parts.map((p, i) => {
+                        const val = attr.key.startsWith('_') ? null : (p as any)[attr.key];
+                        const display = attr.format ? attr.format(val, p) : formatValue(attr.key, val);
+                        return (
+                          <td key={i} style={{ ...s.td, ...getCellStyle(attr.key, val, vals) }}>
+                            {display}
+                          </td>
+                        );
+                      })}
                     </tr>
                   );
                 })}
