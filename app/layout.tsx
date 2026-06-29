@@ -35,6 +35,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="sr">
+      <head>
+        <link rel="dns-prefetch" href="https://cdn.autodoc.de" />
+        <link rel="dns-prefetch" href="https://autohub.rs" />
+        <link rel="dns-prefetch" href="https://cdn.spareto.com" />
+        <link rel="preconnect" href="https://cdn.autodoc.de" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://autohub.rs" crossOrigin="anonymous" />
+      </head>
       <body style={{ margin: 0, background: '#0c0d0f' }}>
         <CartProvider>
           <NavBar />
