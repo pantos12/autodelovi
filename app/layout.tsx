@@ -32,9 +32,28 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'AutoDelovi.sale',
+  url: 'https://autodelovi.sale',
+  description: 'Premium marketplace za auto delove u Srbiji — 50,000+ delova od 200+ proverenih dobavljaca.',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: 'https://autodelovi.sale/marketplace?q={search_term_string}',
+    'query-input': 'required name=search_term_string',
+  },
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="sr">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body style={{ margin: 0, background: '#0c0d0f' }}>
         <CartProvider>
           <NavBar />

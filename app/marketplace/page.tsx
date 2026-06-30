@@ -71,6 +71,7 @@ function SmartImage({
 }) {
   const [errored, setErrored] = useState(false);
   const effective = !src || errored ? '/images/part-placeholder.svg' : src;
+  const isExternal = effective.startsWith('http');
   return (
     <Image
       src={effective}
@@ -81,8 +82,27 @@ function SmartImage({
       priority={!!priority}
       loading={priority ? undefined : 'lazy'}
       onError={() => setErrored(true)}
-      unoptimized
+      unoptimized={!isExternal}
     />
+  );
+}
+
+function ScrollToTop() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 600);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  if (!visible) return null;
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      aria-label="Nazad na vrh"
+      style={{ position: 'fixed', bottom: '24px', right: '24px', width: '44px', height: '44px', borderRadius: '50%', background: '#f9372c', color: '#fff', border: 'none', fontSize: '20px', cursor: 'pointer', zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.4)', transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    >
+      ↑
+    </button>
   );
 }
 
@@ -184,7 +204,7 @@ function MarketplaceContent() {
   const s = {
     page: { background: '#0c0d0f', minHeight: '100vh' } as React.CSSProperties,
     container: { maxWidth: '1200px', margin: '0 auto', padding: '24px 16px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' } as React.CSSProperties,
-    sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky', top: '80px' } as React.CSSProperties,
+    sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky' as const, top: '80px' } as React.CSSProperties,
     label: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '4px' } as React.CSSProperties,
     select: { width: '100%', padding: '8px 12px', background: '#0c0d0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' } as React.CSSProperties,
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
@@ -209,10 +229,30 @@ function MarketplaceContent() {
     return out;
   }
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .marketplace-grid { grid-template-columns: 1fr !important; }
+          .marketplace-sidebar { display: none !important; }
+          .marketplace-sidebar.open { display: block !important; position: fixed; inset: 0; top: 64px; z-index: 90; border-radius: 0 !important; overflow-y: auto; }
+        }
+      `}</style>
+      {/* Mobile filter toggle */}
+      <div style={{ display: 'none', padding: '12px 16px', maxWidth: '1200px', margin: '0 auto' }} className="mobile-filter-toggle">
+        <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ padding: '10px 20px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '13px', cursor: 'pointer', width: '100%', fontWeight: 600 }}>
+          {sidebarOpen ? 'Zatvori filtere' : 'Prikaži filtere'}
+        </button>
+      </div>
+      <style>{`
+        @media (max-width: 768px) {
+          .mobile-filter-toggle { display: block !important; }
+        }
+      `}</style>
+      <div className="marketplace-grid" style={s.container}>
+        <div className={`marketplace-sidebar${sidebarOpen ? ' open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -223,7 +263,7 @@ function MarketplaceContent() {
                 placeholder="Naziv, broj dela, brend..."
                 style={{ ...s.select, flex: 1, padding: '8px 12px' }}
               />
-              <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
+              <button type="submit" aria-label="Pretraži" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
                 🔍
               </button>
             </div>
@@ -353,7 +393,7 @@ function MarketplaceContent() {
 
                       <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
                         <Link href={partUrl} style={{ flex: 1, padding: '8px', background: '#333', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px' }}>Detalji</Link>
-                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
+                        <button onClick={() => toggleCompare(part.id)} aria-label={compareList.includes(part.id) ? 'Ukloni iz poređenja' : 'Dodaj u poređenje'} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
                       <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
@@ -436,6 +476,7 @@ function MarketplaceContent() {
           )}
         </div>
       </div>
+      <ScrollToTop />
     </div>
   );
 }
