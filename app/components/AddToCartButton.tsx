@@ -14,10 +14,10 @@ interface Props {
 export default function AddToCartButton({ part, label, full, inStock }: Props) {
   const [added, setAdded] = useState(false);
 
-  const disabled = inStock === false;
+  const disabled = inStock === false || added;
 
   function handleAdd() {
-    if (disabled) return;
+    if (inStock === false || added) return;
     const item: CartItem = {
       part_id: part.id,
       quantity: 1,
