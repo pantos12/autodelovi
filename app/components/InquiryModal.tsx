@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Part } from '@/lib/types';
 
 interface Props {
@@ -40,13 +40,32 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
     return () => clearTimeout(t);
   }, [success, onClose]);
 
-  // Escape to close
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap + escape to close
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener('keydown', onKey);
+    const firstInput = modalRef.current?.querySelector<HTMLElement>('input, button');
+    firstInput?.focus();
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
@@ -102,9 +121,11 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
         .inquiry-modal input:focus, .inquiry-modal textarea:focus { border-color: #f9372c !important; }
       `}</style>
       <div
+        ref={modalRef}
         className="inquiry-modal"
         role="dialog"
         aria-modal="true"
+        aria-label="Pošalji upit"
         style={{
           width: '100%', maxWidth: '460px', background: '#1a1b1f',
           border: '1px solid #2a2b2f', borderRadius: '12px', padding: '24px',
