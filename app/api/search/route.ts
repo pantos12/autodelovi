@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const page = parseInt(searchParams.get('page') ?? '1');
-    const perPage = Math.min(parseInt(searchParams.get('per_page') ?? '20'), 50);
+    const perPage = Math.min(parseInt(searchParams.get('per_page') ?? '20') || 20, 50);
     const category = searchParams.get('category') ?? null;
     const minPrice = searchParams.get('min_price') ? parseFloat(searchParams.get('min_price')!) : null;
     const maxPrice = searchParams.get('max_price') ? parseFloat(searchParams.get('max_price')!) : null;
