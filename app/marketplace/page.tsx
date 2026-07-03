@@ -20,10 +20,14 @@ const STATIC_CATEGORIES = [
 
 const PER_PAGE = 24;
 
-// TODO(v3.4.0): Once /api/parts is extended to return offers[], replace this
-// fallback with `computeBand(part.best_offer)` from lib/confidence.ts.
 function bandForPart(part: Part): Band {
-  if ((part.stock_quantity ?? 0) > 0) return 'verified';
+  const qty = part.stock_quantity ?? 0;
+  if (qty <= 0) return 'inquiry';
+  const scrapedAt = part.scraped_at ? new Date(part.scraped_at) : null;
+  if (!scrapedAt) return qty > 0 ? 'likely' : 'inquiry';
+  const ageHours = (Date.now() - scrapedAt.getTime()) / 3_600_000;
+  if (ageHours <= 6) return 'verified';
+  if (ageHours <= 48) return 'likely';
   return 'inquiry';
 }
 
@@ -85,6 +89,13 @@ function SmartImage({
     />
   );
 }
+
+const responsiveStyles = `
+  @media (max-width: 768px) {
+    .mp-grid { grid-template-columns: 1fr !important; }
+    .mp-sidebar { position: static !important; }
+  }
+`;
 
 function MarketplaceContent() {
   const searchParams = useSearchParams();
@@ -211,8 +222,9 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{responsiveStyles}</style>
+      <div className="mp-grid" style={s.container}>
+        <div className="mp-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -356,9 +368,16 @@ function MarketplaceContent() {
                         <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
-                      <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
-                      </p>
+                      {part.scraped_at && (
+                        <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
+                          Provereno: {(() => {
+                            const h = Math.floor((Date.now() - new Date(part.scraped_at).getTime()) / 3_600_000);
+                            if (h < 1) return 'upravo';
+                            if (h < 24) return `pre ${h}h`;
+                            return `pre ${Math.floor(h / 24)}d`;
+                          })()}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );

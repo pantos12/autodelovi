@@ -51,8 +51,39 @@ export default async function PartDetail({ params }: { params: { id: string } })
     { label: 'Dobavljač', value: part.supplier?.name },
   ].filter(s => s.value);
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: part.name_sr || part.name,
+    description: part.description_sr || part.description || part.name,
+    image: part.images?.[0] || undefined,
+    sku: part.part_number || undefined,
+    mpn: part.oem_number || part.part_number || undefined,
+    brand: part.brand ? { '@type': 'Brand', name: part.brand } : undefined,
+    offers: {
+      '@type': 'Offer',
+      url: `https://autodelovi.sale/parts/${part.slug || part.id}`,
+      priceCurrency: 'RSD',
+      price: part.price,
+      availability: inStock
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/OutOfStock',
+      seller: part.supplier ? { '@type': 'Organization', name: part.supplier.name } : undefined,
+    },
+    category: part.category?.name_sr || part.category_id || undefined,
+    itemCondition: part.condition === 'new'
+      ? 'https://schema.org/NewCondition'
+      : part.condition === 'used'
+        ? 'https://schema.org/UsedCondition'
+        : 'https://schema.org/RefurbishedCondition',
+  };
+
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
         {/* Breadcrumb */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px' }}>
