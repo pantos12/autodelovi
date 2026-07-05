@@ -55,9 +55,15 @@ async function getOrder(id: string): Promise<OrderRow | null> {
   return data as unknown as OrderRow;
 }
 
-export default async function OrderPage({ params }: { params: { id: string } }) {
+export default async function OrderPage({ params, searchParams }: { params: { id: string }; searchParams: { [key: string]: string | string[] | undefined } }) {
   const order = await getOrder(params.id);
   if (!order) notFound();
+
+  const token = typeof searchParams.token === 'string' ? searchParams.token : '';
+  const status = typeof searchParams.status === 'string' ? searchParams.status : '';
+  if (!status && !token) {
+    notFound();
+  }
 
   const paid = order.status === 'paid';
   const currency = order.currency || 'RSD';

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase';
-import { stripe, isStripeConfigured } from '@/lib/stripe';
+import { getStripe, isStripeConfigured } from '@/lib/stripe';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -116,33 +116,36 @@ export async function POST(request: NextRequest) {
     if (typeof parsed === 'string') return bad(parsed);
     const { items, buyer } = parsed;
 
-    // Fetch and validate parts
+    // Batch-fetch all parts in a single query
+    const partIds = items.map(i => i.part_id);
+    const { data: partsData, error: partsError } = await supabaseAdmin
+      .from('parts_v2')
+      .select('id, name, part_number, brand, supplier_id, images, price, stock_quantity, supplier:suppliers(name)')
+      .in('id', partIds);
+
+    if (partsError) {
+      return bad(`Failed to load parts: ${partsError.message}`, 500);
+    }
+
+    const partsMap = new Map<string, PartRow>();
+    for (const raw of (partsData || [])) {
+      const part = raw as unknown as PartRow & { supplier: { name: string | null } | { name: string | null }[] | null };
+      const supplier = Array.isArray(part.supplier) ? (part.supplier[0] ?? null) : part.supplier;
+      partsMap.set(part.id, { ...part, supplier });
+    }
+
     const resolved: ResolvedItem[] = [];
     for (const item of items) {
-      const { data, error } = await supabaseAdmin
-        .from('parts_v2')
-        .select('id, name, part_number, brand, supplier_id, images, price, stock_quantity, supplier:suppliers(name)')
-        .eq('id', item.part_id)
-        .maybeSingle();
-
-      if (error) {
-        return bad(`Failed to load part ${item.part_id}: ${error.message}`, 500);
-      }
-      if (!data) {
+      const normalized = partsMap.get(item.part_id);
+      if (!normalized) {
         return bad(`Part not found: ${item.part_id}`, 404);
       }
-      // supabase-js types join as array-or-object; normalize
-      const part = data as unknown as PartRow & { supplier: { name: string | null } | { name: string | null }[] | null };
-      const supplier = Array.isArray(part.supplier) ? (part.supplier[0] ?? null) : part.supplier;
-      const normalized: PartRow = { ...part, supplier };
-
       if (typeof normalized.price !== 'number' || normalized.price <= 0) {
         return bad(`Part ${normalized.id} has no valid price`, 409);
       }
       if ((normalized.stock_quantity ?? 0) < item.quantity) {
         return bad(`Insufficient stock for ${normalized.name}`, 409);
       }
-
       resolved.push({
         part: normalized,
         quantity: item.quantity,
@@ -256,7 +259,7 @@ export async function POST(request: NextRequest) {
 
     let session: Stripe.Checkout.Session;
     try {
-      session = await stripe.checkout.sessions.create({
+      session = await getStripe().checkout.sessions.create({
         mode: 'payment',
         line_items,
         customer_email: buyer.email,
