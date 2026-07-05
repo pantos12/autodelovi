@@ -40,6 +40,13 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
     return () => clearTimeout(t);
   }, [success, onClose]);
 
+  // Lock body scroll when open
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
+
   // Escape to close
   useEffect(() => {
     if (!open) return;

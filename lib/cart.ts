@@ -94,7 +94,7 @@ export function addToCart(item: CartItem): CartItem[] {
   }
   const next = writeItems(items);
   // fire-and-forget sync
-  syncToSupabase(next).catch(() => {});
+  debouncedSync(next);
   return next;
 }
 
@@ -126,7 +126,7 @@ export function clearCart(): void {
     /* noop */
   }
   emitUpdate();
-  syncToSupabase([]).catch(() => {});
+  debouncedSync([]);
 }
 
 export function getCartTotal(): { subtotal: number; count: number; currency: string } {
@@ -142,7 +142,18 @@ export function getCartTotal(): { subtotal: number; count: number; currency: str
   return { subtotal, count, currency };
 }
 
-// ─── Server sync (best-effort) ──────────────────────────────
+// ─── Server sync (best-effort, debounced) ──────────────────
+
+let _syncTimer: ReturnType<typeof setTimeout> | null = null;
+
+function debouncedSync(items: CartItem[]): void {
+  if (!isBrowser()) return;
+  if (_syncTimer) clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(() => {
+    _syncTimer = null;
+    syncToSupabase(items).catch(() => {});
+  }, 800);
+}
 
 export async function syncToSupabase(items: CartItem[]): Promise<void> {
   if (!isBrowser()) return;
