@@ -142,20 +142,25 @@ export function getCartTotal(): { subtotal: number; count: number; currency: str
   return { subtotal, count, currency };
 }
 
-// ─── Server sync (best-effort) ──────────────────────────────
+// ─── Server sync (best-effort, debounced) ──────────────────
+
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
 
 export async function syncToSupabase(items: CartItem[]): Promise<void> {
   if (!isBrowser()) return;
-  try {
-    const session_id = getSessionId();
-    if (!session_id) return;
-    await fetch('/api/cart/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id, items }),
-      keepalive: true,
-    });
-  } catch {
-    // swallow — best-effort only
-  }
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(async () => {
+    try {
+      const session_id = getSessionId();
+      if (!session_id) return;
+      await fetch('/api/cart/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id, items }),
+        keepalive: true,
+      });
+    } catch {
+      // swallow — best-effort only
+    }
+  }, 500);
 }
