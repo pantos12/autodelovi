@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -113,7 +113,23 @@ function MarketplaceContent() {
     }
   }, [searchParams]);
 
+  const prevFiltersRef = useRef({ filterMake, filterCategory, filterInStock, sortBy, searchQuery });
   useEffect(() => {
+    const prev = prevFiltersRef.current;
+    const filtersChanged =
+      prev.filterMake !== filterMake ||
+      prev.filterCategory !== filterCategory ||
+      prev.filterInStock !== filterInStock ||
+      prev.sortBy !== sortBy ||
+      prev.searchQuery !== searchQuery;
+    prevFiltersRef.current = { filterMake, filterCategory, filterInStock, sortBy, searchQuery };
+
+    const effectivePage = filtersChanged ? 1 : page;
+    if (filtersChanged && page !== 1) {
+      setPage(1);
+      return;
+    }
+
     const load = async () => {
       setLoading(true);
       try {
@@ -123,7 +139,7 @@ function MarketplaceContent() {
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
           params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
+          params.set('page', String(effectivePage));
           const res = await fetch(`/api/search?${params}`);
           const json = await res.json();
           setParts(json.data || []);
@@ -135,7 +151,7 @@ function MarketplaceContent() {
           if (filterInStock) params.set('in_stock', 'true');
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
+          params.set('page', String(effectivePage));
           const res = await fetch(`/api/parts?${params}`);
           const json = await res.json();
           setParts(json.data || []);
@@ -149,11 +165,6 @@ function MarketplaceContent() {
     };
     load();
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -209,10 +220,20 @@ function MarketplaceContent() {
     return out;
   }
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none; }
+          .mp-sidebar.mp-sidebar-open { display: block; position: fixed; top: 64px; left: 0; right: 0; bottom: 0; z-index: 50; overflow-y: auto; border-radius: 0 !important; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+      `}</style>
+      <div className="mp-container" style={s.container}>
+        <div className={`mp-sidebar${sidebarOpen ? ' mp-sidebar-open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -286,12 +307,20 @@ function MarketplaceContent() {
           <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
             Resetuj sve
           </button>
+          <button className="mp-filter-toggle" onClick={() => setSidebarOpen(false)} style={{ display: 'none', width: '100%', padding: '12px', marginTop: '12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600, alignItems: 'center', justifyContent: 'center' }}>
+            Primeni filtere
+          </button>
         </div>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-            <p style={{ color: '#aaa', fontSize: '14px' }}>
-              {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button className="mp-filter-toggle" onClick={() => setSidebarOpen(true)} style={{ display: 'none', padding: '8px 14px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                ☰ Filteri
+              </button>
+              <p style={{ color: '#aaa', fontSize: '14px', margin: 0 }}>
+                {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
+              </p>
+            </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <select style={{ ...s.select, width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
                 <option value="price_asc">Cena: niža → viša</option>
