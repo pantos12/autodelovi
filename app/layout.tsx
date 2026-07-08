@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="sr">
-      <body style={{ margin: 0, background: '#0c0d0f' }}>
+      <body>
         <CartProvider>
           <NavBar />
           {children}

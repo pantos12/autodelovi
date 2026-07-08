@@ -18,6 +18,13 @@ export interface CartItem {
 const SESSION_KEY = 'ads_cart_session';
 const ITEMS_KEY = 'ads_cart_items';
 
+export const SHIPPING_FEE = 600;
+export const FREE_SHIPPING_THRESHOLD = 10000;
+
+export function getShippingFee(subtotal: number): number {
+  return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
+}
+
 // ─── Internal helpers ───────────────────────────────────────
 
 function isBrowser(): boolean {

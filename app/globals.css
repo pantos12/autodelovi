@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --surface: #121416;
-  --surface-dim: #121416;
+  --surface: #0c0d0f;
+  --surface-dim: #0c0d0f;
   --surface-container-lowest: #0c0e10;
   --surface-container-low: #1a1c1e;
   --surface-container: #1e2022;
@@ -19,6 +19,8 @@
   --on-primary: #690003;
   --on-primary-container: #f9372c;
   --racing-red: #f9372c;
+  --accent: #f9372c;
+  --accent-hover: #e02a20;
   --secondary: #c6c6ca;
   --secondary-container: #47494c;
   --on-secondary: #2e3034;
@@ -27,10 +29,17 @@
   --tertiary-container: #191c1e;
   --on-tertiary: #2e3133;
   --on-tertiary-container: #818487;
-  --background: #121416;
+  --background: #0c0d0f;
   --on-background: #e2e2e5;
   --on-surface: #e2e2e5;
   --on-surface-variant: #c5c6ca;
+  --outline: #8f9194;
+  --outline-variant: #44474a;
+  --error: #ffb4ab;
+  --error-container: #93000a;
+  --on-error: #690005;
+  --success: #22c55e;
+  --warning: #eab308;
 }
 
 * {
@@ -42,4 +51,36 @@
 body {
   background: var(--background);
   color: var(--on-background);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #1a1c1e; }
+::-webkit-scrollbar-thumb { background: #44474a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #8f9194; }
+
+/* Shimmer animation for loading skeletons */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Focus styles */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .marketplace-grid { grid-template-columns: 1fr !important; }
+  .marketplace-sidebar { position: static !important; display: none; }
+  .marketplace-sidebar.open { display: block; }
+  .detail-grid { grid-template-columns: 1fr !important; }
+  .detail-buy-card { position: static !important; }
+}
+
+@media (max-width: 480px) {
+  .marketplace-cards { grid-template-columns: 1fr 1fr !important; }
 }
