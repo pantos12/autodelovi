@@ -2,13 +2,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '../components/CartProvider';
+import { getShippingFee, FREE_SHIPPING_THRESHOLD } from '@/lib/cart';
 
 export default function CartPage() {
   const { items, count, subtotal, updateQty, remove, clear } = useCart();
 
   const currency = items[0]?.price_currency || 'RSD';
-  const freeShippingThreshold = 10000;
-  const shipping = subtotal >= freeShippingThreshold ? 0 : 600;
+  const shipping = getShippingFee(subtotal);
   const total = subtotal + shipping;
 
   if (!items || items.length === 0) {
@@ -93,12 +93,24 @@ export default function CartPage() {
               <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600 }}>{subtotal.toLocaleString('sr-RS')} {currency}</span>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', gap: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+                {shipping === 0 ? 'Besplatna dostava' : `${shipping.toLocaleString('sr-RS')} RSD`}
               </span>
             </div>
+
+            {/* Free shipping progress */}
+            {shipping > 0 && (
+              <div style={{ marginBottom: '10px' }}>
+                <div style={{ background: '#252629', borderRadius: '4px', height: '4px', overflow: 'hidden', marginBottom: '4px' }}>
+                  <div style={{ background: '#f9372c', height: '100%', borderRadius: '4px', width: `${Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100)}%`, transition: 'width 0.3s' }} />
+                </div>
+                <p style={{ color: '#888', fontSize: '11px', textAlign: 'center' }}>
+                  Jos {(FREE_SHIPPING_THRESHOLD - subtotal).toLocaleString('sr-RS')} RSD do besplatne dostave
+                </p>
+              </div>
+            )}
 
             <div style={{ height: '1px', background: '#2a2b2f', margin: '14px 0' }} />
 
