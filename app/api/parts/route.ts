@@ -13,14 +13,14 @@ export async function GET(request: NextRequest) {
       category:  searchParams.get('category') ?? undefined,
       make:      searchParams.get('make') ?? undefined,
       model:     searchParams.get('model') ?? undefined,
-      year:      searchParams.get('year') ? parseInt(searchParams.get('year')!) : undefined,
+      year:      searchParams.get('year') ? parseInt(searchParams.get('year')!, 10) : undefined,
       supplier:  searchParams.get('supplier') ?? undefined,
       min_price: searchParams.get('min_price') ? parseFloat(searchParams.get('min_price')!) : undefined,
       max_price: searchParams.get('max_price') ? parseFloat(searchParams.get('max_price')!) : undefined,
       in_stock:  searchParams.get('in_stock') === 'true' ? true : undefined,
-      sort:      (searchParams.get('sort') as any) ?? 'newest',
-      page:      searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1,
-      per_page:  Math.min(parseInt(searchParams.get('per_page') ?? '24'), 100),
+      sort:      (searchParams.get('sort') as PartsQueryParams['sort']) ?? 'newest',
+      page:      Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1),
+      per_page:  Math.min(parseInt(searchParams.get('per_page') ?? '24', 10) || 24, 100),
     };
     const result = await getParts(params);
     return NextResponse.json(

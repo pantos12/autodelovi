@@ -4,14 +4,18 @@ import { supabase } from '@/lib/supabase';
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
+function escapeIlike(s: string): string {
+  return s.replace(/[%_\\]/g, c => '\\' + c);
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q')?.trim();
   if (!q || q.length < 2) return NextResponse.json({ data: [], meta: { total: 0 } });
 
   try {
-    const page = parseInt(searchParams.get('page') ?? '1');
-    const perPage = Math.min(parseInt(searchParams.get('per_page') ?? '20'), 50);
+    const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
+    const perPage = Math.min(parseInt(searchParams.get('per_page') ?? '20', 10) || 20, 50);
     const category = searchParams.get('category') ?? null;
     const minPrice = searchParams.get('min_price') ? parseFloat(searchParams.get('min_price')!) : null;
     const maxPrice = searchParams.get('max_price') ? parseFloat(searchParams.get('max_price')!) : null;
@@ -23,10 +27,11 @@ export async function GET(request: NextRequest) {
     });
 
     if (error) {
+      const eq = escapeIlike(q);
       const { data: fb, count } = await supabase
         .from('parts_v2')
         .select('id,slug,name,brand,part_number,price,price_eur,stock_quantity,images,category_id,supplier_id', { count: 'exact' })
-        .or(`name.ilike.%${q}%,part_number.ilike.%${q}%,brand.ilike.%${q}%`)
+        .or(`name.ilike.%${eq}%,part_number.ilike.%${eq}%,brand.ilike.%${eq}%`)
         .in('status', ['active','out_of_stock'])
         .range((page-1)*perPage, page*perPage-1);
       return NextResponse.json({ data: fb ?? [], meta: { total: count ?? 0, page, per_page: perPage } });

@@ -68,9 +68,9 @@ export default function CartPage() {
                   </div>
                   <div className="cart-item-actions" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button onClick={() => updateQty(item.part_id, Math.max(1, item.quantity - 1))} style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                      <button onClick={() => updateQty(item.part_id, Math.max(1, item.quantity - 1))} aria-label="Smanji kolicinu" style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
                       <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600, minWidth: '24px', textAlign: 'center' }}>{item.quantity}</span>
-                      <button onClick={() => updateQty(item.part_id, item.quantity + 1)} style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                      <button onClick={() => updateQty(item.part_id, item.quantity + 1)} aria-label="Povecaj kolicinu" style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
                     </div>
                     <div style={{ color: '#fff', fontSize: '15px', fontWeight: 700 }}>{lineTotal.toLocaleString('sr-RS')} {item.price_currency}</div>
                     <button onClick={() => remove(item.part_id)} aria-label="Ukloni" style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '18px', cursor: 'pointer', padding: '2px 6px' }}>×</button>
@@ -96,7 +96,7 @@ export default function CartPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+                {shipping === 0 ? 'Besplatna dostava' : `${shipping} RSD`}
               </span>
             </div>
 
