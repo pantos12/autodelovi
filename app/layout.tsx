@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import NavBar from './components/NavBar';
 import CartProvider from './components/CartProvider';
+import BackToTop from './components/BackToTop';
 
 export const metadata: Metadata = {
   title: {
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'AutoDelovi.sale' }],
   creator: 'AutoDelovi.sale',
   metadataBase: new URL('https://autodelovi.sale'),
+  manifest: '/manifest.json',
   openGraph: {
     type: 'website',
     locale: 'sr_RS',
@@ -30,15 +32,25 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  other: {
+    'theme-color': '#f9372c',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="sr">
+      <head>
+        <link rel="preconnect" href="https://cdn.spareto.com" />
+        <link rel="preconnect" href="https://cdn.autodoc.de" />
+        <link rel="dns-prefetch" href="https://autohub.rs" />
+        <link rel="dns-prefetch" href="https://prodajadelova.rs" />
+      </head>
       <body style={{ margin: 0, background: '#0c0d0f' }}>
         <CartProvider>
           <NavBar />
           {children}
+          <BackToTop />
         </CartProvider>
       </body>
     </html>

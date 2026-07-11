@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /order/
+Disallow: /checkout
+
+Sitemap: https://autodelovi.sale/sitemap.xml
