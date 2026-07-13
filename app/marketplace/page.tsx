@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -20,8 +20,6 @@ const STATIC_CATEGORIES = [
 
 const PER_PAGE = 24;
 
-// TODO(v3.4.0): Once /api/parts is extended to return offers[], replace this
-// fallback with `computeBand(part.best_offer)` from lib/confidence.ts.
 function bandForPart(part: Part): Band {
   if ((part.stock_quantity ?? 0) > 0) return 'verified';
   return 'inquiry';
@@ -105,6 +103,8 @@ function MarketplaceContent() {
     return Number.isFinite(p) && p > 0 ? p : 1;
   });
 
+  const fetchIdRef = useRef(0);
+
   useEffect(() => {
     const q = searchParams.get('q');
     if (q) {
@@ -113,49 +113,62 @@ function MarketplaceContent() {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        if (searchQuery && searchQuery.length >= 2) {
-          const params = new URLSearchParams();
-          params.set('q', searchQuery);
-          if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
-          params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
-          const res = await fetch(`/api/search?${params}`);
-          const json = await res.json();
-          setParts(json.data || []);
-          setTotal(json.meta?.total || json.data?.length || 0);
-        } else {
-          const params = new URLSearchParams();
-          if (filterMake) params.set('make', filterMake);
-          if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
-          params.set('sort', sortBy);
-          params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
-          const res = await fetch(`/api/parts?${params}`);
-          const json = await res.json();
-          setParts(json.data || []);
-          setTotal(json.meta?.total || json.data?.length || 0);
-        }
-      } catch {
-        setParts([]);
-      } finally {
-        setLoading(false);
+  const fetchParts = useCallback(async (currentPage: number) => {
+    const id = ++fetchIdRef.current;
+    setLoading(true);
+    try {
+      if (searchQuery && searchQuery.length >= 2) {
+        const params = new URLSearchParams();
+        params.set('q', searchQuery);
+        if (filterCategory) params.set('category', filterCategory);
+        if (filterInStock) params.set('in_stock', 'true');
+        params.set('per_page', String(PER_PAGE));
+        params.set('page', String(currentPage));
+        const res = await fetch(`/api/search?${params}`);
+        const json = await res.json();
+        if (id !== fetchIdRef.current) return;
+        setParts(json.data || []);
+        setTotal(json.meta?.total || json.data?.length || 0);
+      } else {
+        const params = new URLSearchParams();
+        if (filterMake) params.set('make', filterMake);
+        if (filterCategory) params.set('category', filterCategory);
+        if (filterInStock) params.set('in_stock', 'true');
+        params.set('sort', sortBy);
+        params.set('per_page', String(PER_PAGE));
+        params.set('page', String(currentPage));
+        const res = await fetch(`/api/parts?${params}`);
+        const json = await res.json();
+        if (id !== fetchIdRef.current) return;
+        setParts(json.data || []);
+        setTotal(json.meta?.total || json.data?.length || 0);
       }
-    };
-    load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
+    } catch {
+      if (id === fetchIdRef.current) setParts([]);
+    } finally {
+      if (id === fetchIdRef.current) setLoading(false);
+    }
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
 
-  // Persist ?avail=1
+  useEffect(() => {
+    fetchParts(page);
+  }, [fetchParts, page]);
+
+  const prevFiltersRef = useRef({ filterMake, filterCategory, filterInStock, sortBy, searchQuery });
+  useEffect(() => {
+    const prev = prevFiltersRef.current;
+    const filtersChanged =
+      prev.filterMake !== filterMake ||
+      prev.filterCategory !== filterCategory ||
+      prev.filterInStock !== filterInStock ||
+      prev.sortBy !== sortBy ||
+      prev.searchQuery !== searchQuery;
+    prevFiltersRef.current = { filterMake, filterCategory, filterInStock, sortBy, searchQuery };
+    if (filtersChanged && page !== 1) {
+      setPage(1);
+    }
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
+
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
     if (availOnly) params.set('avail', '1');
@@ -190,7 +203,6 @@ function MarketplaceContent() {
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
   };
 
-  // Client-side avail filter (green + yellow)
   const displayParts = availOnly
     ? parts.filter(p => {
         const b = bandForPart(p);
@@ -211,8 +223,8 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <div className="marketplace-layout" style={s.container}>
+        <div className="marketplace-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -236,28 +248,15 @@ function MarketplaceContent() {
 
           <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '16px' }}>Filteri</h3>
 
-          {/* Availability band filter */}
           <div style={{ marginBottom: '16px' }}>
             <label style={s.label}>Dostupnost</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="avail"
-                  checked={!availOnly}
-                  onChange={() => setAvailOnly(false)}
-                  style={{ accentColor: '#ff4d00' }}
-                />
+                <input type="radio" name="avail" checked={!availOnly} onChange={() => setAvailOnly(false)} style={{ accentColor: '#ff4d00' }} />
                 Sve ponude
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="avail"
-                  checked={availOnly}
-                  onChange={() => setAvailOnly(true)}
-                  style={{ accentColor: '#ff4d00' }}
-                />
+                <input type="radio" name="avail" checked={availOnly} onChange={() => setAvailOnly(true)} style={{ accentColor: '#ff4d00' }} />
                 Samo dostupno (🟢 + 🟡)
               </label>
             </div>
@@ -355,10 +354,6 @@ function MarketplaceContent() {
                         <Link href={partUrl} style={{ flex: 1, padding: '8px', background: '#333', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px' }}>Detalji</Link>
                         <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
-
-                      <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
-                      </p>
                     </div>
                   </div>
                 );
