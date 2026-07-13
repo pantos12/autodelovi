@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,17 +9,15 @@ import AddToCartButton from '@/app/components/AddToCartButton';
 
 export const dynamic = 'force-dynamic';
 
-async function fetchPart(id: string): Promise<Part | null> {
-  // Try slug first, then UUID
+const fetchPart = cache(async (id: string): Promise<Part | null> => {
   const bySlug = await getPartBySlug(id);
   if (bySlug) return bySlug;
   return getPartById(id);
-}
+});
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const part = await fetchPart(params.id);
   if (!part) return { title: 'Deo nije pronađen' };
-  const vehicle = part.compatible_vehicles?.[0];
   return {
     title: (part.name_sr || part.name) + ' | AutoDelovi.sale',
     description: part.description_sr || part.description || `${part.name_sr || part.name}. OEM: ${part.oem_number || part.part_number}.`,
@@ -55,7 +54,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
         {/* Breadcrumb */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px' }}>
+        <nav aria-label="Breadcrumb" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px', flexWrap: 'wrap' }}>
           <Link href="/" style={{ color: '#aaa', textDecoration: 'none' }}>Početna</Link>
           <span style={{ color: '#555' }}>/</span>
           <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none' }}>Marketplace</Link>
@@ -67,12 +66,11 @@ export default async function PartDetail({ params }: { params: { id: string } })
             </>
           )}
           <span style={{ color: '#fff' }}>{part.name_sr || part.name}</span>
-        </div>
+        </nav>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
+        <div className="part-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
           {/* Left column */}
           <div>
-            {/* Image */}
             <div style={{ position: 'relative', background: '#1a1b1f', borderRadius: '16px', height: '320px', marginBottom: '24px', border: '1px solid #252629', overflow: 'hidden' }}>
               <Image
                 src={part.images?.[0] || '/images/part-placeholder.svg'}
@@ -85,22 +83,19 @@ export default async function PartDetail({ params }: { params: { id: string } })
               />
             </div>
 
-            {/* Title */}
             <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>{part.name_sr || part.name}</h1>
             <p style={{ color: '#aaa', fontSize: '16px', marginBottom: '24px' }}>{part.name_sr ? part.name : part.part_number}</p>
 
-            {/* Specs */}
             <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629', marginBottom: '24px' }}>
               <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, padding: '16px 20px', borderBottom: '1px solid #252629' }}>Specifikacije</h2>
               {specs.map((spec, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 20px', borderBottom: i < specs.length - 1 ? '1px solid #252629' : 'none', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                <div key={spec.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 20px', borderBottom: i < specs.length - 1 ? '1px solid #252629' : 'none', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
                   <span style={{ color: '#aaa', fontSize: '14px' }}>{spec.label}</span>
                   <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500 }}>{spec.value}</span>
                 </div>
               ))}
             </div>
 
-            {/* Description */}
             {(part.description_sr || part.description) && (
               <div style={{ background: '#1a1b1f', borderRadius: '12px', padding: '20px', border: '1px solid #252629', marginBottom: '24px' }}>
                 <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginBottom: '12px' }}>Opis</h2>
@@ -108,7 +103,6 @@ export default async function PartDetail({ params }: { params: { id: string } })
               </div>
             )}
 
-            {/* Specs map */}
             {part.specs && Object.keys(part.specs).length > 0 && (
               <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629', marginBottom: '24px' }}>
                 <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, padding: '16px 20px', borderBottom: '1px solid #252629' }}>Tehničke karakteristike</h2>
@@ -123,7 +117,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
           </div>
 
           {/* Right: Buy card */}
-          <div style={{ position: 'sticky', top: '80px' }}>
+          <div className="part-detail-buy" style={{ position: 'sticky', top: '80px' }}>
             <div style={{ background: '#1a1b1f', borderRadius: '16px', padding: '24px', border: '1px solid #252629' }}>
               <div style={{ fontSize: '32px', fontWeight: 800, color: '#ff4d00', marginBottom: '4px' }}>
                 {part.price.toLocaleString('sr-RS')} RSD
@@ -137,7 +131,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
               <AddToCartButton part={part} inStock={inStock} full />
               <Link
                 href={`/comparison?ids=${part.id}`}
-                style={{ display: 'block', width: '100%', padding: '12px', background: '#252629', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: 600, textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' as const }}
+                style={{ display: 'block', width: '100%', padding: '12px', background: '#252629', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: 600, textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' as const, marginTop: '8px' }}
               >
                 ≈ Uporedi
               </Link>
@@ -167,8 +161,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
           <div style={{ marginTop: '48px' }}>
             <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, marginBottom: '20px' }}>Slični delovi</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-              {related.map((rp, idx) => {
-                const rpInStock = (rp.stock_quantity ?? 0) > 0;
+              {related.map((rp) => {
                 return (
                   <div key={rp.id} style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
                     <div style={{ position: 'relative', background: '#252629', height: '120px', overflow: 'hidden' }}>
