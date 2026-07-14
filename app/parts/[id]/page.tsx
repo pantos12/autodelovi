@@ -2,18 +2,18 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import { getPartBySlug, getPartById, getRelatedParts } from '@/lib/supabase';
 import type { Part } from '@/lib/types';
 import AddToCartButton from '@/app/components/AddToCartButton';
 
 export const dynamic = 'force-dynamic';
 
-async function fetchPart(id: string): Promise<Part | null> {
-  // Try slug first, then UUID
+const fetchPart = cache(async (id: string): Promise<Part | null> => {
   const bySlug = await getPartBySlug(id);
   if (bySlug) return bySlug;
   return getPartById(id);
-}
+});
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const part = await fetchPart(params.id);
@@ -69,7 +69,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
           <span style={{ color: '#fff' }}>{part.name_sr || part.name}</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
+        <div className="part-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
           {/* Left column */}
           <div>
             {/* Image */}
@@ -123,7 +123,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
           </div>
 
           {/* Right: Buy card */}
-          <div style={{ position: 'sticky', top: '80px' }}>
+          <div className="part-detail-buy-card" style={{ position: 'sticky', top: '80px' }}>
             <div style={{ background: '#1a1b1f', borderRadius: '16px', padding: '24px', border: '1px solid #252629' }}>
               <div style={{ fontSize: '32px', fontWeight: 800, color: '#ff4d00', marginBottom: '4px' }}>
                 {part.price.toLocaleString('sr-RS')} RSD
