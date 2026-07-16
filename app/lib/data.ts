@@ -106,7 +106,7 @@ export function getYears(): string[] {
   return years;
 }
 
-export interface Part {
+export interface MockPart {
   id: string;
   name: string;
   nameSr: string;
@@ -124,7 +124,7 @@ export interface Part {
   description: string;
 }
 
-export const mockParts: Part[] = [
+export const mockParts: MockPart[] = [
   { id: '1', name: 'Brake Disc Front', nameSr: 'Prednji Kocioni Disk', category: 'Kocnice', categorySlug: 'kocnice', make: 'Volkswagen', model: 'Golf', yearFrom: 2012, yearTo: 2020, oem: '5Q0615301', price: 4800, supplier: 'Brembo Serbia', inStock: true, image: '', description: 'Originalni prednji kocioni disk za VW Golf 7' },
   { id: '2', name: 'Oil Filter', nameSr: 'Filter Ulja', category: 'Motor', categorySlug: 'motor', make: 'Volkswagen', model: 'Golf', yearFrom: 2008, yearTo: 2020, oem: '06J115403Q', price: 850, supplier: 'Mann Filter Serbia', inStock: true, image: '', description: 'Filter ulja za VW Golf motore 1.2, 1.4 TSI' },
   { id: '3', name: 'Alternator', nameSr: 'Alternator', category: 'Elektronika', categorySlug: 'elektronika', make: 'BMW', model: '3 Serija', yearFrom: 2005, yearTo: 2012, oem: '12317552980', price: 18500, supplier: 'Bosch Auto', inStock: true, image: '', description: 'Remanufakturisani alternator 150A za BMW E90' },
