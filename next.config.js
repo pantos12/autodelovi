@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  // These packages use runtime dynamic require() that webpack can't analyze.
-  // Mark them as external so Next.js leaves them untouched in the server bundle.
   experimental: {
     serverComponentsExternalPackages: [
       'playwright-extra',
