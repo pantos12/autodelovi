@@ -37,14 +37,23 @@ function ComparisonContent() {
   const initialIds = searchParams.get('ids')?.split(',').filter(Boolean) || [];
   const [selectedIds, setSelectedIds] = useState<string[]>(initialIds.slice(0, 3));
   const [parts, setParts] = useState<Part[]>([]);
-  const [allParts, setAllParts] = useState<Part[]>([]);
+  const [searchResults, setSearchResults] = useState<Part[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    // Load all parts for search
-    fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
-  }, []);
+    if (search.trim().length < 2) { setSearchResults([]); return; }
+    setSearching(true);
+    const timeout = setTimeout(() => {
+      fetch(`/api/parts?q=${encodeURIComponent(search.trim())}&per_page=20`)
+        .then(r => r.json())
+        .then(d => setSearchResults(d.data || []))
+        .catch(() => setSearchResults([]))
+        .finally(() => setSearching(false));
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [search]);
 
   useEffect(() => {
     if (selectedIds.length === 0) { setParts([]); return; }
@@ -55,10 +64,7 @@ function ComparisonContent() {
       .finally(() => setLoading(false));
   }, [selectedIds]);
 
-  const filtered = allParts.filter(p =>
-    (p.name_sr || p.name).toLowerCase().includes(search.toLowerCase()) ||
-    (p.brand || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = searchResults.filter(p => !selectedIds.includes(p.id));
 
   const addPart = (id: string) => {
     if (selectedIds.length < 3 && !selectedIds.includes(id)) setSelectedIds([...selectedIds, id]);
@@ -80,7 +86,8 @@ function ComparisonContent() {
           <p style={{ fontSize: '64px', marginBottom: '16px' }}>⚖️</p>
           <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '12px' }}>Poređenje delova</h1>
           <p style={{ color: '#aaa', marginBottom: '32px' }}>Izaberite do 3 dela za poređenje</p>
-          <input style={{ ...s.input, maxWidth: '400px', margin: '0 auto 16px' }} placeholder="Pretraži delove..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input style={{ ...s.input, maxWidth: '400px', margin: '0 auto 16px' }} placeholder="Pretraži delove (min 2 slova)..." value={search} onChange={e => setSearch(e.target.value)} />
+          {searching && <p style={{ color: '#888', fontSize: '13px', marginBottom: '8px' }}>Pretražujem...</p>}
           <div style={{ maxWidth: '600px', margin: '0 auto', maxHeight: '300px', overflowY: 'auto' }}>
             {filtered.slice(0, 20).map(p => (
               <div key={p.id} onClick={() => addPart(p.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1a1b1f', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer' }}>
