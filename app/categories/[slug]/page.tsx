@@ -25,7 +25,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
   const category = STATIC_CATEGORIES.find(c => c.slug === params.slug);
 
   const [partsResult, dbCategories] = await Promise.all([
-    getParts({ category: params.slug, per_page: 60 }).catch(() => ({ parts: [] as any[], total: 0, page: 1, per_page: 60, total_pages: 1 })),
+    getParts({ category: params.slug, per_page: 24 }).catch(() => ({ parts: [] as any[], total: 0, page: 1, per_page: 24, total_pages: 1 })),
     getCategories().catch(() => []),
   ]);
 

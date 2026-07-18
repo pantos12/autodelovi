@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import type { Part } from '@/lib/types';
@@ -37,14 +37,28 @@ function ComparisonContent() {
   const initialIds = searchParams.get('ids')?.split(',').filter(Boolean) || [];
   const [selectedIds, setSelectedIds] = useState<string[]>(initialIds.slice(0, 3));
   const [parts, setParts] = useState<Part[]>([]);
-  const [allParts, setAllParts] = useState<Part[]>([]);
+  const [searchResults, setSearchResults] = useState<Part[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const searchParts = useCallback((query: string) => {
+    if (query.length < 2) { setSearchResults([]); return; }
+    setSearching(true);
+    fetch(`/api/search?q=${encodeURIComponent(query)}&per_page=20`)
+      .then(r => r.json())
+      .then(d => setSearchResults(d.data || []))
+      .catch(() => setSearchResults([]))
+      .finally(() => setSearching(false));
+  }, []);
 
   useEffect(() => {
-    // Load all parts for search
-    fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
-  }, []);
+    clearTimeout(debounceRef.current);
+    if (search.length < 2) { setSearchResults([]); return; }
+    debounceRef.current = setTimeout(() => searchParts(search), 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [search, searchParts]);
 
   useEffect(() => {
     if (selectedIds.length === 0) { setParts([]); return; }
@@ -55,10 +69,7 @@ function ComparisonContent() {
       .finally(() => setLoading(false));
   }, [selectedIds]);
 
-  const filtered = allParts.filter(p =>
-    (p.name_sr || p.name).toLowerCase().includes(search.toLowerCase()) ||
-    (p.brand || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = searchResults.filter(p => !selectedIds.includes(p.id));
 
   const addPart = (id: string) => {
     if (selectedIds.length < 3 && !selectedIds.includes(id)) setSelectedIds([...selectedIds, id]);
