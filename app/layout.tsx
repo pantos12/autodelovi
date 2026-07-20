@@ -1,7 +1,13 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import NavBar from './components/NavBar';
 import CartProvider from './components/CartProvider';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
 
 export const metadata: Metadata = {
   title: {
@@ -32,10 +38,27 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'AutoDelovi.sale',
+  url: 'https://autodelovi.sale',
+  description: 'Premium marketplace za auto delove u Srbiji. 50,000+ delova od 200+ proverenih dobavljaca.',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: 'https://autodelovi.sale/marketplace?q={search_term_string}',
+    'query-input': 'required name=search_term_string',
+  },
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="sr">
       <body style={{ margin: 0, background: '#0c0d0f' }}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <CartProvider>
           <NavBar />
           {children}
