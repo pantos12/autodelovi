@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -36,6 +36,7 @@ function bandColor(band: Band): string {
 function BandBadge({ band }: { band: Band }) {
   return (
     <div
+      data-testid="band-badge"
       style={{
         position: 'absolute',
         top: 8,
@@ -113,7 +114,19 @@ function MarketplaceContent() {
     }
   }, [searchParams]);
 
+  const filterKey = `${filterMake}|${filterCategory}|${filterInStock}|${sortBy}|${searchQuery}`;
+  const prevFilterKey = useRef(filterKey);
+
   useEffect(() => {
+    let cancelled = false;
+    const filtersChanged = prevFilterKey.current !== filterKey;
+    prevFilterKey.current = filterKey;
+    const effectivePage = filtersChanged ? 1 : page;
+    if (filtersChanged && page !== 1) {
+      setPage(1);
+      return;
+    }
+
     const load = async () => {
       setLoading(true);
       try {
@@ -123,8 +136,9 @@ function MarketplaceContent() {
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
           params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
+          params.set('page', String(effectivePage));
           const res = await fetch(`/api/search?${params}`);
+          if (cancelled) return;
           const json = await res.json();
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
@@ -135,25 +149,22 @@ function MarketplaceContent() {
           if (filterInStock) params.set('in_stock', 'true');
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
+          params.set('page', String(effectivePage));
           const res = await fetch(`/api/parts?${params}`);
+          if (cancelled) return;
           const json = await res.json();
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
         }
       } catch {
-        setParts([]);
+        if (!cancelled) setParts([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+    return () => { cancelled = true; };
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page, filterKey]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -211,8 +222,14 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-grid { grid-template-columns: 1fr !important; }
+          .mp-sidebar { position: static !important; }
+        }
+      `}</style>
+      <div className="mp-grid" style={s.container}>
+        <div className="mp-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -320,7 +337,7 @@ function MarketplaceContent() {
                 const band = bandForPart(part);
                 const priority = idx < 4;
                 return (
-                  <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
+                  <div key={part.id} data-testid="part-card" style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
                     <div style={{ position: 'relative', background: '#252629', height: '140px', overflow: 'hidden' }}>
                       <SmartImage src={part.images?.[0]} alt={part.name} priority={priority} />
                       <BandBadge band={band} />
@@ -353,12 +370,14 @@ function MarketplaceContent() {
 
                       <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
                         <Link href={partUrl} style={{ flex: 1, padding: '8px', background: '#333', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px' }}>Detalji</Link>
-                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
+                        <button data-testid="compare-toggle" onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }} aria-label="Uporedi">≈</button>
                       </div>
 
-                      <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
-                      </p>
+                      {part.scraped_at && (
+                        <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
+                          Ažurirano: {new Date(part.scraped_at).toLocaleDateString('sr-RS')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
@@ -401,6 +420,7 @@ function MarketplaceContent() {
               {pageNumbers().map(n => (
                 <button
                   key={n}
+                  data-testid={`pagination-${n}`}
                   onClick={() => setPage(n)}
                   style={{
                     padding: '8px 12px',
