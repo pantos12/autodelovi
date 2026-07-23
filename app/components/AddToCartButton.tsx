@@ -64,7 +64,7 @@ export default function AddToCartButton({ part, label, full, inStock }: Props) {
   const defaultLabel = disabled ? 'Nema na stanju' : label || 'Dodaj u korpu';
 
   return (
-    <button onClick={handleAdd} disabled={disabled} style={baseStyle}>
+    <button data-testid="add-to-cart" onClick={handleAdd} disabled={disabled} style={baseStyle}>
       {added ? 'Dodato u korpu ✓' : defaultLabel}
     </button>
   );
