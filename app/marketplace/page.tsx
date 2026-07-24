@@ -181,6 +181,8 @@ function MarketplaceContent() {
     setSearchInput('');
   }
 
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
   const s = {
     page: { background: '#0c0d0f', minHeight: '100vh' } as React.CSSProperties,
     container: { maxWidth: '1200px', margin: '0 auto', padding: '24px 16px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' } as React.CSSProperties,
@@ -211,8 +213,30 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none !important; }
+          .mp-sidebar.mp-sidebar--open { display: block !important; position: fixed !important; top: 64px !important; left: 0 !important; right: 0 !important; bottom: 0 !important; z-index: 90 !important; border-radius: 0 !important; overflow-y: auto !important; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .mp-filter-toggle { display: none !important; }
+        }
+      `}</style>
+
+      {/* Mobile filter toggle */}
+      <div className="mp-filter-toggle" style={{ display: 'none', padding: '12px 16px', justifyContent: 'flex-end' }}>
+        <button
+          onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+          style={{ padding: '10px 20px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          <span style={{ fontSize: '16px' }}>☰</span> Filteri
+        </button>
+      </div>
+
+      <div className="mp-container" style={s.container}>
+        <div className={`mp-sidebar${mobileFiltersOpen ? ' mp-sidebar--open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -283,8 +307,11 @@ function MarketplaceContent() {
             <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); setMobileFiltersOpen(false); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
             Resetuj sve
+          </button>
+          <button onClick={() => setMobileFiltersOpen(false)} className="mp-filter-toggle" style={{ display: 'none', width: '100%', padding: '10px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600, marginTop: '8px' }}>
+            Primeni filtere
           </button>
         </div>
         <div>
