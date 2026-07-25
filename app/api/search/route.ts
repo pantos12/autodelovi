@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const total = data?.[0]?.total_count ?? 0;
     return NextResponse.json(
       { data: data ?? [], meta: { total, page, per_page: perPage, total_pages: Math.ceil(total/perPage), query: q } },
-      { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' } }
+      { headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300' } }
     );
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
