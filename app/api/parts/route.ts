@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const result = await getParts(params);
     return NextResponse.json(
       { data: result.parts, meta: { total: result.total, page: result.page, per_page: result.per_page, total_pages: result.total_pages } },
-      { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
+      { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' } }
     );
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

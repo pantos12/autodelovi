@@ -1,7 +1,7 @@
 import { extractPrice, slugify } from './base';
 import type { ScrapedPart, NormalizedPart, CompatibleVehicle, PartCondition } from '../types';
 
-let EUR_RATE = 117.5;
+let EUR_RATE = parseFloat(process.env.EUR_RATE || '117.5');
 export function setEurRate(rate: number) { if (rate > 50 && rate < 200) EUR_RATE = rate; }
 
 const CATEGORY_SLUGS: Record<string, string> = {
