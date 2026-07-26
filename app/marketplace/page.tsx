@@ -105,6 +105,8 @@ function MarketplaceContent() {
     return Number.isFinite(p) && p > 0 ? p : 1;
   });
 
+  const [filterKey, setFilterKey] = useState(0);
+
   useEffect(() => {
     const q = searchParams.get('q');
     if (q) {
@@ -112,6 +114,11 @@ function MarketplaceContent() {
       setSearchInput(q);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    setPage(1);
+    setFilterKey(k => k + 1);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
 
   useEffect(() => {
     const load = async () => {
@@ -148,12 +155,8 @@ function MarketplaceContent() {
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey, page]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -211,8 +214,18 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-layout { grid-template-columns: 1fr !important; }
+          .mp-sidebar { position: static !important; }
+        }
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+      `}</style>
+      <div style={s.container} className="mp-layout">
+        <div style={s.sidebar} className="mp-sidebar">
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>

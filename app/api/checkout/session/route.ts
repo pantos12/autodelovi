@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase';
 import { stripe, isStripeConfigured } from '@/lib/stripe';
+import { computeShipping } from '@/lib/shipping';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
     const subtotal = Number(
       resolved.reduce((acc, r) => acc + r.lineTotal, 0).toFixed(2)
     );
-    const shipping_fee = subtotal >= 10000 ? 0 : 600;
+    const shipping_fee = computeShipping(subtotal);
     const total = Number((subtotal + shipping_fee).toFixed(2));
     const order_number = generateOrderNumber();
     const currency = 'RSD';
