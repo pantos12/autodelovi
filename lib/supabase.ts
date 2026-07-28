@@ -33,7 +33,10 @@ export async function getParts(params: {
     .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`, { count: 'exact' })
     .eq('status', 'active');
 
-  if (q) query = query.or(`name.ilike.%${q}%,name_sr.ilike.%${q}%,part_number.ilike.%${q}%,oem_number.ilike.%${q}%,brand.ilike.%${q}%`);
+  if (q) {
+    const eq = q.replace(/[%_\\]/g, c => '\\' + c);
+    query = query.or(`name.ilike.%${eq}%,name_sr.ilike.%${eq}%,part_number.ilike.%${eq}%,oem_number.ilike.%${eq}%,brand.ilike.%${eq}%`);
+  }
   if (category) query = query.eq('category_id', category);
   if (supplier) query = query.eq('supplier_id', supplier);
   if (min_price !== undefined) query = query.gte('price', min_price);
