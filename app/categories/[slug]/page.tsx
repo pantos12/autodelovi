@@ -3,6 +3,8 @@ import Image from 'next/image';
 import { getParts, getCategories } from '@/lib/supabase';
 import type { Metadata } from 'next';
 
+export const revalidate = 3600;
+
 const STATIC_CATEGORIES = [
   { slug: 'motor', name: 'Motor', icon: '⚙️', description: 'Delovi za motor' },
   { slug: 'kocnice', name: 'Kocnice', icon: '🛑', description: 'Kočioni sistem' },
@@ -110,7 +112,6 @@ export default async function CategoryPage({ params }: { params: { slug: string 
                       style={{ objectFit: 'cover' }}
                       priority={idx < 4}
                       loading={idx < 4 ? undefined : 'lazy'}
-                      unoptimized
                     />
                   </div>
                   <div style={{ padding: '12px' }}>

@@ -19,7 +19,6 @@ export async function POST(req: Request) {
 
     const { session_id, items } = body;
 
-    // 1) Upsert cart row by session_id
     const { data: cartRow, error: upsertErr } = await supabaseAdmin
       .from('carts')
       .upsert(
@@ -41,41 +40,50 @@ export async function POST(req: Request) {
 
     const cartId = (cartRow as { id: string }).id;
 
-    // 2) Delete existing items for this cart
-    const { error: delErr } = await supabaseAdmin
-      .from('cart_items')
-      .delete()
-      .eq('cart_id', cartId);
+    if (items.length === 0) {
+      const { error: delErr } = await supabaseAdmin
+        .from('cart_items')
+        .delete()
+        .eq('cart_id', cartId);
 
-    if (delErr) {
-      return NextResponse.json(
-        { ok: false, error: delErr.message },
-        { status: 200 }
-      );
+      if (delErr) {
+        return NextResponse.json({ ok: false, error: delErr.message }, { status: 200 });
+      }
+      return NextResponse.json({ ok: true });
     }
 
-    // 3) Insert fresh items (if any)
-    if (items.length > 0) {
-      const rows = items.map(it => ({
-        cart_id: cartId,
-        part_id: it.part_id,
-        quantity: it.quantity,
-        name: it.name,
-        brand: it.brand,
-        price: it.price,
-        price_currency: it.price_currency,
-        image_url: it.image_url,
-        supplier_id: it.supplier_id,
-        supplier_name: it.supplier_name,
-        part_number: it.part_number,
-      }));
-      const { error: insErr } = await supabaseAdmin.from('cart_items').insert(rows);
-      if (insErr) {
-        return NextResponse.json(
-          { ok: false, error: insErr.message },
-          { status: 200 }
-        );
-      }
+    const incomingPartIds = items.map(it => it.part_id);
+
+    const { error: delStaleErr } = await supabaseAdmin
+      .from('cart_items')
+      .delete()
+      .eq('cart_id', cartId)
+      .not('part_id', 'in', `(${incomingPartIds.join(',')})`);
+
+    if (delStaleErr) {
+      return NextResponse.json({ ok: false, error: delStaleErr.message }, { status: 200 });
+    }
+
+    const rows = items.map(it => ({
+      cart_id: cartId,
+      part_id: it.part_id,
+      quantity: it.quantity,
+      name: it.name,
+      brand: it.brand,
+      price: it.price,
+      price_currency: it.price_currency,
+      image_url: it.image_url,
+      supplier_id: it.supplier_id,
+      supplier_name: it.supplier_name,
+      part_number: it.part_number,
+    }));
+
+    const { error: upsertItemsErr } = await supabaseAdmin
+      .from('cart_items')
+      .upsert(rows, { onConflict: 'cart_id,part_id' });
+
+    if (upsertItemsErr) {
+      return NextResponse.json({ ok: false, error: upsertItemsErr.message }, { status: 200 });
     }
 
     return NextResponse.json({ ok: true });

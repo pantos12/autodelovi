@@ -142,10 +142,12 @@ export function getCartTotal(): { subtotal: number; count: number; currency: str
   return { subtotal, count, currency };
 }
 
-// ─── Server sync (best-effort) ──────────────────────────────
+// ─── Server sync (best-effort, debounced) ──────────────────
 
-export async function syncToSupabase(items: CartItem[]): Promise<void> {
-  if (!isBrowser()) return;
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingItems: CartItem[] | null = null;
+
+async function doSync(items: CartItem[]): Promise<void> {
   try {
     const session_id = getSessionId();
     if (!session_id) return;
@@ -158,4 +160,16 @@ export async function syncToSupabase(items: CartItem[]): Promise<void> {
   } catch {
     // swallow — best-effort only
   }
+}
+
+export async function syncToSupabase(items: CartItem[]): Promise<void> {
+  if (!isBrowser()) return;
+  pendingItems = items;
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    if (pendingItems !== null) {
+      doSync(pendingItems);
+      pendingItems = null;
+    }
+  }, 500);
 }

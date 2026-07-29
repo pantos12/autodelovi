@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import type { Part } from '@/lib/types';
@@ -37,14 +37,34 @@ function ComparisonContent() {
   const initialIds = searchParams.get('ids')?.split(',').filter(Boolean) || [];
   const [selectedIds, setSelectedIds] = useState<string[]>(initialIds.slice(0, 3));
   const [parts, setParts] = useState<Part[]>([]);
-  const [allParts, setAllParts] = useState<Part[]>([]);
+  const [searchResults, setSearchResults] = useState<Part[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const searchParts = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const res = await fetch(`/api/parts?q=${encodeURIComponent(query)}&per_page=10`);
+      const json = await res.json();
+      setSearchResults(json.data || []);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  }, []);
 
   useEffect(() => {
-    // Load all parts for search
-    fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
-  }, []);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => searchParts(search), 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [search, searchParts]);
 
   useEffect(() => {
     if (selectedIds.length === 0) { setParts([]); return; }
@@ -55,13 +75,14 @@ function ComparisonContent() {
       .finally(() => setLoading(false));
   }, [selectedIds]);
 
-  const filtered = allParts.filter(p =>
-    (p.name_sr || p.name).toLowerCase().includes(search.toLowerCase()) ||
-    (p.brand || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = searchResults.filter(p => !selectedIds.includes(p.id));
 
   const addPart = (id: string) => {
-    if (selectedIds.length < 3 && !selectedIds.includes(id)) setSelectedIds([...selectedIds, id]);
+    if (selectedIds.length < 3 && !selectedIds.includes(id)) {
+      setSelectedIds([...selectedIds, id]);
+      setSearch('');
+      setSearchResults([]);
+    }
   };
   const removePart = (id: string) => setSelectedIds(selectedIds.filter(x => x !== id));
 
@@ -81,6 +102,7 @@ function ComparisonContent() {
           <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '12px' }}>Poređenje delova</h1>
           <p style={{ color: '#aaa', marginBottom: '32px' }}>Izaberite do 3 dela za poređenje</p>
           <input style={{ ...s.input, maxWidth: '400px', margin: '0 auto 16px' }} placeholder="Pretraži delove..." value={search} onChange={e => setSearch(e.target.value)} />
+          {searching && <p style={{ color: '#888', fontSize: '13px' }}>Pretraga...</p>}
           <div style={{ maxWidth: '600px', margin: '0 auto', maxHeight: '300px', overflowY: 'auto' }}>
             {filtered.slice(0, 20).map(p => (
               <div key={p.id} onClick={() => addPart(p.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1a1b1f', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer' }}>
@@ -88,8 +110,11 @@ function ComparisonContent() {
                 <span style={{ color: '#ff4d00', fontSize: '14px', fontWeight: 600 }}>{p.price.toLocaleString('sr-RS')} RSD</span>
               </div>
             ))}
+            {search.length >= 2 && !searching && filtered.length === 0 && (
+              <p style={{ color: '#666', fontSize: '13px', padding: '16px' }}>Nema rezultata za &quot;{search}&quot;</p>
+            )}
           </div>
-          <Link href="/marketplace" style={{ color: '#ff4d00', textDecoration: 'none', fontSize: '14px' }}>← Nazad na marketplace</Link>
+          <Link href="/marketplace" style={{ color: '#ff4d00', textDecoration: 'none', fontSize: '14px' }}>&larr; Nazad na marketplace</Link>
         </div>
       </div>
     );
@@ -100,7 +125,7 @@ function ComparisonContent() {
       <div style={s.container}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: 800 }}>Poređenje delova</h1>
-          <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none', fontSize: '14px' }}>← Nazad</Link>
+          <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none', fontSize: '14px' }}>&larr; Nazad</Link>
         </div>
 
         {/* Part selector */}
@@ -119,7 +144,7 @@ function ComparisonContent() {
                   <>
                     <p style={{ color: '#555', fontSize: '14px', marginBottom: '8px' }}>+ Dodaj deo</p>
                     <input style={{ ...s.input, fontSize: '12px', padding: '6px 10px' }} placeholder="Pretraži..." value={search} onChange={e => setSearch(e.target.value)} />
-                    {search && filtered.slice(0, 5).map(p => (
+                    {search.length >= 2 && filtered.slice(0, 5).map(p => (
                       <div key={p.id} onClick={() => addPart(p.id)} style={{ padding: '6px 10px', background: '#252629', borderRadius: '6px', marginTop: '4px', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
                         <span style={{ color: '#fff', fontSize: '12px' }}>{(p.name_sr || p.name).slice(0, 30)}</span>
                       </div>
