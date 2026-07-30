@@ -55,11 +55,18 @@ async function getOrder(id: string): Promise<OrderRow | null> {
   return data as unknown as OrderRow;
 }
 
-export default async function OrderPage({ params }: { params: { id: string } }) {
+export default async function OrderPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { status?: string };
+}) {
   const order = await getOrder(params.id);
   if (!order) notFound();
 
   const paid = order.status === 'paid';
+  const justCompleted = searchParams.status === 'success' && !paid;
   const currency = order.currency || 'RSD';
   const items = order.order_items_v2 || [];
 
@@ -84,6 +91,10 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
               {paid ? (
                 <span style={{ display: 'inline-block', background: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22c55e', color: '#22c55e', padding: '8px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: 700 }}>
                   ✓ Plaćanje potvrđeno
+                </span>
+              ) : justCompleted ? (
+                <span style={{ display: 'inline-block', background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#3b82f6', padding: '8px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: 700 }}>
+                  Obrađuje se uplata...
                 </span>
               ) : (
                 <span style={{ display: 'inline-block', background: 'rgba(249, 158, 44, 0.12)', border: '1px solid #f99e2c', color: '#f99e2c', padding: '8px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: 700 }}>
