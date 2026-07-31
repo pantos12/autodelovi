@@ -100,6 +100,7 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -209,10 +210,28 @@ function MarketplaceContent() {
     return out;
   }
 
+  const activeFilterCount = [filterMake, filterCategory, filterInStock, availOnly, searchQuery].filter(Boolean).length;
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      {/* Mobile filter toggle */}
+      <div style={{ display: 'none', padding: '12px 16px', borderBottom: '1px solid #252629' }} className="mobile-filter-toggle">
+        <button
+          onClick={() => setFiltersOpen(f => !f)}
+          style={{ width: '100%', padding: '10px 16px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        >
+          <span>Filteri {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}</span>
+          <span style={{ fontSize: '12px', color: '#aaa' }}>{filtersOpen ? '▲' : '▼'}</span>
+        </button>
+      </div>
+      <style>{`
+        @media (max-width: 768px) {
+          .mobile-filter-toggle { display: block !important; }
+          .marketplace-sidebar-wrap { display: ${filtersOpen ? 'block' : 'none'} !important; }
+        }
+      `}</style>
+      <div className="marketplace-grid" style={s.container}>
+        <div className="marketplace-sidebar-wrap marketplace-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
