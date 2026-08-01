@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
+import ClearCartOnSuccess from './ClearCartOnSuccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,18 +37,20 @@ interface OrderRow {
   order_items_v2: OrderItem[];
 }
 
+const ORDER_SELECT = `
+  id, order_number, status, buyer_name, buyer_email, buyer_phone,
+  shipping_address, shipping_city, shipping_postal, notes,
+  subtotal, shipping_fee, total, currency, created_at,
+  order_items_v2 (
+    id, part_id, part_name, brand, part_number, quantity,
+    unit_price, line_total, image_url, supplier_name
+  )
+`;
+
 async function getOrder(id: string): Promise<OrderRow | null> {
   const { data, error } = await supabaseAdmin
     .from('orders_v2')
-    .select(`
-      id, order_number, status, buyer_name, buyer_email, buyer_phone,
-      shipping_address, shipping_city, shipping_postal, notes,
-      subtotal, shipping_fee, total, currency, created_at,
-      order_items_v2 (
-        id, part_id, part_name, brand, part_number, quantity,
-        unit_price, line_total, image_url, supplier_name
-      )
-    `)
+    .select(ORDER_SELECT)
     .eq('id', id)
     .single();
 
@@ -55,9 +58,32 @@ async function getOrder(id: string): Promise<OrderRow | null> {
   return data as unknown as OrderRow;
 }
 
-export default async function OrderPage({ params }: { params: { id: string } }) {
-  const order = await getOrder(params.id);
+async function getOrderByStripeSession(sessionId: string): Promise<OrderRow | null> {
+  const { data, error } = await supabaseAdmin
+    .from('orders_v2')
+    .select(ORDER_SELECT)
+    .eq('stripe_session_id', sessionId)
+    .single();
+
+  if (error || !data) return null;
+  return data as unknown as OrderRow;
+}
+
+export default async function OrderPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
+  const orderId = typeof searchParams.order_id === 'string' ? searchParams.order_id : null;
+
+  let order = orderId ? await getOrder(orderId) : null;
+  if (!order) order = await getOrder(params.id);
+  if (!order) order = await getOrderByStripeSession(params.id);
   if (!order) notFound();
+
+  const isSuccess = searchParams.status === 'success';
 
   const paid = order.status === 'paid';
   const currency = order.currency || 'RSD';
@@ -65,6 +91,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh', fontFamily: 'Inter, "Helvetica Neue", sans-serif' }}>
+      {isSuccess && <ClearCartOnSuccess />}
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 16px' }}>
         <div style={{ marginBottom: '24px' }}>
           <Link href="/marketplace" style={{ color: '#aaa', fontSize: '13px', textDecoration: 'none' }}>← Nazad na marketplace</Link>
