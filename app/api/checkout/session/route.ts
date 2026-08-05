@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase';
-import { stripe, isStripeConfigured } from '@/lib/stripe';
+import { getStripe, isStripeConfigured } from '@/lib/stripe';
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from '@/lib/constants';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
     const subtotal = Number(
       resolved.reduce((acc, r) => acc + r.lineTotal, 0).toFixed(2)
     );
-    const shipping_fee = subtotal >= 10000 ? 0 : 600;
+    const shipping_fee = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
     const total = Number((subtotal + shipping_fee).toFixed(2));
     const order_number = generateOrderNumber();
     const currency = 'RSD';
@@ -256,7 +257,7 @@ export async function POST(request: NextRequest) {
 
     let session: Stripe.Checkout.Session;
     try {
-      session = await stripe.checkout.sessions.create({
+      session = await getStripe().checkout.sessions.create({
         mode: 'payment',
         line_items,
         customer_email: buyer.email,

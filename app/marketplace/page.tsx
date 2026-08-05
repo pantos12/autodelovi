@@ -20,11 +20,27 @@ const STATIC_CATEGORIES = [
 
 const PER_PAGE = 24;
 
-// TODO(v3.4.0): Once /api/parts is extended to return offers[], replace this
-// fallback with `computeBand(part.best_offer)` from lib/confidence.ts.
 function bandForPart(part: Part): Band {
-  if ((part.stock_quantity ?? 0) > 0) return 'verified';
+  const qty = part.stock_quantity ?? 0;
+  if (qty <= 0) return 'inquiry';
+  const lastSeen = part.scraped_at || part.updated_at;
+  if (!lastSeen) return qty > 0 ? 'likely' : 'inquiry';
+  const ageHours = (Date.now() - new Date(lastSeen).getTime()) / 3_600_000;
+  if (ageHours <= 6) return 'verified';
+  if (ageHours <= 48) return 'likely';
   return 'inquiry';
+}
+
+function relativeTime(dateStr: string | undefined): string {
+  if (!dateStr) return 'nepoznato';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return 'upravo';
+  if (mins < 60) return `pre ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `pre ${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  return `pre ${days}d`;
 }
 
 function bandColor(band: Band): string {
@@ -357,7 +373,7 @@ function MarketplaceContent() {
                       </div>
 
                       <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
+                        Provereno: {relativeTime(part.scraped_at || part.updated_at)}
                       </p>
                     </div>
                   </div>
