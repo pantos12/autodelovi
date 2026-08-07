@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       const { data: fb, count } = await supabase
         .from('parts_v2')
         .select('id,slug,name,brand,part_number,price,price_eur,stock_quantity,images,category_id,supplier_id', { count: 'exact' })
-        .or(`name.ilike.%${q}%,part_number.ilike.%${q}%,brand.ilike.%${q}%`)
+        .or(`name.ilike.%${q.replace(/[%_\\]/g, '\\$&')}%,part_number.ilike.%${q.replace(/[%_\\]/g, '\\$&')}%,brand.ilike.%${q.replace(/[%_\\]/g, '\\$&')}%`)
         .in('status', ['active','out_of_stock'])
         .range((page-1)*perPage, page*perPage-1);
       return NextResponse.json({ data: fb ?? [], meta: { total: count ?? 0, page, per_page: perPage } });
@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
       { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' } }
     );
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('[api/search] Error:', err.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,4 +1,4 @@
-import { extractPrice, slugify } from './base';
+import { extractPrice } from './base';
 import type { ScrapedPart, NormalizedPart, CompatibleVehicle, PartCondition } from '../types';
 
 let EUR_RATE = 117.5;

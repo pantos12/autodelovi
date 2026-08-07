@@ -23,6 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       { headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600' } }
     );
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('[api/parts/id] Error:', err.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

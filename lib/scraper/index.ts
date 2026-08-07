@@ -1,4 +1,4 @@
-import { normalizeAll, setEurRate } from './normalizer';
+import { normalizeAll } from './normalizer';
 import { DemoScraper } from './sources/demo';
 import { AutoHubScraper } from './sources/autohub';
 import { HaloOglasiScraper } from './sources/halooglasi';
@@ -45,6 +45,14 @@ export const SOURCE_NAMES = [
   'polovniautomobili',
 ] as const;
 export type SourceName = typeof SOURCE_NAMES[number];
+
+export const SOURCE_DISPLAY_NAMES: Record<SourceName, string> = {
+  autohub: 'AutoHub.rs',
+  prodajadelova: 'ProdajaDelova.rs',
+  delovionline: 'DeloviOnline.rs',
+  alvadi: 'Alvadi.com',
+  polovniautomobili: 'PolovniAutomobili.com',
+};
 
 export function getScraperByName(name: string): BaseScraper {
   switch (name) {
