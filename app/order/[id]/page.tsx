@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
+import { createServerClient } from '@supabase/ssr';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,6 +68,22 @@ function maskPhone(phone: string): string {
   return '***' + phone.slice(-4);
 }
 
+async function getSessionEmail(): Promise<string | null> {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseKey) return null;
+    const cookieStore = cookies();
+    const supabase = createServerClient(supabaseUrl, supabaseKey, {
+      cookies: { getAll() { return cookieStore.getAll(); }, setAll() {} },
+    });
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.email ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function OrderPage({ params, searchParams }: { params: { id: string }; searchParams: { status?: string } }) {
   const order = await getOrder(params.id);
   if (!order) notFound();
@@ -73,7 +91,9 @@ export default async function OrderPage({ params, searchParams }: { params: { id
   const paid = order.status === 'paid';
   const currency = order.currency || 'RSD';
   const items = order.order_items_v2 || [];
-  const isOwner = searchParams.status === 'success' || searchParams.status === 'pending';
+
+  const sessionEmail = await getSessionEmail();
+  const isOwner = sessionEmail != null && sessionEmail.toLowerCase() === order.buyer_email.toLowerCase();
 
   const displayEmail = isOwner ? order.buyer_email : maskEmail(order.buyer_email);
   const displayPhone = order.buyer_phone ? (isOwner ? order.buyer_phone : maskPhone(order.buyer_phone)) : null;

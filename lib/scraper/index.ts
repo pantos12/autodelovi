@@ -46,6 +46,14 @@ export const SOURCE_NAMES = [
 ] as const;
 export type SourceName = typeof SOURCE_NAMES[number];
 
+export const SOURCE_DISPLAY_NAMES: Record<SourceName, string> = {
+  autohub: 'AutoHub.rs',
+  prodajadelova: 'ProdajaDelova.rs',
+  delovionline: 'DeloviOnline.rs',
+  alvadi: 'Alvadi.com',
+  polovniautomobili: 'PolovniAutomobili.com',
+};
+
 export function getScraperByName(name: string): BaseScraper {
   switch (name) {
     case 'autohub':           return new AutoHubScraper('autohub', 'AutoHub.rs');

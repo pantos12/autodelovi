@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -113,7 +113,21 @@ function MarketplaceContent() {
     }
   }, [searchParams]);
 
+  const filtersRef = React.useRef({ filterMake, filterCategory, filterInStock, sortBy, searchQuery });
   useEffect(() => {
+    const prev = filtersRef.current;
+    const filtersChanged =
+      prev.filterMake !== filterMake || prev.filterCategory !== filterCategory ||
+      prev.filterInStock !== filterInStock || prev.sortBy !== sortBy ||
+      prev.searchQuery !== searchQuery;
+    filtersRef.current = { filterMake, filterCategory, filterInStock, sortBy, searchQuery };
+
+    const effectivePage = filtersChanged ? 1 : page;
+    if (filtersChanged && page !== 1) {
+      setPage(1);
+      return;
+    }
+
     const load = async () => {
       setLoading(true);
       try {
@@ -123,7 +137,7 @@ function MarketplaceContent() {
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
           params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
+          params.set('page', String(effectivePage));
           const res = await fetch(`/api/search?${params}`);
           const json = await res.json();
           setParts(json.data || []);
@@ -135,7 +149,7 @@ function MarketplaceContent() {
           if (filterInStock) params.set('in_stock', 'true');
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
+          params.set('page', String(effectivePage));
           const res = await fetch(`/api/parts?${params}`);
           const json = await res.json();
           setParts(json.data || []);
@@ -149,11 +163,6 @@ function MarketplaceContent() {
     };
     load();
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
 
   // Persist ?avail=1
   useEffect(() => {

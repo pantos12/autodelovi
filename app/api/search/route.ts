@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
       { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' } }
     );
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('[api/search] Error:', err.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

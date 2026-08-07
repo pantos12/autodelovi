@@ -69,12 +69,15 @@ function validateBody(body: unknown): CheckoutBody | string {
   if (!Array.isArray(b.items) || b.items.length === 0) {
     return 'items must be a non-empty array';
   }
+  if (b.items.length > 50) {
+    return 'Maximum 50 items per order';
+  }
   for (const raw of b.items) {
     if (!raw || typeof raw !== 'object') return 'Invalid item';
     const it = raw as Record<string, unknown>;
     if (typeof it.part_id !== 'string' || !it.part_id) return 'item.part_id is required';
-    if (typeof it.quantity !== 'number' || !Number.isFinite(it.quantity) || it.quantity <= 0) {
-      return 'item.quantity must be a positive number';
+    if (typeof it.quantity !== 'number' || !Number.isInteger(it.quantity) || it.quantity <= 0 || it.quantity > 999) {
+      return 'item.quantity must be a positive integer (max 999)';
     }
   }
   if (!b.buyer || typeof b.buyer !== 'object') return 'buyer is required';
