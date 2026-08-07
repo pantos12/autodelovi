@@ -1,4 +1,4 @@
-import { normalizeAll, setEurRate } from './normalizer';
+import { normalizeAll } from './normalizer';
 import { DemoScraper } from './sources/demo';
 import { AutoHubScraper } from './sources/autohub';
 import { HaloOglasiScraper } from './sources/halooglasi';

@@ -55,13 +55,30 @@ async function getOrder(id: string): Promise<OrderRow | null> {
   return data as unknown as OrderRow;
 }
 
-export default async function OrderPage({ params }: { params: { id: string } }) {
+function maskEmail(email: string): string {
+  const [local, domain] = email.split('@');
+  if (!domain) return '***@***';
+  return local.slice(0, 2) + '***@' + domain;
+}
+
+function maskPhone(phone: string): string {
+  if (phone.length <= 4) return '***';
+  return '***' + phone.slice(-4);
+}
+
+export default async function OrderPage({ params, searchParams }: { params: { id: string }; searchParams: { status?: string } }) {
   const order = await getOrder(params.id);
   if (!order) notFound();
 
   const paid = order.status === 'paid';
   const currency = order.currency || 'RSD';
   const items = order.order_items_v2 || [];
+  const isOwner = searchParams.status === 'success' || searchParams.status === 'pending';
+
+  const displayEmail = isOwner ? order.buyer_email : maskEmail(order.buyer_email);
+  const displayPhone = order.buyer_phone ? (isOwner ? order.buyer_phone : maskPhone(order.buyer_phone)) : null;
+  const displayAddress = isOwner ? order.shipping_address : null;
+  const displayCity = isOwner ? order.shipping_city : null;
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh', fontFamily: 'Inter, "Helvetica Neue", sans-serif' }}>
@@ -104,21 +121,21 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
             </div>
             <div>
               <div style={{ color: '#888', marginBottom: '2px' }}>Email</div>
-              <div style={{ color: '#fff' }}>{order.buyer_email}</div>
+              <div style={{ color: '#fff' }}>{displayEmail}</div>
             </div>
-            {order.buyer_phone && (
+            {displayPhone && (
               <div>
                 <div style={{ color: '#888', marginBottom: '2px' }}>Telefon</div>
-                <div style={{ color: '#fff' }}>{order.buyer_phone}</div>
+                <div style={{ color: '#fff' }}>{displayPhone}</div>
               </div>
             )}
           </div>
-          {(order.shipping_address || order.shipping_city) && (
+          {isOwner && (displayAddress || displayCity) && (
             <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2a2b2f' }}>
               <div style={{ color: '#888', fontSize: '13px', marginBottom: '4px' }}>Adresa za dostavu</div>
               <div style={{ color: '#fff', fontSize: '14px' }}>
-                {order.shipping_address}
-                {order.shipping_city && <>, {order.shipping_city}</>}
+                {displayAddress}
+                {displayCity && <>, {displayCity}</>}
                 {order.shipping_postal && <> {order.shipping_postal}</>}
               </div>
             </div>
