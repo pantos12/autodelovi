@@ -1,8 +1,16 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
+import { createServerClient } from '@supabase/ssr';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Porudzbina',
+  robots: { index: false, follow: false },
+};
 
 interface OrderItem {
   id: string;
@@ -37,6 +45,8 @@ interface OrderRow {
 }
 
 async function getOrder(id: string): Promise<OrderRow | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+
   const { data, error } = await supabaseAdmin
     .from('orders_v2')
     .select(`
@@ -55,13 +65,52 @@ async function getOrder(id: string): Promise<OrderRow | null> {
   return data as unknown as OrderRow;
 }
 
+async function getAuthenticatedEmail(): Promise<string | null> {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !anonKey) return null;
+
+    const cookieStore = cookies();
+    const supabase = createServerClient(url, anonKey, {
+      cookies: {
+        getAll() { return cookieStore.getAll(); },
+      },
+    });
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.email ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split('@');
+  if (!domain) return '***@***';
+  return local.slice(0, 2) + '***@' + domain;
+}
+
+function maskPhone(phone: string): string {
+  if (phone.length <= 4) return '***';
+  return phone.slice(0, 3) + '****' + phone.slice(-2);
+}
+
 export default async function OrderPage({ params }: { params: { id: string } }) {
   const order = await getOrder(params.id);
   if (!order) notFound();
 
+  const authEmail = await getAuthenticatedEmail();
+  const isOwner = authEmail !== null && authEmail.toLowerCase() === order.buyer_email.toLowerCase();
+
   const paid = order.status === 'paid';
   const currency = order.currency || 'RSD';
   const items = order.order_items_v2 || [];
+
+  const displayEmail = isOwner ? order.buyer_email : maskEmail(order.buyer_email);
+  const displayPhone = order.buyer_phone
+    ? (isOwner ? order.buyer_phone : maskPhone(order.buyer_phone))
+    : null;
+  const displayName = isOwner ? order.buyer_name : order.buyer_name.split(' ')[0] + ' ***';
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh', fontFamily: 'Inter, "Helvetica Neue", sans-serif' }}>
@@ -74,7 +123,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
         <div style={{ background: '#1a1b1f', borderRadius: '12px', padding: '24px', border: '1px solid #2a2b2f', marginBottom: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
             <div>
-              <div style={{ color: '#aaa', fontSize: '13px', marginBottom: '4px' }}>Broj porudžbine</div>
+              <div style={{ color: '#aaa', fontSize: '13px', marginBottom: '4px' }}>Broj porudzbine</div>
               <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: 800, margin: 0 }}>{order.order_number}</h1>
               <div style={{ color: '#888', fontSize: '12px', marginTop: '6px' }}>
                 {new Date(order.created_at).toLocaleString('sr-RS')}
@@ -83,11 +132,11 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
             <div>
               {paid ? (
                 <span style={{ display: 'inline-block', background: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22c55e', color: '#22c55e', padding: '8px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: 700 }}>
-                  ✓ Plaćanje potvrđeno
+                  ✓ Placanje potvrdjeno
                 </span>
               ) : (
                 <span style={{ display: 'inline-block', background: 'rgba(249, 158, 44, 0.12)', border: '1px solid #f99e2c', color: '#f99e2c', padding: '8px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: 700 }}>
-                  Čeka se uplata
+                  Ceka se uplata
                 </span>
               )}
             </div>
@@ -97,23 +146,28 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
         {/* Buyer + Shipping */}
         <div style={{ background: '#1a1b1f', borderRadius: '12px', padding: '24px', border: '1px solid #2a2b2f', marginBottom: '16px' }}>
           <h2 style={{ color: '#fff', fontSize: '16px', fontWeight: 700, margin: '0 0 14px' }}>Podaci o kupcu</h2>
+          {!isOwner && (
+            <div style={{ background: 'rgba(249,55,44,0.08)', border: '1px solid rgba(249,55,44,0.2)', borderRadius: '8px', padding: '10px 14px', marginBottom: '14px', fontSize: '12px', color: '#f9372c' }}>
+              Prijavite se sa email adresom narudzbine da vidite sve podatke.
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', fontSize: '13px' }}>
             <div>
               <div style={{ color: '#888', marginBottom: '2px' }}>Ime i prezime</div>
-              <div style={{ color: '#fff' }}>{order.buyer_name}</div>
+              <div style={{ color: '#fff' }}>{displayName}</div>
             </div>
             <div>
               <div style={{ color: '#888', marginBottom: '2px' }}>Email</div>
-              <div style={{ color: '#fff' }}>{order.buyer_email}</div>
+              <div style={{ color: '#fff' }}>{displayEmail}</div>
             </div>
-            {order.buyer_phone && (
+            {displayPhone && (
               <div>
                 <div style={{ color: '#888', marginBottom: '2px' }}>Telefon</div>
-                <div style={{ color: '#fff' }}>{order.buyer_phone}</div>
+                <div style={{ color: '#fff' }}>{displayPhone}</div>
               </div>
             )}
           </div>
-          {(order.shipping_address || order.shipping_city) && (
+          {isOwner && (order.shipping_address || order.shipping_city) && (
             <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2a2b2f' }}>
               <div style={{ color: '#888', fontSize: '13px', marginBottom: '4px' }}>Adresa za dostavu</div>
               <div style={{ color: '#fff', fontSize: '14px' }}>
@@ -123,7 +177,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
               </div>
             </div>
           )}
-          {order.notes && (
+          {isOwner && order.notes && (
             <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #2a2b2f' }}>
               <div style={{ color: '#888', fontSize: '13px', marginBottom: '4px' }}>Napomena</div>
               <div style={{ color: '#fff', fontSize: '13px' }}>{order.notes}</div>
