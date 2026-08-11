@@ -211,8 +211,14 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .marketplace-grid { grid-template-columns: 1fr !important; }
+          .marketplace-sidebar { position: static !important; }
+        }
+      `}</style>
+      <div className="marketplace-grid" style={s.container}>
+        <div className="marketplace-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -223,7 +229,7 @@ function MarketplaceContent() {
                 placeholder="Naziv, broj dela, brend..."
                 style={{ ...s.select, flex: 1, padding: '8px 12px' }}
               />
-              <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
+              <button type="submit" aria-label="Pretrazi" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
                 🔍
               </button>
             </div>
@@ -356,9 +362,11 @@ function MarketplaceContent() {
                         <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
-                      <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
-                      </p>
+                      {part.updated_at && (
+                        <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
+                          Azurirano: {new Date(part.updated_at).toLocaleDateString('sr-RS')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
