@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCart } from '../components/CartProvider';
 
 interface BuyerForm {
@@ -178,16 +179,14 @@ export default function CheckoutPage() {
               {items.map(item => (
                 <div key={item.part_id} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                   <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: '#252629', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
-                    <img
+                    <Image
                       src={item.image_url || '/images/part-placeholder.svg'}
                       alt={item.name || ''}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                      onError={(e) => {
-                        const img = e.currentTarget;
-                        if (!img.src.endsWith('/images/part-placeholder.svg')) {
-                          img.src = '/images/part-placeholder.svg';
-                        }
-                      }}
+                      fill
+                      sizes="56px"
+                      style={{ objectFit: 'cover' }}
+                      loading="lazy"
+                      unoptimized
                     />
                     <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#2a2b2f', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #1a1b1f' }}>{item.quantity}</span>
                   </div>
