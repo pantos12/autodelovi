@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getParts } from '@/lib/supabase';
-import type { PartsQueryParams } from '@/lib/types';
+import { getParts, supabase } from '@/lib/supabase';
+import { computeBand } from '@/lib/confidence';
+import type { PartsQueryParams, Offer } from '@/lib/types';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -23,8 +24,43 @@ export async function GET(request: NextRequest) {
       per_page:  Math.min(parseInt(searchParams.get('per_page') ?? '24'), 100),
     };
     const result = await getParts(params);
+
+    const now = new Date();
+    const partIds = result.parts.map(p => p.id);
+    let offersByPart: Record<string, Offer[]> = {};
+
+    if (partIds.length > 0) {
+      try {
+        const { data: offers } = await supabase
+          .from('offers')
+          .select('id, part_id, price, price_currency, stock_signal_strength, last_check_status, last_seen_at')
+          .in('part_id', partIds);
+
+        if (offers) {
+          for (const o of offers as Offer[]) {
+            (offersByPart[o.part_id] ??= []).push(o);
+          }
+        }
+      } catch {
+        // offers table may not exist yet — fall back to stock_quantity
+      }
+    }
+
+    const enrichedParts = result.parts.map(part => {
+      const offers = offersByPart[part.id];
+      if (offers && offers.length > 0) {
+        const bands = offers.map(o => ({ offer: o, band: computeBand(o, now) }));
+        const eligible = bands.filter(b => b.band !== 'inquiry');
+        const bestBand = eligible.length > 0
+          ? eligible.reduce((best, cur) => cur.offer.price < best.offer.price ? cur : best).band
+          : bands[0].band;
+        return { ...part, band: bestBand };
+      }
+      return { ...part, band: (part.stock_quantity ?? 0) > 0 ? 'verified' : 'inquiry' };
+    });
+
     return NextResponse.json(
-      { data: result.parts, meta: { total: result.total, page: result.page, per_page: result.per_page, total_pages: result.total_pages } },
+      { data: enrichedParts, meta: { total: result.total, page: result.page, per_page: result.per_page, total_pages: result.total_pages } },
       { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
     );
   } catch (err: any) {
