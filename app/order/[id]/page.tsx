@@ -37,6 +37,7 @@ interface OrderRow {
 }
 
 async function getOrder(id: string): Promise<OrderRow | null> {
+  // Try by order UUID first, then by stripe_session_id as fallback
   const { data, error } = await supabaseAdmin
     .from('orders_v2')
     .select(`
@@ -51,11 +52,31 @@ async function getOrder(id: string): Promise<OrderRow | null> {
     .eq('id', id)
     .single();
 
-  if (error || !data) return null;
-  return data as unknown as OrderRow;
+  if (!error && data) return data as unknown as OrderRow;
+
+  // Fallback: look up by stripe_session_id for old-format redirect URLs
+  const { data: bySession } = await supabaseAdmin
+    .from('orders_v2')
+    .select(`
+      id, order_number, status, buyer_name, buyer_email, buyer_phone,
+      shipping_address, shipping_city, shipping_postal, notes,
+      subtotal, shipping_fee, total, currency, created_at,
+      order_items_v2 (
+        id, part_id, part_name, brand, part_number, quantity,
+        unit_price, line_total, image_url, supplier_name
+      )
+    `)
+    .eq('stripe_session_id', id)
+    .single();
+
+  if (bySession) return bySession as unknown as OrderRow;
+  return null;
 }
 
-export default async function OrderPage({ params }: { params: { id: string } }) {
+export default async function OrderPage({ params, searchParams }: { params: { id: string }; searchParams: { status?: string } }) {
+  // Require status query param as a basic access guard - only checkout flow provides it
+  if (!searchParams.status) notFound();
+
   const order = await getOrder(params.id);
   if (!order) notFound();
 
