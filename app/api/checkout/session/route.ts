@@ -116,22 +116,25 @@ export async function POST(request: NextRequest) {
     if (typeof parsed === 'string') return bad(parsed);
     const { items, buyer } = parsed;
 
-    // Fetch and validate parts
-    const resolved: ResolvedItem[] = [];
-    for (const item of items) {
-      const { data, error } = await supabaseAdmin
-        .from('parts_v2')
-        .select('id, name, part_number, brand, supplier_id, images, price, stock_quantity, supplier:suppliers(name)')
-        .eq('id', item.part_id)
-        .maybeSingle();
+    // Fetch all parts in a single query
+    const partIds = items.map(i => i.part_id);
+    const { data: partsData, error: partsErr } = await supabaseAdmin
+      .from('parts_v2')
+      .select('id, name, part_number, brand, supplier_id, images, price, stock_quantity, supplier:suppliers(name)')
+      .in('id', partIds);
 
-      if (error) {
-        return bad(`Failed to load part ${item.part_id}: ${error.message}`, 500);
-      }
+    if (partsErr) {
+      return bad(`Failed to load parts: ${partsErr.message}`, 500);
+    }
+
+    const partsMap = new Map((partsData ?? []).map(d => [d.id, d]));
+    const resolved: ResolvedItem[] = [];
+
+    for (const item of items) {
+      const data = partsMap.get(item.part_id);
       if (!data) {
         return bad(`Part not found: ${item.part_id}`, 404);
       }
-      // supabase-js types join as array-or-object; normalize
       const part = data as unknown as PartRow & { supplier: { name: string | null } | { name: string | null }[] | null };
       const supplier = Array.isArray(part.supplier) ? (part.supplier[0] ?? null) : part.supplier;
       const normalized: PartRow = { ...part, supplier };
@@ -205,6 +208,22 @@ export async function POST(request: NextRequest) {
       return bad(`Failed to insert order items: ${itemsErr.message}`, 500);
     }
 
+    // Decrement stock for each ordered item
+    for (const r of resolved) {
+      await supabaseAdmin.rpc('decrement_stock', {
+        p_part_id: r.part.id,
+        p_qty: r.quantity,
+      }).then(({ error: stockErr }) => {
+        if (stockErr) {
+          // Fallback: direct update if RPC doesn't exist
+          return supabaseAdmin
+            .from('parts_v2')
+            .update({ stock_quantity: Math.max(0, (r.part.stock_quantity ?? 0) - r.quantity) })
+            .eq('id', r.part.id);
+        }
+      });
+    }
+
     const origin = new URL(request.url).origin;
 
     // If Stripe is not configured, return pending order (dev fallback)
@@ -260,7 +279,7 @@ export async function POST(request: NextRequest) {
         mode: 'payment',
         line_items,
         customer_email: buyer.email,
-        success_url: `${origin}/order/{CHECKOUT_SESSION_ID}?status=success&order_id=${orderRow.id}`,
+        success_url: `${origin}/order/${orderRow.id}?status=success`,
         cancel_url: `${origin}/checkout?cancelled=1`,
         metadata: {
           order_id: orderRow.id,

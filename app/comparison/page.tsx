@@ -39,6 +39,7 @@ function ComparisonContent() {
   const [parts, setParts] = useState<Part[]>([]);
   const [allParts, setAllParts] = useState<Part[]>([]);
   const [search, setSearch] = useState('');
+  const [slotSearches, setSlotSearches] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -107,6 +108,12 @@ function ComparisonContent() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
           {Array.from({ length: 3 }).map((_, i) => {
             const part = parts[i];
+            const slotSearch = slotSearches[i] || '';
+            const slotFiltered = allParts.filter(p =>
+              !selectedIds.includes(p.id) &&
+              ((p.name_sr || p.name).toLowerCase().includes(slotSearch.toLowerCase()) ||
+              (p.brand || '').toLowerCase().includes(slotSearch.toLowerCase()))
+            );
             return (
               <div key={i} style={{ background: '#1a1b1f', borderRadius: '12px', padding: '16px', border: '1px solid #252629', textAlign: 'center', minHeight: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 {part ? (
@@ -118,9 +125,9 @@ function ComparisonContent() {
                 ) : (
                   <>
                     <p style={{ color: '#555', fontSize: '14px', marginBottom: '8px' }}>+ Dodaj deo</p>
-                    <input style={{ ...s.input, fontSize: '12px', padding: '6px 10px' }} placeholder="Pretraži..." value={search} onChange={e => setSearch(e.target.value)} />
-                    {search && filtered.slice(0, 5).map(p => (
-                      <div key={p.id} onClick={() => addPart(p.id)} style={{ padding: '6px 10px', background: '#252629', borderRadius: '6px', marginTop: '4px', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                    <input style={{ ...s.input, fontSize: '12px', padding: '6px 10px' }} placeholder="Pretrazi..." value={slotSearch} onChange={e => setSlotSearches(prev => ({ ...prev, [i]: e.target.value }))} />
+                    {slotSearch && slotFiltered.slice(0, 5).map(p => (
+                      <div key={p.id} onClick={() => { addPart(p.id); setSlotSearches(prev => ({ ...prev, [i]: '' })); }} style={{ padding: '6px 10px', background: '#252629', borderRadius: '6px', marginTop: '4px', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
                         <span style={{ color: '#fff', fontSize: '12px' }}>{(p.name_sr || p.name).slice(0, 30)}</span>
                       </div>
                     ))}

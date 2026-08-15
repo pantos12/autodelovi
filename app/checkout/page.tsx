@@ -16,7 +16,7 @@ interface BuyerForm {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, subtotal, count } = useCart();
+  const { items, subtotal, count, clear } = useCart();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<BuyerForm>({
@@ -77,6 +77,7 @@ export default function CheckoutPage() {
         throw new Error(json.error || `Greška (${res.status})`);
       }
       if (json.url) {
+        clear();
         window.location.href = json.url;
       } else {
         throw new Error('Nedostaje URL za plaćanje.');
