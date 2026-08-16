@@ -13,6 +13,8 @@ const STATIC_CATEGORIES = [
   { slug: 'ostalo', name: 'Ostalo', icon: '📦', description: 'Ostali delovi' },
 ];
 
+const PER_PAGE = 24;
+
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const cat = STATIC_CATEGORIES.find(c => c.slug === params.slug);
   return {
@@ -21,18 +23,24 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function CategoryPage({ params }: { params: { slug: string } }) {
+export default async function CategoryPage({
+  params,
+  searchParams,
+}: {
+  params: { slug: string };
+  searchParams: { page?: string };
+}) {
   const category = STATIC_CATEGORIES.find(c => c.slug === params.slug);
+  const currentPage = Math.max(1, parseInt(searchParams.page || '1') || 1);
 
   const [partsResult, dbCategories] = await Promise.all([
-    getParts({ category: params.slug, per_page: 60 }).catch(() => ({ parts: [] as any[], total: 0, page: 1, per_page: 60, total_pages: 1 })),
+    getParts({ category: params.slug, per_page: PER_PAGE, page: currentPage }).catch(() => ({ parts: [] as any[], total: 0, page: 1, per_page: PER_PAGE, total_pages: 1 })),
     getCategories().catch(() => []),
   ]);
 
   const parts = partsResult.parts || [];
-  const displayCategories = dbCategories.length > 0
-    ? dbCategories
-    : STATIC_CATEGORIES.map(c => ({ id: c.slug, slug: c.slug, name: c.name, name_sr: c.name, icon: c.icon, sort_order: 0 }));
+  const total = partsResult.total || parts.length;
+  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
 
   if (!category) {
     return (
@@ -46,12 +54,21 @@ export default async function CategoryPage({ params }: { params: { slug: string 
     );
   }
 
+  function pageNumbers(): number[] {
+    const out: number[] = [];
+    const start = Math.max(1, currentPage - 2);
+    const end = Math.min(totalPages, start + 4);
+    const realStart = Math.max(1, end - 4);
+    for (let i = realStart; i <= end; i++) out.push(i);
+    return out;
+  }
+
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
       {/* Hero */}
       <div style={{ background: 'linear-gradient(135deg, #1a1b1f 0%, #0c0d0f 100%)', padding: '48px 16px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
             <Link href="/" style={{ color: '#aaa', textDecoration: 'none', fontSize: '14px' }}>Početna</Link>
             <span style={{ color: '#555' }}>/</span>
             <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none', fontSize: '14px' }}>Marketplace</Link>
@@ -93,7 +110,10 @@ export default async function CategoryPage({ params }: { params: { slug: string 
 
       {/* Parts grid */}
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 16px' }}>
-        <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '24px' }}>{parts.length} delova u kategoriji "{category.name}"</p>
+        <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '24px' }}>
+          {total} delova u kategoriji &quot;{category.name}&quot;
+          {totalPages > 1 && ` — strana ${currentPage} od ${totalPages}`}
+        </p>
         {parts.length > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
             {parts.map((part: any, idx: number) => {
@@ -110,7 +130,6 @@ export default async function CategoryPage({ params }: { params: { slug: string 
                       style={{ objectFit: 'cover' }}
                       priority={idx < 4}
                       loading={idx < 4 ? undefined : 'lazy'}
-                      unoptimized
                     />
                   </div>
                   <div style={{ padding: '12px' }}>
@@ -139,6 +158,62 @@ export default async function CategoryPage({ params }: { params: { slug: string 
             <p style={{ fontSize: '18px', color: '#aaa', marginBottom: '24px' }}>Nema delova u ovoj kategoriji</p>
             <Link href="/marketplace" style={{ padding: '12px 28px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontWeight: 700 }}>
               Vidi sve delove
+            </Link>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '32px', flexWrap: 'wrap' }}>
+            <Link
+              href={currentPage > 1 ? `/categories/${params.slug}?page=${currentPage - 1}` : '#'}
+              style={{
+                padding: '8px 14px',
+                background: currentPage <= 1 ? '#1a1b1f' : '#252629',
+                border: '1px solid #333',
+                borderRadius: '8px',
+                color: currentPage <= 1 ? '#555' : '#fff',
+                pointerEvents: currentPage <= 1 ? 'none' : 'auto',
+                fontSize: '13px',
+                textDecoration: 'none',
+              }}
+            >
+              ← Prethodna
+            </Link>
+            {pageNumbers().map(n => (
+              <Link
+                key={n}
+                href={`/categories/${params.slug}?page=${n}`}
+                style={{
+                  padding: '8px 12px',
+                  background: n === currentPage ? '#ff4d00' : '#252629',
+                  border: '1px solid #333',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  fontSize: '13px',
+                  fontWeight: n === currentPage ? 700 : 400,
+                  minWidth: '36px',
+                  textAlign: 'center',
+                  textDecoration: 'none',
+                }}
+              >
+                {n}
+              </Link>
+            ))}
+            <Link
+              href={currentPage < totalPages ? `/categories/${params.slug}?page=${currentPage + 1}` : '#'}
+              style={{
+                padding: '8px 14px',
+                background: currentPage >= totalPages ? '#1a1b1f' : '#252629',
+                border: '1px solid #333',
+                borderRadius: '8px',
+                color: currentPage >= totalPages ? '#555' : '#fff',
+                pointerEvents: currentPage >= totalPages ? 'none' : 'auto',
+                fontSize: '13px',
+                textDecoration: 'none',
+              }}
+            >
+              Sledeća →
             </Link>
           </div>
         )}
