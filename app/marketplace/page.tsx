@@ -190,6 +190,8 @@ function MarketplaceContent() {
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
   };
 
+  const [mobileFilters, setMobileFilters] = useState(false);
+
   // Client-side avail filter (green + yellow)
   const displayParts = availOnly
     ? parts.filter(p => {
@@ -211,8 +213,25 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { position: static !important; display: none; }
+          .mp-sidebar.mp-sidebar--open { display: block; }
+          .mp-filter-toggle { display: flex !important; }
+          .mp-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important; }
+        }
+      `}</style>
+      <div className="mp-container" style={s.container}>
+        {/* Mobile filter toggle */}
+        <button
+          className="mp-filter-toggle"
+          onClick={() => setMobileFilters(v => !v)}
+          style={{ display: 'none', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px 16px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600, gridColumn: '1 / -1' }}
+        >
+          {mobileFilters ? '✕ Zatvori filtere' : '⚙ Filteri i pretraga'}
+        </button>
+        <div className={`mp-sidebar${mobileFilters ? ' mp-sidebar--open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -246,7 +265,7 @@ function MarketplaceContent() {
                   name="avail"
                   checked={!availOnly}
                   onChange={() => setAvailOnly(false)}
-                  style={{ accentColor: '#ff4d00' }}
+                  style={{ accentColor: '#f9372c' }}
                 />
                 Sve ponude
               </label>
@@ -256,7 +275,7 @@ function MarketplaceContent() {
                   name="avail"
                   checked={availOnly}
                   onChange={() => setAvailOnly(true)}
-                  style={{ accentColor: '#ff4d00' }}
+                  style={{ accentColor: '#f9372c' }}
                 />
                 Samo dostupno (🟢 + 🟡)
               </label>
@@ -280,7 +299,7 @@ function MarketplaceContent() {
             </select>
           </div>
           <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
+            <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#f9372c' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
           <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
@@ -299,20 +318,20 @@ function MarketplaceContent() {
                 <option value="newest">Najnovije</option>
               </select>
               {compareList.length > 0 && (
-                <button onClick={() => router.push('/comparison?ids=' + compareList.join(','))} style={{ padding: '8px 16px', background: '#ff4d00', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+                <button onClick={() => router.push('/comparison?ids=' + compareList.join(','))} style={{ padding: '8px 16px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
                   Poredi ({compareList.length})
                 </button>
               )}
             </div>
           </div>
           {loading ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+            <div className="mp-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
               {Array.from({ length: PER_PAGE }).map((_, i) => (
                 <div key={i} style={{ ...s.card, height: '280px', background: 'linear-gradient(90deg, #1a1b1f 25%, #252629 50%, #1a1b1f 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
               ))}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+            <div className="mp-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
               {displayParts.map((part, idx) => {
                 const vehicle = part.compatible_vehicles?.[0];
                 const inStock = (part.stock_quantity ?? 0) > 0;
@@ -320,7 +339,7 @@ function MarketplaceContent() {
                 const band = bandForPart(part);
                 const priority = idx < 4;
                 return (
-                  <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
+                  <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #f9372c' : '2px solid transparent' }}>
                     <div style={{ position: 'relative', background: '#252629', height: '140px', overflow: 'hidden' }}>
                       <SmartImage src={part.images?.[0]} alt={part.name} priority={priority} />
                       <BandBadge band={band} />
@@ -328,7 +347,7 @@ function MarketplaceContent() {
                     <div style={{ padding: '12px' }}>
                       {vehicle && <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{vehicle.make} {vehicle.model}</p>}
                       <h3 style={{ color: '#fff', fontSize: '14px', marginBottom: '8px', lineHeight: '1.3' }}>{part.name_sr || part.name}</h3>
-                      <p style={{ color: '#ff4d00', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{part.price?.toLocaleString('sr-RS')} RSD</p>
+                      <p style={{ color: '#f9372c', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{part.price?.toLocaleString('sr-RS')} RSD</p>
                       <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '12px', marginBottom: '10px' }}>{inStock ? 'Na stanju' : 'Nema na stanju'}</p>
 
                       <div style={{ marginBottom: '6px' }}>
@@ -353,7 +372,7 @@ function MarketplaceContent() {
 
                       <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
                         <Link href={partUrl} style={{ flex: 1, padding: '8px', background: '#333', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px' }}>Detalji</Link>
-                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
+                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#f9372c' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
                       <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
@@ -404,7 +423,7 @@ function MarketplaceContent() {
                   onClick={() => setPage(n)}
                   style={{
                     padding: '8px 12px',
-                    background: n === page ? '#ff4d00' : '#252629',
+                    background: n === page ? '#f9372c' : '#252629',
                     border: '1px solid #333',
                     borderRadius: '8px',
                     color: '#fff',

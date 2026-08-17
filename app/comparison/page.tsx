@@ -85,11 +85,11 @@ function ComparisonContent() {
             {filtered.slice(0, 20).map(p => (
               <div key={p.id} onClick={() => addPart(p.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1a1b1f', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer' }}>
                 <span style={{ color: '#fff', fontSize: '14px' }}>{p.name_sr || p.name}</span>
-                <span style={{ color: '#ff4d00', fontSize: '14px', fontWeight: 600 }}>{p.price.toLocaleString('sr-RS')} RSD</span>
+                <span style={{ color: '#f9372c', fontSize: '14px', fontWeight: 600 }}>{p.price.toLocaleString('sr-RS')} RSD</span>
               </div>
             ))}
           </div>
-          <Link href="/marketplace" style={{ color: '#ff4d00', textDecoration: 'none', fontSize: '14px' }}>← Nazad na marketplace</Link>
+          <Link href="/marketplace" style={{ color: '#f9372c', textDecoration: 'none', fontSize: '14px' }}>← Nazad na marketplace</Link>
         </div>
       </div>
     );
@@ -97,14 +97,20 @@ function ComparisonContent() {
 
   return (
     <div style={s.page}>
+      <style>{`
+        @media (max-width: 768px) {
+          .cmp-selector { grid-template-columns: 1fr !important; }
+          .cmp-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        }
+      `}</style>
       <div style={s.container}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: 800 }}>Poređenje delova</h1>
+          <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: 800 }}>Poredenje delova</h1>
           <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none', fontSize: '14px' }}>← Nazad</Link>
         </div>
 
         {/* Part selector */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
+        <div className="cmp-selector" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
           {Array.from({ length: 3 }).map((_, i) => {
             const part = parts[i];
             return (
@@ -112,7 +118,7 @@ function ComparisonContent() {
                 {part ? (
                   <>
                     <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>{part.name_sr || part.name}</p>
-                    <p style={{ color: '#ff4d00', fontSize: '16px', fontWeight: 700, marginBottom: '12px' }}>{part.price.toLocaleString('sr-RS')} RSD</p>
+                    <p style={{ color: '#f9372c', fontSize: '16px', fontWeight: 700, marginBottom: '12px' }}>{part.price.toLocaleString('sr-RS')} RSD</p>
                     <button onClick={() => removePart(part.id)} style={{ padding: '6px 12px', background: '#333', border: 'none', borderRadius: '6px', color: '#aaa', cursor: 'pointer', fontSize: '12px' }}>Ukloni</button>
                   </>
                 ) : (
@@ -133,8 +139,8 @@ function ComparisonContent() {
 
         {/* Comparison table */}
         {parts.length > 0 && (
-          <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="cmp-table-wrap" style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '500px' }}>
               <thead>
                 <tr>
                   <th style={s.th}>Karakteristika</th>

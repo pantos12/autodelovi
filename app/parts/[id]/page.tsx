@@ -26,8 +26,38 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     openGraph: {
       title: part.name_sr || part.name,
       description: `${part.brand} - ${part.price.toLocaleString('sr-RS')} RSD`,
+      ...(part.images?.[0] ? { images: [part.images[0]] } : {}),
+    },
+    alternates: {
+      canonical: `/parts/${part.slug || part.id}`,
     },
   };
+}
+
+function ProductJsonLd({ part }: { part: Part }) {
+  const inStock = (part.stock_quantity ?? 0) > 0;
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: part.name_sr || part.name,
+    ...(part.description_sr || part.description ? { description: part.description_sr || part.description } : {}),
+    ...(part.images?.[0] ? { image: part.images[0] } : {}),
+    ...(part.brand ? { brand: { '@type': 'Brand', name: part.brand } } : {}),
+    ...(part.part_number ? { sku: part.part_number } : {}),
+    offers: {
+      '@type': 'Offer',
+      price: part.price,
+      priceCurrency: 'RSD',
+      availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      ...(part.supplier?.name ? { seller: { '@type': 'Organization', name: part.supplier.name } } : {}),
+    },
+  };
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  );
 }
 
 export default async function PartDetail({ params }: { params: { id: string } }) {
@@ -53,6 +83,13 @@ export default async function PartDetail({ params }: { params: { id: string } })
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
+      <ProductJsonLd part={part} />
+      <style>{`
+        @media (max-width: 768px) {
+          .pdp-grid { grid-template-columns: 1fr !important; }
+          .pdp-buy-card { position: static !important; }
+        }
+      `}</style>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
         {/* Breadcrumb */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px' }}>
@@ -69,7 +106,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
           <span style={{ color: '#fff' }}>{part.name_sr || part.name}</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
+        <div className="pdp-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
           {/* Left column */}
           <div>
             {/* Image */}
@@ -123,9 +160,9 @@ export default async function PartDetail({ params }: { params: { id: string } })
           </div>
 
           {/* Right: Buy card */}
-          <div style={{ position: 'sticky', top: '80px' }}>
+          <div className="pdp-buy-card" style={{ position: 'sticky', top: '80px' }}>
             <div style={{ background: '#1a1b1f', borderRadius: '16px', padding: '24px', border: '1px solid #252629' }}>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: '#ff4d00', marginBottom: '4px' }}>
+              <div style={{ fontSize: '32px', fontWeight: 800, color: '#f9372c', marginBottom: '4px' }}>
                 {part.price.toLocaleString('sr-RS')} RSD
               </div>
               {part.price_eur && (
@@ -185,8 +222,8 @@ export default async function PartDetail({ params }: { params: { id: string } })
                     <div style={{ padding: '12px' }}>
                       <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{rp.brand}</p>
                       <h3 style={{ color: '#fff', fontSize: '13px', marginBottom: '8px', lineHeight: '1.3' }}>{rp.name_sr || rp.name}</h3>
-                      <p style={{ color: '#ff4d00', fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>{rp.price.toLocaleString('sr-RS')} RSD</p>
-                      <Link href={`/parts/${rp.slug || rp.id}`} style={{ display: 'block', padding: '7px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '12px', fontWeight: 600 }}>Vidi detalje</Link>
+                      <p style={{ color: '#f9372c', fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>{rp.price.toLocaleString('sr-RS')} RSD</p>
+                      <Link href={`/parts/${rp.slug || rp.id}`} style={{ display: 'block', padding: '7px', background: '#f9372c', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '12px', fontWeight: 600 }}>Vidi detalje</Link>
                     </div>
                   </div>
                 );
