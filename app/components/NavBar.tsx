@@ -82,7 +82,7 @@ export default function NavBar() {
               placeholder="Pretrazi delove..."
               style={{ flex: 1, padding: '8px 12px', background: 'transparent', border: 'none', color: '#fff', fontSize: '13px', outline: 'none' }}
             />
-            <button type="submit" style={{ padding: '8px 14px', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
+            <button type="submit" aria-label="Pretraži" style={{ padding: '8px 14px', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
               🔍
             </button>
           </div>
@@ -114,7 +114,7 @@ export default function NavBar() {
         <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
           {user ? (
             <div style={{ position: 'relative' }}>
-              <button onClick={() => setUserMenuOpen(!userMenuOpen)} style={{ background: '#f9372c', border: 'none', borderRadius: '50%', width: '34px', height: '34px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button onClick={() => setUserMenuOpen(!userMenuOpen)} aria-label="Korisnički meni" aria-expanded={userMenuOpen} style={{ background: '#f9372c', border: 'none', borderRadius: '50%', width: '34px', height: '34px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {user.email?.[0]?.toUpperCase() || 'U'}
               </button>
               {userMenuOpen && (
@@ -141,7 +141,7 @@ export default function NavBar() {
         </div>
 
         {/* Hamburger */}
-        <button className="nav-hamburger" onClick={() => setMenuOpen(!menuOpen)} style={{ display: 'none', flexDirection: 'column', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', padding: '8px', zIndex: 101 }}>
+        <button className="nav-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Zatvori meni' : 'Otvori meni'} aria-expanded={menuOpen} style={{ display: 'none', flexDirection: 'column', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', padding: '8px', zIndex: 101 }}>
           <span style={{ display: 'block', width: '22px', height: '2px', background: '#fff', transition: 'all 0.2s', transform: menuOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none' }} />
           <span style={{ display: 'block', width: '22px', height: '2px', background: '#fff', transition: 'all 0.2s', opacity: menuOpen ? 0 : 1 }} />
           <span style={{ display: 'block', width: '22px', height: '2px', background: '#fff', transition: 'all 0.2s', transform: menuOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none' }} />
@@ -160,7 +160,7 @@ export default function NavBar() {
               placeholder="Pretrazi delove..."
               style={{ flex: 1, padding: '10px 12px', background: 'transparent', border: 'none', color: '#fff', fontSize: '14px', outline: 'none' }}
             />
-            <button type="submit" style={{ padding: '10px 14px', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '16px' }}>
+            <button type="submit" aria-label="Pretraži" style={{ padding: '10px 14px', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '16px' }}>
               🔍
             </button>
           </div>

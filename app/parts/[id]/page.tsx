@@ -26,8 +26,38 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     openGraph: {
       title: part.name_sr || part.name,
       description: `${part.brand} - ${part.price.toLocaleString('sr-RS')} RSD`,
+      ...(part.images?.[0] ? { images: [part.images[0]] } : {}),
+    },
+    alternates: {
+      canonical: `/parts/${part.slug || part.id}`,
     },
   };
+}
+
+function ProductJsonLd({ part }: { part: Part }) {
+  const inStock = (part.stock_quantity ?? 0) > 0;
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: part.name_sr || part.name,
+    ...(part.description_sr || part.description ? { description: part.description_sr || part.description } : {}),
+    ...(part.images?.[0] ? { image: part.images[0] } : {}),
+    ...(part.brand ? { brand: { '@type': 'Brand', name: part.brand } } : {}),
+    ...(part.part_number ? { sku: part.part_number } : {}),
+    offers: {
+      '@type': 'Offer',
+      price: part.price,
+      priceCurrency: 'RSD',
+      availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      ...(part.supplier?.name ? { seller: { '@type': 'Organization', name: part.supplier.name } } : {}),
+    },
+  };
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  );
 }
 
 export default async function PartDetail({ params }: { params: { id: string } }) {
@@ -53,6 +83,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
+      <ProductJsonLd part={part} />
       <style>{`
         @media (max-width: 768px) {
           .pdp-grid { grid-template-columns: 1fr !important; }

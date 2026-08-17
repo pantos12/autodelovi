@@ -44,6 +44,18 @@ body {
   color: var(--on-background);
 }
 
+:focus-visible {
+  outline: 2px solid var(--racing-red);
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  border-color: var(--racing-red) !important;
+  outline: none;
+}
+
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
