@@ -100,6 +100,7 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -211,8 +212,39 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none; }
+          .mp-sidebar.mp-sidebar--open {
+            display: block;
+            position: fixed;
+            inset: 64px 0 0;
+            z-index: 90;
+            border-radius: 0;
+            overflow-y: auto;
+            background: #1a1b1f;
+            padding: 20px;
+          }
+          .mp-filter-toggle { display: flex !important; }
+          .mp-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 89;
+          }
+        }
+      `}</style>
+      {filtersOpen && <div className="mp-overlay" onClick={() => setFiltersOpen(false)} />}
+      <div className="mp-container" style={s.container}>
+        <button
+          className="mp-filter-toggle"
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          style={{ display: 'none', alignItems: 'center', gap: '6px', padding: '10px 16px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', gridColumn: '1 / -1' }}
+        >
+          <span>⚙</span> Filteri {filtersOpen ? '▲' : '▼'}
+        </button>
+        <div className={`mp-sidebar${filtersOpen ? ' mp-sidebar--open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
