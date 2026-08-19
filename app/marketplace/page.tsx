@@ -20,11 +20,24 @@ const STATIC_CATEGORIES = [
 
 const PER_PAGE = 24;
 
-// TODO(v3.4.0): Once /api/parts is extended to return offers[], replace this
-// fallback with `computeBand(part.best_offer)` from lib/confidence.ts.
 function bandForPart(part: Part): Band {
   if ((part.stock_quantity ?? 0) > 0) return 'verified';
   return 'inquiry';
+}
+
+function relativeTime(dateStr: string | undefined): string {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  if (diff < 0) return 'upravo';
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return 'upravo';
+  if (mins < 60) return `pre ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `pre ${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'pre 1 dan';
+  if (days < 7) return `pre ${days} dana`;
+  return `pre ${Math.floor(days / 7)} ned.`;
 }
 
 function bandColor(band: Band): string {
@@ -85,6 +98,17 @@ function SmartImage({
     />
   );
 }
+
+const mobileStyles = `
+  @media (max-width: 768px) {
+    .mp-layout { grid-template-columns: 1fr !important; }
+    .mp-sidebar { position: static !important; }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+`;
 
 function MarketplaceContent() {
   const searchParams = useSearchParams();
@@ -211,8 +235,9 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{mobileStyles}</style>
+      <div className="mp-layout" style={s.container}>
+        <div className="mp-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -356,9 +381,11 @@ function MarketplaceContent() {
                         <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
-                      <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
-                      </p>
+                      {(part.updated_at || part.scraped_at) && (
+                        <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
+                          Azurirano: {relativeTime(part.scraped_at || part.updated_at)}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
