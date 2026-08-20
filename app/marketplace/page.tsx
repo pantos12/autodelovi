@@ -190,6 +190,8 @@ function MarketplaceContent() {
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
   };
 
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
   // Client-side avail filter (green + yellow)
   const displayParts = availOnly
     ? parts.filter(p => {
@@ -211,8 +213,41 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { position: static !important; }
+          .mp-sidebar-hidden { display: none !important; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .mp-filter-toggle { display: none !important; }
+        }
+      `}</style>
+      <div className="mp-container" style={s.container}>
+        {/* Mobile filter toggle */}
+        <button
+          className="mp-filter-toggle"
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          style={{
+            display: 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '12px',
+            background: '#1a1b1f',
+            border: '1px solid #333',
+            borderRadius: '10px',
+            color: '#fff',
+            fontSize: '14px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            gridColumn: '1 / -1',
+          }}
+        >
+          {filtersOpen ? '✕ Zatvori filtere' : '☰ Filteri i pretraga'}
+        </button>
+        <div className={`mp-sidebar${filtersOpen ? '' : ' mp-sidebar-hidden'}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
