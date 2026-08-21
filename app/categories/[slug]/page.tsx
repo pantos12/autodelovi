@@ -3,6 +3,8 @@ import Image from 'next/image';
 import { getParts, getCategories } from '@/lib/supabase';
 import type { Metadata } from 'next';
 
+export const revalidate = 120;
+
 const STATIC_CATEGORIES = [
   { slug: 'motor', name: 'Motor', icon: '⚙️', description: 'Delovi za motor' },
   { slug: 'kocnice', name: 'Kocnice', icon: '🛑', description: 'Kočioni sistem' },

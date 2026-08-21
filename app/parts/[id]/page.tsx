@@ -26,6 +26,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     openGraph: {
       title: part.name_sr || part.name,
       description: `${part.brand} - ${part.price.toLocaleString('sr-RS')} RSD`,
+      ...(part.images?.[0] ? { images: [{ url: part.images[0], alt: part.name_sr || part.name }] } : {}),
     },
   };
 }

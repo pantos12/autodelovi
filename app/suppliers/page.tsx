@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { getSuppliers } from '@/lib/supabase';
 
+export const revalidate = 300;
+
 export const metadata = {
   title: 'Dobavljači | AutoDelovi.sale',
   description: 'Proverite listu verifikovanih dobavljača auto delova u Srbiji.',
