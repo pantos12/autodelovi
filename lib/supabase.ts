@@ -15,6 +15,10 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 
 const isConfigured = () => !!process.env.NEXT_PUBLIC_SUPABASE_URL;
 
+function sanitizeFilterValue(v: string): string {
+  return v.replace(/[,.()\\]/g, '');
+}
+
 export async function getParts(params: {
   q?: string; category?: string; make?: string; model?: string; year?: number;
   supplier?: string; min_price?: number; max_price?: number;
@@ -33,7 +37,10 @@ export async function getParts(params: {
     .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`, { count: 'exact' })
     .eq('status', 'active');
 
-  if (q) query = query.or(`name.ilike.%${q}%,name_sr.ilike.%${q}%,part_number.ilike.%${q}%,oem_number.ilike.%${q}%,brand.ilike.%${q}%`);
+  if (q) {
+    const sq = sanitizeFilterValue(q);
+    query = query.or(`name.ilike.%${sq}%,name_sr.ilike.%${sq}%,part_number.ilike.%${sq}%,oem_number.ilike.%${sq}%,brand.ilike.%${sq}%`);
+  }
   if (category) query = query.eq('category_id', category);
   if (supplier) query = query.eq('supplier_id', supplier);
   if (min_price !== undefined) query = query.gte('price', min_price);
@@ -56,14 +63,14 @@ export async function getParts(params: {
 }
 export async function getPartById(id: string): Promise<Part | null> {
   if (!isConfigured()) return null;
-  const { data, error } = await supabase.from('parts_v2').select(`*, category:categories(*), supplier:suppliers(*)`).eq('id', id).single();
+  const { data, error } = await supabase.from('parts_v2').select(`*, category:categories(id,name,name_sr,slug,icon), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`).eq('id', id).single();
   if (error) return null;
   return data as Part;
 }
 
 export async function getPartBySlug(slug: string): Promise<Part | null> {
   if (!isConfigured()) return null;
-  const { data, error } = await supabase.from('parts_v2').select(`*, category:categories(*), supplier:suppliers(*)`).eq('slug', slug).single();
+  const { data, error } = await supabase.from('parts_v2').select(`*, category:categories(id,name,name_sr,slug,icon), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`).eq('slug', slug).single();
   if (error) return null;
   return data as Part;
 }
@@ -88,7 +95,7 @@ export async function recordPriceHistory(partId: string, supplierId: string, pri
 export async function getPriceHistory(partId: string, days = 30): Promise<PriceRecord[]> {
   if (!isConfigured()) return [];
   const since = new Date(Date.now() - days * 86400000).toISOString();
-  const { data } = await supabase.from('price_history').select('*').eq('part_id', partId).gte('recorded_at', since).order('recorded_at', { ascending: true });
+  const { data } = await supabase.from('price_history').select('id,part_id,price,price_eur,currency,source,recorded_at').eq('part_id', partId).gte('recorded_at', since).order('recorded_at', { ascending: true });
   return (data ?? []) as PriceRecord[];
 }
 
@@ -113,7 +120,7 @@ export async function getCategories(): Promise<Category[]> {
 
 export async function getSuppliers(activeOnly = true): Promise<Supplier[]> {
   if (!isConfigured()) return [];
-  let query = supabase.from('suppliers').select('*').order('name');
+  let query = supabase.from('suppliers').select('id,name,slug,city,description,description_sr,is_verified,status,logo_url,rating,review_count').order('name');
   if (activeOnly) query = query.eq('status', 'active');
   const { data } = await query;
   return (data ?? []) as Supplier[];
@@ -121,7 +128,7 @@ export async function getSuppliers(activeOnly = true): Promise<Supplier[]> {
 
 export async function getSupplierById(id: string): Promise<Supplier | null> {
   if (!isConfigured()) return null;
-  const { data } = await supabase.from('suppliers').select('*').eq('id', id).single();
+  const { data } = await supabase.from('suppliers').select('id,name,slug,city,description,description_sr,is_verified,status,logo_url,rating,review_count,website,phone,email').eq('id', id).single();
   return data as Supplier | null;
 }
 

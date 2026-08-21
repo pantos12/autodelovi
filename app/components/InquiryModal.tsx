@@ -105,6 +105,7 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
         className="inquiry-modal"
         role="dialog"
         aria-modal="true"
+        aria-label="Pošalji upit"
         style={{
           width: '100%', maxWidth: '460px', background: '#1a1b1f',
           border: '1px solid #2a2b2f', borderRadius: '12px', padding: '24px',

@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     if (upsertErr || !cartRow) {
       return NextResponse.json(
         { ok: false, error: upsertErr?.message || 'cart_upsert_failed' },
-        { status: 200 }
+        { status: 500 }
       );
     }
 
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     if (delErr) {
       return NextResponse.json(
         { ok: false, error: delErr.message },
-        { status: 200 }
+        { status: 500 }
       );
     }
 
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
       if (insErr) {
         return NextResponse.json(
           { ok: false, error: insErr.message },
-          { status: 200 }
+          { status: 500 }
         );
       }
     }
@@ -81,6 +81,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unknown_error';
-    return NextResponse.json({ ok: false, error: message }, { status: 200 });
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }
