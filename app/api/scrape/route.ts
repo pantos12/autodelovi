@@ -9,7 +9,9 @@ export const maxDuration = 300;
 function isAuthorized(request: NextRequest): boolean {
   const token = request.headers.get('Authorization')?.replace('Bearer ', '');
   const cronSecret = request.headers.get('x-cron-secret');
-  return token === process.env.SCRAPE_API_SECRET || cronSecret === process.env.CRON_SECRET;
+  const apiSecret = process.env.SCRAPE_API_SECRET;
+  const envCronSecret = process.env.CRON_SECRET;
+  return (!!apiSecret && token === apiSecret) || (!!envCronSecret && cronSecret === envCronSecret);
 }
 
 export async function POST(request: NextRequest) {

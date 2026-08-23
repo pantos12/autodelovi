@@ -33,13 +33,21 @@ export async function getParts(params: {
     .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`, { count: 'exact' })
     .eq('status', 'active');
 
-  if (q) query = query.or(`name.ilike.%${q}%,name_sr.ilike.%${q}%,part_number.ilike.%${q}%,oem_number.ilike.%${q}%,brand.ilike.%${q}%`);
+  if (q) {
+    const sq = q.replace(/[,().\\%_]/g, '');
+    if (sq) query = query.or(`name.ilike.%${sq}%,name_sr.ilike.%${sq}%,part_number.ilike.%${sq}%,oem_number.ilike.%${sq}%,brand.ilike.%${sq}%`);
+  }
   if (category) query = query.eq('category_id', category);
   if (supplier) query = query.eq('supplier_id', supplier);
   if (min_price !== undefined) query = query.gte('price', min_price);
   if (max_price !== undefined) query = query.lte('price', max_price);
   if (in_stock) query = query.gt('stock_quantity', 0);
-  if (make) query = query.contains('compatible_vehicles', [{ make }]);
+  if (make && model) {
+    query = query.contains('compatible_vehicles', [{ make, model }]);
+  } else if (make) {
+    query = query.contains('compatible_vehicles', [{ make }]);
+  }
+  if (year) query = query.or(`year_from.lte.${year},year_from.is.null`).or(`year_to.gte.${year},year_to.is.null`);
 
   switch (sort) {
     case 'price_asc':  query = query.order('price', { ascending: true }); break;

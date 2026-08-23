@@ -95,22 +95,24 @@ export async function GET(
     vpicOk = false;
   }
 
-  // 3) Upsert cache (even on failure — write null row so we don't hammer vPIC)
-  try {
-    await supabaseAdmin.from('vin_cache').upsert(
-      {
-        vin,
-        make,
-        model,
-        model_year: modelYear,
-        raw_payload: rawPayload,
-        source: SOURCE,
-        decoded_at: new Date().toISOString(),
-      },
-      { onConflict: 'vin' }
-    );
-  } catch {
-    // ignore cache write errors
+  // 3) Upsert cache only on successful decode
+  if (vpicOk) {
+    try {
+      await supabaseAdmin.from('vin_cache').upsert(
+        {
+          vin,
+          make,
+          model,
+          model_year: modelYear,
+          raw_payload: rawPayload,
+          source: SOURCE,
+          decoded_at: new Date().toISOString(),
+        },
+        { onConflict: 'vin' }
+      );
+    } catch {
+      // ignore cache write errors
+    }
   }
 
   if (!vpicOk) {
