@@ -4,13 +4,19 @@ import { getParts, getCategories } from '@/lib/supabase';
 import type { Metadata } from 'next';
 
 const STATIC_CATEGORIES = [
-  { slug: 'motor', name: 'Motor', icon: '⚙️', description: 'Delovi za motor' },
-  { slug: 'kocnice', name: 'Kocnice', icon: '🛑', description: 'Kočioni sistem' },
-  { slug: 'elektronika', name: 'Elektronika', icon: '⚡', description: 'Elektronski delovi' },
-  { slug: 'karoserija', name: 'Karoserija', icon: '🚗', description: 'Karoserijski delovi' },
-  { slug: 'suspenzija', name: 'Suspenzija', icon: '🔧', description: 'Ovjesi i amortizeri' },
-  { slug: 'transmisija', name: 'Transmisija', icon: '⚙️', description: 'Menjač i kvačilo' },
-  { slug: 'ostalo', name: 'Ostalo', icon: '📦', description: 'Ostali delovi' },
+  { slug: 'filteri', name: 'Filteri', icon: '🔧', description: 'Filteri za ulje, vazduh, gorivo i kabinu' },
+  { slug: 'kocnice', name: 'Kočnice', icon: '🛑', description: 'Kočioni diskovi, pločice i sistem' },
+  { slug: 'amortizeri', name: 'Amortizeri', icon: '🔩', description: 'Amortizeri, opruge i ovjesi' },
+  { slug: 'paljenje', name: 'Paljenje', icon: '🔥', description: 'Svećice, bobine i sistem paljenja' },
+  { slug: 'razvod', name: 'Razvod', icon: '⚙️', description: 'Kaiš razvoda, lančanik i zupčasti set' },
+  { slug: 'kvacilo', name: 'Kvačilo', icon: '🔄', description: 'Kvačilo, zamajac i set kvačila' },
+  { slug: 'hladjenje', name: 'Hlađenje', icon: '❄️', description: 'Hladnjak, termostat i vodena pumpa' },
+  { slug: 'elektrika', name: 'Elektrika', icon: '⚡', description: 'Alternator, starter i električni delovi' },
+  { slug: 'izduvni-sistem', name: 'Izduvni sistem', icon: '💨', description: 'Auspuh, katalizator i izduvne cevi' },
+  { slug: 'upravljac', name: 'Upravljač', icon: '🎯', description: 'Servo pumpa, letva volana i krajevi' },
+  { slug: 'menjac', name: 'Menjač', icon: '⚙️', description: 'Delovi menjača i transmisije' },
+  { slug: 'karoserija', name: 'Karoserija', icon: '🚗', description: 'Branici, farovi i karoserijski delovi' },
+  { slug: 'ostalo', name: 'Ostalo', icon: '📦', description: 'Ostali auto delovi i oprema' },
 ];
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
