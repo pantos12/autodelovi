@@ -144,9 +144,9 @@ export default function Home() {
           <h2 style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '2px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: '20px' }}>KATEGORIJE</h2>
           <div className="categories-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '12px' }}>
             {[
-              { slug: 'motor', label: 'MOTOR', icon: '⚙️', count: '1,240', large: true },
-              { slug: 'kocnice', label: 'KOCNICE', icon: '🛞', count: '840', large: false },
-              { slug: 'elektronika', label: 'ELEKTRONIKA', icon: '⚡', count: '960', large: false },
+              { slug: 'filteri', label: 'FILTERI', icon: '🔧', count: '1,240', large: true },
+              { slug: 'kocnice', label: 'KOČNICE', icon: '🛑', count: '840', large: false },
+              { slug: 'elektrika', label: 'ELEKTRIKA', icon: '⚡', count: '960', large: false },
               { slug: 'karoserija', label: 'KAROSERIJA', icon: '🚗', count: '1,100', large: false },
             ].map(cat => (
               <Link href={'/categories/' + cat.slug} key={cat.slug} style={{ textDecoration: 'none' }}>
