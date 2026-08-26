@@ -151,10 +151,19 @@ export async function runScrapingPipeline(
 
 export async function runAllSuppliers(triggeredBy: 'cron' | 'manual' | 'api' = 'api'): Promise<PipelineResult[]> {
   const suppliers = await getSuppliers(true);
-  const results: PipelineResult[] = [];
-  for (const supplier of suppliers) {
-    const result = await runScrapingPipeline(supplier, triggeredBy);
-    results.push(result);
-  }
-  return results;
+  const settled = await Promise.allSettled(
+    suppliers.map(supplier => runScrapingPipeline(supplier, triggeredBy))
+  );
+  return settled.map((result, i) =>
+    result.status === 'fulfilled'
+      ? result.value
+      : {
+          supplier_id: suppliers[i].id,
+          status: 'failed' as const,
+          scrape_result: { parts_fetched: 0, parts_normalized: 0, parts_rejected: 0 },
+          db_result: { upserted: 0, skipped: 0, price_changes: 0 },
+          duration_ms: 0,
+          error: result.reason?.message || 'Unknown error',
+        }
+  );
 }
