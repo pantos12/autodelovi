@@ -121,7 +121,7 @@ function MarketplaceContent() {
           const params = new URLSearchParams();
           params.set('q', searchQuery);
           if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
+          if (filterInStock || availOnly) params.set('in_stock', 'true');
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
           const res = await fetch(`/api/search?${params}`);
@@ -132,7 +132,7 @@ function MarketplaceContent() {
           const params = new URLSearchParams();
           if (filterMake) params.set('make', filterMake);
           if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
+          if (filterInStock || availOnly) params.set('in_stock', 'true');
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
@@ -148,12 +148,12 @@ function MarketplaceContent() {
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
+  }, [filterMake, filterCategory, filterInStock, availOnly, sortBy, searchQuery, page]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+  }, [filterMake, filterCategory, filterInStock, availOnly, sortBy, searchQuery]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -190,13 +190,7 @@ function MarketplaceContent() {
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
   };
 
-  // Client-side avail filter (green + yellow)
-  const displayParts = availOnly
-    ? parts.filter(p => {
-        const b = bandForPart(p);
-        return b === 'verified' || b === 'likely';
-      })
-    : parts;
+  const displayParts = parts;
 
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
 
