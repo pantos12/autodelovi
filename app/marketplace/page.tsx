@@ -113,6 +113,14 @@ function MarketplaceContent() {
     }
   }, [searchParams]);
 
+  const [filterKey, setFilterKey] = useState(0);
+
+  useEffect(() => {
+    setPage(1);
+    setFilterKey(k => k + 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -148,12 +156,8 @@ function MarketplaceContent() {
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey, page]);
 
   // Persist ?avail=1
   useEffect(() => {

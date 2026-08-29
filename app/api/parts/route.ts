@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       in_stock:  searchParams.get('in_stock') === 'true' ? true : undefined,
       sort:      (searchParams.get('sort') as any) ?? 'newest',
       page:      searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1,
-      per_page:  Math.min(parseInt(searchParams.get('per_page') ?? '24'), 100),
+      per_page:  Math.min(parseInt(searchParams.get('per_page') ?? '24') || 24, 100),
     };
     const result = await getParts(params);
     return NextResponse.json(

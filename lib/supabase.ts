@@ -4,8 +4,6 @@ import { computeBand, type Band } from './confidence';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
-// When the service role key is not configured, fall back to the anon key so
-// server routes still work against tables that grant public insert/update via RLS.
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseKey;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
@@ -14,6 +12,10 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 const isConfigured = () => !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+function sanitizeFilterValue(input: string): string {
+  return input.replace(/[%_\\(),."']/g, '');
+}
 
 export async function getParts(params: {
   q?: string; category?: string; make?: string; model?: string; year?: number;
@@ -33,7 +35,10 @@ export async function getParts(params: {
     .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`, { count: 'exact' })
     .eq('status', 'active');
 
-  if (q) query = query.or(`name.ilike.%${q}%,name_sr.ilike.%${q}%,part_number.ilike.%${q}%,oem_number.ilike.%${q}%,brand.ilike.%${q}%`);
+  if (q) {
+    const safe = sanitizeFilterValue(q);
+    if (safe) query = query.or(`name.ilike.%${safe}%,name_sr.ilike.%${safe}%,part_number.ilike.%${safe}%,oem_number.ilike.%${safe}%,brand.ilike.%${safe}%`);
+  }
   if (category) query = query.eq('category_id', category);
   if (supplier) query = query.eq('supplier_id', supplier);
   if (min_price !== undefined) query = query.gte('price', min_price);

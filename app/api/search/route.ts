@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const page = parseInt(searchParams.get('page') ?? '1');
-    const perPage = Math.min(parseInt(searchParams.get('per_page') ?? '20'), 50);
+    const perPage = Math.min(parseInt(searchParams.get('per_page') ?? '20') || 20, 50);
     const category = searchParams.get('category') ?? null;
     const minPrice = searchParams.get('min_price') ? parseFloat(searchParams.get('min_price')!) : null;
     const maxPrice = searchParams.get('max_price') ? parseFloat(searchParams.get('max_price')!) : null;
@@ -23,10 +23,11 @@ export async function GET(request: NextRequest) {
     });
 
     if (error) {
+      const safeQ = q.replace(/[%_\\(),."']/g, '');
       const { data: fb, count } = await supabase
         .from('parts_v2')
         .select('id,slug,name,brand,part_number,price,price_eur,stock_quantity,images,category_id,supplier_id', { count: 'exact' })
-        .or(`name.ilike.%${q}%,part_number.ilike.%${q}%,brand.ilike.%${q}%`)
+        .or(`name.ilike.%${safeQ}%,part_number.ilike.%${safeQ}%,brand.ilike.%${safeQ}%`)
         .in('status', ['active','out_of_stock'])
         .range((page-1)*perPage, page*perPage-1);
       return NextResponse.json({ data: fb ?? [], meta: { total: count ?? 0, page, per_page: perPage } });
