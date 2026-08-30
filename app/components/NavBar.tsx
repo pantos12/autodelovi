@@ -73,16 +73,18 @@ export default function NavBar() {
         </Link>
 
         {/* Desktop search */}
-        <form onSubmit={handleSearch} className="nav-search-desktop" style={{ display: 'flex', flex: 1, maxWidth: '360px' }}>
+        <form onSubmit={handleSearch} className="nav-search-desktop" role="search" aria-label="Pretraga delova" style={{ display: 'flex', flex: 1, maxWidth: '360px' }}>
           <div style={{ display: 'flex', width: '100%', background: '#1a1b1f', borderRadius: '8px', border: '1px solid #333', overflow: 'hidden' }}>
+            <label htmlFor="nav-search" className="sr-only">Pretraga</label>
             <input
+              id="nav-search"
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Pretrazi delove..."
               style={{ flex: 1, padding: '8px 12px', background: 'transparent', border: 'none', color: '#fff', fontSize: '13px', outline: 'none' }}
             />
-            <button type="submit" style={{ padding: '8px 14px', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
+            <button type="submit" aria-label="Pretrazi" style={{ padding: '8px 14px', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
               🔍
             </button>
           </div>
