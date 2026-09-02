@@ -93,16 +93,55 @@ export async function getPriceHistory(partId: string, days = 30): Promise<PriceR
 }
 
 export async function detectPriceChanges(parts: Array<{ id: string; price: number; part_number: string; supplier_id: string }>): Promise<PriceAlert[]> {
-  if (!isConfigured()) return [];
-  const alerts: PriceAlert[] = [];
-  for (const part of parts) {
-    const { data: latest } = await supabase.from('price_history').select('price').eq('part_id', part.id).order('recorded_at', { ascending: false }).limit(1).single();
-    if (latest && Math.abs(latest.price - part.price) / latest.price > 0.05) {
-      const { data: pf } = await supabase.from('parts_v2').select('name, supplier:suppliers(name)').eq('id', part.id).single();
-      alerts.push({ part_id: part.id, part_name: (pf as any)?.name ?? part.part_number, old_price: latest.price, new_price: part.price, change_pct: ((part.price - latest.price) / latest.price) * 100, supplier_name: (pf as any)?.supplier?.name ?? '', currency: 'RSD' });
+  if (!isConfigured() || parts.length === 0) return [];
+
+  const partIds = parts.map(p => p.id);
+  const priceMap = new Map(parts.map(p => [p.id, p]));
+
+  const { data: historyRows } = await supabase
+    .from('price_history')
+    .select('part_id, price, recorded_at')
+    .in('part_id', partIds)
+    .order('recorded_at', { ascending: false });
+
+  const latestByPart = new Map<string, number>();
+  for (const row of historyRows ?? []) {
+    if (!latestByPart.has(row.part_id)) {
+      latestByPart.set(row.part_id, row.price);
     }
   }
-  return alerts;
+
+  const changedIds: string[] = [];
+  for (const [partId, oldPrice] of latestByPart) {
+    const part = priceMap.get(partId);
+    if (part && Math.abs(oldPrice - part.price) / oldPrice > 0.05) {
+      changedIds.push(partId);
+    }
+  }
+
+  if (changedIds.length === 0) return [];
+
+  const { data: partDetails } = await supabase
+    .from('parts_v2')
+    .select('id, name, supplier:suppliers(name)')
+    .in('id', changedIds);
+
+  const detailMap = new Map((partDetails ?? []).map((p: any) => [p.id, p]));
+
+  return changedIds.map(id => {
+    const part = priceMap.get(id)!;
+    const oldPrice = latestByPart.get(id)!;
+    const detail = detailMap.get(id);
+    return {
+      part_id: id,
+      part_name: detail?.name ?? part.part_number,
+      old_price: oldPrice,
+      new_price: part.price,
+      change_pct: ((part.price - oldPrice) / oldPrice) * 100,
+      supplier_name: (detail?.supplier as any)?.name ?? '',
+      currency: 'RSD',
+    };
+  });
 }
 
 export async function getCategories(): Promise<Category[]> {
