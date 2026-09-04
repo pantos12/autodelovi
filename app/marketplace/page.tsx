@@ -93,6 +93,7 @@ function MarketplaceContent() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [compareList, setCompareList] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
   const [filterMake, setFilterMake] = useState(searchParams.get('make') || '');
   const [filterCategory, setFilterCategory] = useState(searchParams.get('category') || '');
   const [filterInStock, setFilterInStock] = useState(false);
@@ -117,11 +118,12 @@ function MarketplaceContent() {
     const load = async () => {
       setLoading(true);
       try {
+        const inStock = filterInStock || availOnly;
         if (searchQuery && searchQuery.length >= 2) {
           const params = new URLSearchParams();
           params.set('q', searchQuery);
           if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
+          if (inStock) params.set('in_stock', 'true');
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
           const res = await fetch(`/api/search?${params}`);
@@ -132,7 +134,7 @@ function MarketplaceContent() {
           const params = new URLSearchParams();
           if (filterMake) params.set('make', filterMake);
           if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
+          if (inStock) params.set('in_stock', 'true');
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
@@ -148,12 +150,12 @@ function MarketplaceContent() {
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
+  }, [filterMake, filterCategory, filterInStock, availOnly, sortBy, searchQuery, page]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+  }, [filterMake, filterCategory, filterInStock, availOnly, sortBy, searchQuery]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -190,13 +192,7 @@ function MarketplaceContent() {
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
   };
 
-  // Client-side avail filter (green + yellow)
-  const displayParts = availOnly
-    ? parts.filter(p => {
-        const b = bandForPart(p);
-        return b === 'verified' || b === 'likely';
-      })
-    : parts;
+  const displayParts = parts;
 
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
 
@@ -211,8 +207,35 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-grid { grid-template-columns: 1fr !important; }
+          .mp-sidebar { position: static !important; display: none; }
+          .mp-sidebar.mp-sidebar--open { display: block; }
+          .mp-filter-toggle { display: block !important; }
+        }
+      `}</style>
+      <div style={s.container} className="mp-grid">
+        {/* Mobile filter toggle */}
+        <button
+          onClick={() => setShowFilters(v => !v)}
+          style={{
+            display: 'none',
+            width: '100%',
+            padding: '10px',
+            background: '#1a1b1f',
+            border: '1px solid #333',
+            borderRadius: '8px',
+            color: '#fff',
+            fontSize: '14px',
+            cursor: 'pointer',
+            gridColumn: '1 / -1',
+          }}
+          className="mp-filter-toggle"
+        >
+          {showFilters ? 'Sakrij filtere ▲' : 'Prikaži filtere ▼'}
+        </button>
+        <div style={s.sidebar} className={`mp-sidebar${showFilters ? ' mp-sidebar--open' : ''}`}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>

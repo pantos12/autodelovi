@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
-// Vercel Cron: 0 */6 * * * (every 6 hours)
+// Vercel Cron: 0 10 * * * (daily at 10:00 UTC)
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
