@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -7,6 +7,28 @@ import type { Part } from '@/lib/types';
 import AddToCartButton from '@/app/components/AddToCartButton';
 import InquiryButton from '@/app/components/InquiryButton';
 import { bandEmoji, bandLabel, type Band } from '@/lib/confidence';
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
+
+function relativeTime(dateStr?: string): string {
+  if (!dateStr) return 'nepoznato';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  if (diff < 0 || isNaN(diff)) return 'nepoznato';
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return 'upravo';
+  if (mins < 60) return `pre ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `pre ${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `pre ${days}d`;
+}
 
 const STATIC_CATEGORIES = [
   { slug: 'motor', name: 'Motor', icon: '⚙️' },
@@ -99,6 +121,7 @@ function MarketplaceContent() {
   const [sortBy, setSortBy] = useState('price_asc');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
+  const debouncedSearchInput = useDebounce(searchInput, 400);
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
@@ -112,6 +135,13 @@ function MarketplaceContent() {
       setSearchInput(q);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const trimmed = debouncedSearchInput.trim();
+    if (trimmed.length >= 2 || trimmed.length === 0) {
+      setSearchQuery(trimmed);
+    }
+  }, [debouncedSearchInput]);
 
   useEffect(() => {
     const load = async () => {
@@ -357,7 +387,7 @@ function MarketplaceContent() {
                       </div>
 
                       <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
+                        Provereno: {relativeTime(part.scraped_at || part.updated_at)}
                       </p>
                     </div>
                   </div>

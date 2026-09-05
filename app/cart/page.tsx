@@ -2,13 +2,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '../components/CartProvider';
+import { calcShipping, FREE_SHIPPING_THRESHOLD_RSD } from '@/lib/shipping';
 
 export default function CartPage() {
   const { items, count, subtotal, updateQty, remove, clear } = useCart();
 
   const currency = items[0]?.price_currency || 'RSD';
-  const freeShippingThreshold = 10000;
-  const shipping = subtotal >= freeShippingThreshold ? 0 : 600;
+  const shipping = calcShipping(subtotal);
   const total = subtotal + shipping;
 
   if (!items || items.length === 0) {
@@ -96,7 +96,7 @@ export default function CartPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+                {shipping === 0 ? `Besplatna dostava (iznad ${FREE_SHIPPING_THRESHOLD_RSD.toLocaleString('sr-RS')} ${currency})` : `${shipping.toLocaleString('sr-RS')} ${currency}`}
               </span>
             </div>
 

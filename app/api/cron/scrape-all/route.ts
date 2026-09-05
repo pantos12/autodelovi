@@ -1,21 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { runAllSuppliers } from '@/lib/scraper';
+import { runAllSuppliers, runScrapingPipeline, getScraperByName, SOURCE_NAMES } from '@/lib/scraper';
+import { getSuppliers } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
-// Vercel Cron: 0 4 * * * (daily at 04:00 UTC)
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const source = request.nextUrl.searchParams.get('source');
   const startTime = Date.now();
-  console.log('[Cron scrape-all] Starting at', new Date().toISOString());
 
   try {
+    if (source && (SOURCE_NAMES as readonly string[]).includes(source)) {
+      console.log(`[Cron scrape] Starting source=${source} at`, new Date().toISOString());
+      const suppliers = await getSuppliers(true);
+      const supplier = suppliers.find(s => s.id === source || s.slug === source);
+      if (!supplier) {
+        return NextResponse.json({ error: `Supplier not found: ${source}` }, { status: 404 });
+      }
+      const result = await runScrapingPipeline(supplier, 'cron');
+      console.log(`[Cron scrape] Done source=${source}:`, result);
+      return NextResponse.json({ success: true, source, result });
+    }
+
+    console.log('[Cron scrape-all] Starting at', new Date().toISOString());
     const results = await runAllSuppliers('cron');
     const summary = {
       triggered_at: new Date().toISOString(),
@@ -29,7 +42,7 @@ export async function GET(request: NextRequest) {
     console.log('[Cron scrape-all] Done:', summary);
     return NextResponse.json({ success: true, summary });
   } catch (err: any) {
-    console.error('[Cron scrape-all] Failed:', err.message);
+    console.error('[Cron scrape] Failed:', err.message);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
