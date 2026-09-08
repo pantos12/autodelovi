@@ -81,7 +81,6 @@ export default async function PartDetail({ params }: { params: { id: string } })
                 sizes="(max-width: 1200px) 100vw, 800px"
                 style={{ objectFit: part.images?.[0] ? 'contain' : 'cover', padding: part.images?.[0] ? '16px' : 0 }}
                 priority
-                unoptimized
               />
             </div>
 
@@ -179,8 +178,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
                         sizes="(max-width: 768px) 50vw, 220px"
                         style={{ objectFit: 'cover' }}
                         loading="lazy"
-                        unoptimized
-                      />
+                              />
                     </div>
                     <div style={{ padding: '12px' }}>
                       <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{rp.brand}</p>
