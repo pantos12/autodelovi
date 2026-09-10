@@ -100,6 +100,7 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -209,11 +210,11 @@ function MarketplaceContent() {
     return out;
   }
 
-  return (
-    <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
-          <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
+  const activeFilterCount = [filterMake, filterCategory, filterInStock, availOnly, searchQuery].filter(Boolean).length;
+
+  const filterPanel = (
+    <>
+      <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
               <input
@@ -283,15 +284,66 @@ function MarketplaceContent() {
             <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
-            Resetuj sve
-          </button>
+      <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+        Resetuj sve
+      </button>
+    </>
+  );
+
+  return (
+    <div style={s.page}>
+      <style>{`
+        @media (max-width: 768px) {
+          .marketplace-grid { grid-template-columns: 1fr !important; }
+          .marketplace-sidebar { display: none !important; }
+          .marketplace-mobile-filter-btn { display: flex !important; }
+        }
+        .marketplace-filter-overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+          z-index: 200; display: flex; justify-content: flex-end;
+        }
+        .marketplace-filter-drawer {
+          width: 300px; max-width: 85vw; height: 100%;
+          background: #1a1b1f; overflow-y: auto; padding: 20px;
+        }
+      `}</style>
+
+      {/* Mobile filter drawer */}
+      {filtersOpen && (
+        <div className="marketplace-filter-overlay" onClick={(e) => { if (e.target === e.currentTarget) setFiltersOpen(false); }}>
+          <div className="marketplace-filter-drawer">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ color: '#fff', fontSize: '16px', margin: 0 }}>Filteri</h3>
+              <button onClick={() => setFiltersOpen(false)} style={{ background: 'none', border: 'none', color: '#aaa', fontSize: '24px', cursor: 'pointer' }}>×</button>
+            </div>
+            {filterPanel}
+          </div>
+        </div>
+      )}
+
+      <div className="marketplace-grid" style={s.container}>
+        <div className="marketplace-sidebar" style={s.sidebar}>
+          {filterPanel}
         </div>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-            <p style={{ color: '#aaa', fontSize: '14px' }}>
-              {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button
+                className="marketplace-mobile-filter-btn"
+                onClick={() => setFiltersOpen(true)}
+                style={{ display: 'none', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '13px', cursor: 'pointer' }}
+              >
+                <span>Filteri</span>
+                {activeFilterCount > 0 && (
+                  <span style={{ background: '#f9372c', color: '#fff', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700 }}>
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+              <p style={{ color: '#aaa', fontSize: '14px', margin: 0 }}>
+                {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
+              </p>
+            </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <select style={{ ...s.select, width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
                 <option value="price_asc">Cena: niža → viša</option>
