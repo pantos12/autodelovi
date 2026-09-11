@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
       { data: result.parts, meta: { total: result.total, page: result.page, per_page: result.per_page, total_pages: result.total_pages } },
       { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
     );
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    console.error('[parts] Error:', err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: 'Failed to fetch parts' }, { status: 500 });
   }
 }

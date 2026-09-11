@@ -22,7 +22,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       { data: part, related, price_history: priceHistory },
       { headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600' } }
     );
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    console.error('[parts/id] Error:', err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: 'Failed to fetch part' }, { status: 500 });
   }
 }

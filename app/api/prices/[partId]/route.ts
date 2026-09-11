@@ -19,7 +19,8 @@ export async function GET(request: NextRequest, { params }: { params: { partId: 
       { data: history, stats, meta: { days, total: history.length } },
       { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=1800' } }
     );
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    console.error('[prices] Error:', err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: 'Failed to fetch price history' }, { status: 500 });
   }
 }
