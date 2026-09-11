@@ -17,7 +17,8 @@ export async function GET(request: NextRequest) {
       { data: suppliers, meta: { total: suppliers.length } },
       { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600' } }
     );
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    console.error('[suppliers] Error:', err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: 'Failed to fetch suppliers' }, { status: 500 });
   }
 }

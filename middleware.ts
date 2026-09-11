@@ -35,6 +35,11 @@ export async function middleware(request: NextRequest) {
     // Auth refresh failed — continue without blocking the request
   }
 
+  supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff');
+  supabaseResponse.headers.set('X-Frame-Options', 'DENY');
+  supabaseResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  supabaseResponse.headers.set('X-DNS-Prefetch-Control', 'on');
+
   return supabaseResponse;
 }
 

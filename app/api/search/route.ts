@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       const { data: fb, count } = await supabase
         .from('parts_v2')
         .select('id,slug,name,brand,part_number,price,price_eur,stock_quantity,images,category_id,supplier_id', { count: 'exact' })
-        .or(`name.ilike.%${q}%,part_number.ilike.%${q}%,brand.ilike.%${q}%`)
+        .or(`name.ilike.%${q.replace(/[,%()]/g, '')}%,part_number.ilike.%${q.replace(/[,%()]/g, '')}%,brand.ilike.%${q.replace(/[,%()]/g, '')}%`)
         .in('status', ['active','out_of_stock'])
         .range((page-1)*perPage, page*perPage-1);
       return NextResponse.json({ data: fb ?? [], meta: { total: count ?? 0, page, per_page: perPage } });
@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
       { data: data ?? [], meta: { total, page, per_page: perPage, total_pages: Math.ceil(total/perPage), query: q } },
       { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' } }
     );
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    console.error('[search] Error:', err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: 'Search failed' }, { status: 500 });
   }
 }
