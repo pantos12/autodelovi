@@ -37,11 +37,13 @@ export default function VehicleSelection() {
       const res = await fetch(`/api/vin/${cleaned}`);
       if (res.status === 400) {
         setVinError('VIN nije validan');
+        setVinLoading(false);
         return;
       }
       const json = await res.json();
       if (!res.ok || json?.error) {
         setVinError('Servis trenutno nedostupan, koristi dropdown');
+        setVinLoading(false);
         return;
       }
       // Match make case-insensitively against known list

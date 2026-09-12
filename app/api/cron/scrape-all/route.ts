@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { runAllSuppliers } from '@/lib/scraper';
+import { runAllSuppliers, getScraperByName, runScrapingPipeline, SOURCE_NAMES } from '@/lib/scraper';
+import { getSuppliers } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
-// Vercel Cron: 0 4 * * * (daily at 04:00 UTC)
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -13,13 +13,28 @@ export async function GET(request: NextRequest) {
   }
 
   const startTime = Date.now();
-  console.log('[Cron scrape-all] Starting at', new Date().toISOString());
+  const source = new URL(request.url).searchParams.get('source');
+  console.log('[Cron scrape-all] Starting at', new Date().toISOString(), source ? `source=${source}` : '(all)');
 
   try {
-    const results = await runAllSuppliers('cron');
+    let results;
+    if (source && (SOURCE_NAMES as readonly string[]).includes(source)) {
+      const suppliers = await getSuppliers(true);
+      const supplier = suppliers.find(s => s.id === source || s.slug === source);
+      if (supplier) {
+        const result = await runScrapingPipeline(supplier, 'cron');
+        results = [result];
+      } else {
+        return NextResponse.json({ error: `Supplier not found: ${source}` }, { status: 404 });
+      }
+    } else {
+      results = await runAllSuppliers('cron');
+    }
+
     const summary = {
       triggered_at: new Date().toISOString(),
       duration_ms: Date.now() - startTime,
+      source: source || 'all',
       suppliers_processed: results.length,
       total_parts_found: results.reduce((a,r) => a + r.scrape_result.parts_fetched, 0),
       total_upserted: results.reduce((a,r) => a + r.db_result.upserted, 0),

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -113,7 +113,18 @@ function MarketplaceContent() {
     }
   }, [searchParams]);
 
+  const filterKey = `${filterMake}|${filterCategory}|${filterInStock}|${sortBy}|${searchQuery}`;
+  const prevFilterKey = useRef(filterKey);
+
   useEffect(() => {
+    let currentPage = page;
+    if (prevFilterKey.current !== filterKey) {
+      currentPage = 1;
+      setPage(1);
+      prevFilterKey.current = filterKey;
+    }
+
+    let cancelled = false;
     const load = async () => {
       setLoading(true);
       try {
@@ -123,9 +134,10 @@ function MarketplaceContent() {
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
           params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
+          params.set('page', String(currentPage));
           const res = await fetch(`/api/search?${params}`);
           const json = await res.json();
+          if (cancelled) return;
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
         } else {
@@ -135,25 +147,22 @@ function MarketplaceContent() {
           if (filterInStock) params.set('in_stock', 'true');
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
+          params.set('page', String(currentPage));
           const res = await fetch(`/api/parts?${params}`);
           const json = await res.json();
+          if (cancelled) return;
           setParts(json.data || []);
           setTotal(json.meta?.total || json.data?.length || 0);
         }
       } catch {
-        setParts([]);
+        if (!cancelled) setParts([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+    return () => { cancelled = true; };
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page, filterKey]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -356,9 +365,11 @@ function MarketplaceContent() {
                         <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
-                      <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
-                      </p>
+                      {part.scraped_at && (
+                        <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
+                          Ažurirano: {new Date(part.scraped_at).toLocaleDateString('sr-RS')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );

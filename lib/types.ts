@@ -274,6 +274,6 @@ export interface Inquiry {
   buyer_email: string;
   buyer_phone: string | null;
   message: string | null;
-  status: 'pending' | 'responded' | 'closed';
+  status: 'new' | 'pending' | 'responded' | 'closed';
   created_at: string;
 }
