@@ -24,16 +24,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function CategoryPage({ params }: { params: { slug: string } }) {
   const category = STATIC_CATEGORIES.find(c => c.slug === params.slug);
 
-  const [partsResult, dbCategories] = await Promise.all([
-    getParts({ category: params.slug, per_page: 60 }).catch(() => ({ parts: [] as any[], total: 0, page: 1, per_page: 60, total_pages: 1 })),
-    getCategories().catch(() => []),
-  ]);
-
-  const parts = partsResult.parts || [];
-  const displayCategories = dbCategories.length > 0
-    ? dbCategories
-    : STATIC_CATEGORIES.map(c => ({ id: c.slug, slug: c.slug, name: c.name, name_sr: c.name, icon: c.icon, sort_order: 0 }));
-
   if (!category) {
     return (
       <div style={{ background: '#0c0d0f', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -45,6 +35,13 @@ export default async function CategoryPage({ params }: { params: { slug: string 
       </div>
     );
   }
+
+  const [partsResult, dbCategories] = await Promise.all([
+    getParts({ category: params.slug, per_page: 60 }).catch(() => ({ parts: [] as any[], total: 0, page: 1, per_page: 60, total_pages: 1 })),
+    getCategories().catch(() => []),
+  ]);
+
+  const parts = partsResult.parts || [];
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
