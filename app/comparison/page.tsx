@@ -42,9 +42,12 @@ function ComparisonContent() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Load all parts for search
-    fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
-  }, []);
+    if (search.length >= 2) {
+      fetch(`/api/search?q=${encodeURIComponent(search)}&per_page=20`).then(r => r.json()).then(d => setAllParts(d.data || []));
+    } else if (search.length === 0) {
+      fetch('/api/parts?per_page=20').then(r => r.json()).then(d => setAllParts(d.data || []));
+    }
+  }, [search]);
 
   useEffect(() => {
     if (selectedIds.length === 0) { setParts([]); return; }
@@ -55,10 +58,7 @@ function ComparisonContent() {
       .finally(() => setLoading(false));
   }, [selectedIds]);
 
-  const filtered = allParts.filter(p =>
-    (p.name_sr || p.name).toLowerCase().includes(search.toLowerCase()) ||
-    (p.brand || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = allParts;
 
   const addPart = (id: string) => {
     if (selectedIds.length < 3 && !selectedIds.includes(id)) setSelectedIds([...selectedIds, id]);
@@ -97,6 +97,12 @@ function ComparisonContent() {
 
   return (
     <div style={s.page}>
+      <style>{`
+        @media (max-width: 768px) {
+          .cmp-selector { grid-template-columns: 1fr !important; }
+          .cmp-table { overflow-x: auto; }
+        }
+      `}</style>
       <div style={s.container}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: 800 }}>Poređenje delova</h1>
@@ -104,7 +110,7 @@ function ComparisonContent() {
         </div>
 
         {/* Part selector */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
+        <div className="cmp-selector" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
           {Array.from({ length: 3 }).map((_, i) => {
             const part = parts[i];
             return (
@@ -133,7 +139,7 @@ function ComparisonContent() {
 
         {/* Comparison table */}
         {parts.length > 0 && (
-          <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
+          <div className="cmp-table" style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
