@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -23,10 +22,11 @@ export async function GET(request: NextRequest) {
     });
 
     if (error) {
+      const sanitized = q.replace(/[%_\\(),."']/g, '');
       const { data: fb, count } = await supabase
         .from('parts_v2')
         .select('id,slug,name,brand,part_number,price,price_eur,stock_quantity,images,category_id,supplier_id', { count: 'exact' })
-        .or(`name.ilike.%${q}%,part_number.ilike.%${q}%,brand.ilike.%${q}%`)
+        .or(`name.ilike.%${sanitized}%,part_number.ilike.%${sanitized}%,brand.ilike.%${sanitized}%`)
         .in('status', ['active','out_of_stock'])
         .range((page-1)*perPage, page*perPage-1);
       return NextResponse.json({ data: fb ?? [], meta: { total: count ?? 0, page, per_page: perPage } });
