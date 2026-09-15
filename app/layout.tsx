@@ -1,7 +1,10 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import NavBar from './components/NavBar';
 import CartProvider from './components/CartProvider';
+
+const inter = Inter({ subsets: ['latin', 'latin-ext'], display: 'swap' });
 
 export const metadata: Metadata = {
   title: {
@@ -32,13 +35,24 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: '#0c0d0f',
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="sr">
-      <body style={{ margin: 0, background: '#0c0d0f' }}>
+    <html lang="sr" dir="ltr">
+      <body className={inter.className} style={{ margin: 0, background: '#0c0d0f' }}>
         <CartProvider>
+          <a href="#main-content" className="skip-to-content">
+            Preskoci na sadrzaj
+          </a>
           <NavBar />
-          {children}
+          <main id="main-content">
+            {children}
+          </main>
         </CartProvider>
       </body>
     </html>
