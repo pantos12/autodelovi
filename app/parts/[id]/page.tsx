@@ -51,8 +51,27 @@ export default async function PartDetail({ params }: { params: { id: string } })
     { label: 'Dobavljač', value: part.supplier?.name },
   ].filter(s => s.value);
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: part.name_sr || part.name,
+    description: part.description_sr || part.description || '',
+    sku: part.part_number || undefined,
+    mpn: part.oem_number || undefined,
+    brand: part.brand ? { '@type': 'Brand', name: part.brand } : undefined,
+    image: part.images?.[0] || undefined,
+    offers: {
+      '@type': 'Offer',
+      price: part.price,
+      priceCurrency: 'RSD',
+      availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      seller: part.supplier ? { '@type': 'Organization', name: part.supplier.name } : undefined,
+    },
+  };
+
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <style>{`
         @media (max-width: 900px) {
           .part-grid { grid-template-columns: 1fr !important; }
