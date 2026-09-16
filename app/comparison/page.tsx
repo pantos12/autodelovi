@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import type { Part } from '@/lib/types';
@@ -37,14 +37,28 @@ function ComparisonContent() {
   const initialIds = searchParams.get('ids')?.split(',').filter(Boolean) || [];
   const [selectedIds, setSelectedIds] = useState<string[]>(initialIds.slice(0, 3));
   const [parts, setParts] = useState<Part[]>([]);
-  const [allParts, setAllParts] = useState<Part[]>([]);
+  const [searchResults, setSearchResults] = useState<Part[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    // Load all parts for search
-    fetch('/api/parts?per_page=100').then(r => r.json()).then(d => setAllParts(d.data || []));
-  }, []);
+    if (search.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(search.trim())}&per_page=10`);
+        const json = await res.json();
+        setSearchResults(json.data || []);
+      } catch {
+        setSearchResults([]);
+      }
+    }, 300);
+    return () => clearTimeout(searchTimer.current);
+  }, [search]);
 
   useEffect(() => {
     if (selectedIds.length === 0) { setParts([]); return; }
@@ -55,10 +69,7 @@ function ComparisonContent() {
       .finally(() => setLoading(false));
   }, [selectedIds]);
 
-  const filtered = allParts.filter(p =>
-    (p.name_sr || p.name).toLowerCase().includes(search.toLowerCase()) ||
-    (p.brand || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = searchResults.filter(p => !selectedIds.includes(p.id));
 
   const addPart = (id: string) => {
     if (selectedIds.length < 3 && !selectedIds.includes(id)) setSelectedIds([...selectedIds, id]);
@@ -85,11 +96,11 @@ function ComparisonContent() {
             {filtered.slice(0, 20).map(p => (
               <div key={p.id} onClick={() => addPart(p.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1a1b1f', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer' }}>
                 <span style={{ color: '#fff', fontSize: '14px' }}>{p.name_sr || p.name}</span>
-                <span style={{ color: '#ff4d00', fontSize: '14px', fontWeight: 600 }}>{p.price.toLocaleString('sr-RS')} RSD</span>
+                <span style={{ color: '#f9372c', fontSize: '14px', fontWeight: 600 }}>{p.price.toLocaleString('sr-RS')} RSD</span>
               </div>
             ))}
           </div>
-          <Link href="/marketplace" style={{ color: '#ff4d00', textDecoration: 'none', fontSize: '14px' }}>← Nazad na marketplace</Link>
+          <Link href="/marketplace" style={{ color: '#f9372c', textDecoration: 'none', fontSize: '14px' }}>← Nazad na marketplace</Link>
         </div>
       </div>
     );
@@ -112,7 +123,7 @@ function ComparisonContent() {
                 {part ? (
                   <>
                     <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>{part.name_sr || part.name}</p>
-                    <p style={{ color: '#ff4d00', fontSize: '16px', fontWeight: 700, marginBottom: '12px' }}>{part.price.toLocaleString('sr-RS')} RSD</p>
+                    <p style={{ color: '#f9372c', fontSize: '16px', fontWeight: 700, marginBottom: '12px' }}>{part.price.toLocaleString('sr-RS')} RSD</p>
                     <button onClick={() => removePart(part.id)} style={{ padding: '6px 12px', background: '#333', border: 'none', borderRadius: '6px', color: '#aaa', cursor: 'pointer', fontSize: '12px' }}>Ukloni</button>
                   </>
                 ) : (

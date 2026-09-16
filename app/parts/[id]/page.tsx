@@ -53,10 +53,15 @@ export default async function PartDetail({ params }: { params: { id: string } })
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
+      <style>{`
+        .part-detail-grid { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
+        @media (min-width: 768px) { .part-detail-grid { grid-template-columns: 1fr 360px; gap: 32px; } }
+        .breadcrumb { display: flex; gap: 8px; align-items: center; margin-bottom: 24px; font-size: 14px; flex-wrap: wrap; }
+      `}</style>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
         {/* Breadcrumb */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px' }}>
-          <Link href="/" style={{ color: '#aaa', textDecoration: 'none' }}>Početna</Link>
+        <nav className="breadcrumb" aria-label="Putanja">
+          <Link href="/" style={{ color: '#aaa', textDecoration: 'none' }}>Pocetna</Link>
           <span style={{ color: '#555' }}>/</span>
           <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none' }}>Marketplace</Link>
           <span style={{ color: '#555' }}>/</span>
@@ -67,9 +72,9 @@ export default async function PartDetail({ params }: { params: { id: string } })
             </>
           )}
           <span style={{ color: '#fff' }}>{part.name_sr || part.name}</span>
-        </div>
+        </nav>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
+        <div className="part-detail-grid">
           {/* Left column */}
           <div>
             {/* Image */}
@@ -81,7 +86,6 @@ export default async function PartDetail({ params }: { params: { id: string } })
                 sizes="(max-width: 1200px) 100vw, 800px"
                 style={{ objectFit: part.images?.[0] ? 'contain' : 'cover', padding: part.images?.[0] ? '16px' : 0 }}
                 priority
-                unoptimized
               />
             </div>
 
@@ -125,7 +129,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
           {/* Right: Buy card */}
           <div style={{ position: 'sticky', top: '80px' }}>
             <div style={{ background: '#1a1b1f', borderRadius: '16px', padding: '24px', border: '1px solid #252629' }}>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: '#ff4d00', marginBottom: '4px' }}>
+              <div style={{ fontSize: '32px', fontWeight: 800, color: '#f9372c', marginBottom: '4px' }}>
                 {part.price.toLocaleString('sr-RS')} RSD
               </div>
               {part.price_eur && (
@@ -153,7 +157,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
                   )}
                 </div>
               )}
-              {part.source_url && (
+              {part.source_url && /^https?:\/\//.test(part.source_url) && (
                 <a href={part.source_url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center', marginTop: '12px', color: '#aaa', fontSize: '12px', textDecoration: 'none' }}>
                   Pogledaj na sajtu dobavljača →
                 </a>
@@ -185,8 +189,8 @@ export default async function PartDetail({ params }: { params: { id: string } })
                     <div style={{ padding: '12px' }}>
                       <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{rp.brand}</p>
                       <h3 style={{ color: '#fff', fontSize: '13px', marginBottom: '8px', lineHeight: '1.3' }}>{rp.name_sr || rp.name}</h3>
-                      <p style={{ color: '#ff4d00', fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>{rp.price.toLocaleString('sr-RS')} RSD</p>
-                      <Link href={`/parts/${rp.slug || rp.id}`} style={{ display: 'block', padding: '7px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '12px', fontWeight: 600 }}>Vidi detalje</Link>
+                      <p style={{ color: '#f9372c', fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>{rp.price.toLocaleString('sr-RS')} RSD</p>
+                      <Link href={`/parts/${rp.slug || rp.id}`} style={{ display: 'block', padding: '7px', background: '#f9372c', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '12px', fontWeight: 600 }}>Vidi detalje</Link>
                     </div>
                   </div>
                 );

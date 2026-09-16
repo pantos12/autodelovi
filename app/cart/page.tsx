@@ -57,7 +57,6 @@ export default function CartPage() {
                       sizes="60px"
                       style={{ objectFit: 'cover' }}
                       loading="lazy"
-                      unoptimized
                     />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>

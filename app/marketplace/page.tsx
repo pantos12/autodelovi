@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -81,7 +81,6 @@ function SmartImage({
       priority={!!priority}
       loading={priority ? undefined : 'lazy'}
       onError={() => setErrored(true)}
-      unoptimized
     />
   );
 }
@@ -113,7 +112,25 @@ function MarketplaceContent() {
     }
   }, [searchParams]);
 
+  const prevFiltersRef = useRef({ filterMake, filterCategory, filterInStock, sortBy, searchQuery });
+
   useEffect(() => {
+    const prev = prevFiltersRef.current;
+    const filtersChanged =
+      prev.filterMake !== filterMake ||
+      prev.filterCategory !== filterCategory ||
+      prev.filterInStock !== filterInStock ||
+      prev.sortBy !== sortBy ||
+      prev.searchQuery !== searchQuery;
+    prevFiltersRef.current = { filterMake, filterCategory, filterInStock, sortBy, searchQuery };
+
+    const effectivePage = filtersChanged ? 1 : page;
+    if (filtersChanged && page !== 1) {
+      setPage(1);
+      return;
+    }
+
+    let cancelled = false;
     const load = async () => {
       setLoading(true);
       try {
@@ -123,11 +140,13 @@ function MarketplaceContent() {
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
           params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
+          params.set('page', String(effectivePage));
           const res = await fetch(`/api/search?${params}`);
           const json = await res.json();
-          setParts(json.data || []);
-          setTotal(json.meta?.total || json.data?.length || 0);
+          if (!cancelled) {
+            setParts(json.data || []);
+            setTotal(json.meta?.total || json.data?.length || 0);
+          }
         } else {
           const params = new URLSearchParams();
           if (filterMake) params.set('make', filterMake);
@@ -135,25 +154,23 @@ function MarketplaceContent() {
           if (filterInStock) params.set('in_stock', 'true');
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
+          params.set('page', String(effectivePage));
           const res = await fetch(`/api/parts?${params}`);
           const json = await res.json();
-          setParts(json.data || []);
-          setTotal(json.meta?.total || json.data?.length || 0);
+          if (!cancelled) {
+            setParts(json.data || []);
+            setTotal(json.meta?.total || json.data?.length || 0);
+          }
         }
       } catch {
-        setParts([]);
+        if (!cancelled) setParts([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     load();
+    return () => { cancelled = true; };
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -183,7 +200,7 @@ function MarketplaceContent() {
 
   const s = {
     page: { background: '#0c0d0f', minHeight: '100vh' } as React.CSSProperties,
-    container: { maxWidth: '1200px', margin: '0 auto', padding: '24px 16px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' } as React.CSSProperties,
+    container: { maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' } as React.CSSProperties,
     sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky', top: '80px' } as React.CSSProperties,
     label: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '4px' } as React.CSSProperties,
     select: { width: '100%', padding: '8px 12px', background: '#0c0d0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' } as React.CSSProperties,
@@ -211,7 +228,7 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
+      <div className="marketplace-grid" style={s.container}>
         <div style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
@@ -246,7 +263,7 @@ function MarketplaceContent() {
                   name="avail"
                   checked={!availOnly}
                   onChange={() => setAvailOnly(false)}
-                  style={{ accentColor: '#ff4d00' }}
+                  style={{ accentColor: '#f9372c' }}
                 />
                 Sve ponude
               </label>
@@ -256,7 +273,7 @@ function MarketplaceContent() {
                   name="avail"
                   checked={availOnly}
                   onChange={() => setAvailOnly(true)}
-                  style={{ accentColor: '#ff4d00' }}
+                  style={{ accentColor: '#f9372c' }}
                 />
                 Samo dostupno (🟢 + 🟡)
               </label>
@@ -280,7 +297,7 @@ function MarketplaceContent() {
             </select>
           </div>
           <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
+            <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#f9372c' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
           <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
@@ -299,7 +316,7 @@ function MarketplaceContent() {
                 <option value="newest">Najnovije</option>
               </select>
               {compareList.length > 0 && (
-                <button onClick={() => router.push('/comparison?ids=' + compareList.join(','))} style={{ padding: '8px 16px', background: '#ff4d00', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+                <button onClick={() => router.push('/comparison?ids=' + compareList.join(','))} style={{ padding: '8px 16px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
                   Poredi ({compareList.length})
                 </button>
               )}
@@ -308,7 +325,7 @@ function MarketplaceContent() {
           {loading ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
               {Array.from({ length: PER_PAGE }).map((_, i) => (
-                <div key={i} style={{ ...s.card, height: '280px', background: 'linear-gradient(90deg, #1a1b1f 25%, #252629 50%, #1a1b1f 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+                <div key={i} className="skeleton" style={{ ...s.card, height: '280px', borderRadius: '12px' }} />
               ))}
             </div>
           ) : (
@@ -320,7 +337,7 @@ function MarketplaceContent() {
                 const band = bandForPart(part);
                 const priority = idx < 4;
                 return (
-                  <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #ff4d00' : '2px solid transparent' }}>
+                  <div key={part.id} style={{ ...s.card, border: compareList.includes(part.id) ? '2px solid #f9372c' : '2px solid transparent' }}>
                     <div style={{ position: 'relative', background: '#252629', height: '140px', overflow: 'hidden' }}>
                       <SmartImage src={part.images?.[0]} alt={part.name} priority={priority} />
                       <BandBadge band={band} />
@@ -328,7 +345,7 @@ function MarketplaceContent() {
                     <div style={{ padding: '12px' }}>
                       {vehicle && <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{vehicle.make} {vehicle.model}</p>}
                       <h3 style={{ color: '#fff', fontSize: '14px', marginBottom: '8px', lineHeight: '1.3' }}>{part.name_sr || part.name}</h3>
-                      <p style={{ color: '#ff4d00', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{part.price?.toLocaleString('sr-RS')} RSD</p>
+                      <p style={{ color: '#f9372c', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{part.price?.toLocaleString('sr-RS')} RSD</p>
                       <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '12px', marginBottom: '10px' }}>{inStock ? 'Na stanju' : 'Nema na stanju'}</p>
 
                       <div style={{ marginBottom: '6px' }}>
@@ -353,7 +370,7 @@ function MarketplaceContent() {
 
                       <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
                         <Link href={partUrl} style={{ flex: 1, padding: '8px', background: '#333', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px' }}>Detalji</Link>
-                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
+                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#f9372c' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
                       <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
@@ -404,7 +421,7 @@ function MarketplaceContent() {
                   onClick={() => setPage(n)}
                   style={{
                     padding: '8px 12px',
-                    background: n === page ? '#ff4d00' : '#252629',
+                    background: n === page ? '#f9372c' : '#252629',
                     border: '1px solid #333',
                     borderRadius: '8px',
                     color: '#fff',
