@@ -59,7 +59,7 @@ export default function CheckoutPage() {
       if (typeof window !== 'undefined') {
         session_id = localStorage.getItem('ads_cart_session');
         if (!session_id) {
-          session_id = `ads_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+          session_id = crypto.randomUUID();
           try { localStorage.setItem('ads_cart_session', session_id); } catch {}
         }
       }

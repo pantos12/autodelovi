@@ -4,6 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const rateLimit = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW = 60_000;
+
 interface InquiryBody {
   part_id?: string;
   merchant_id?: string;
@@ -18,6 +22,17 @@ function bad(error: string, status = 400) {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const now = Date.now();
+  const entry = rateLimit.get(ip);
+  if (entry && now < entry.resetAt) {
+    if (entry.count >= RATE_LIMIT_MAX) {
+      return bad('Too many requests. Please try again later.', 429);
+    }
+    entry.count++;
+  } else {
+    rateLimit.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+  }
   let raw: unknown;
   try {
     raw = await request.json();
@@ -30,6 +45,11 @@ export async function POST(request: NextRequest) {
   const email = typeof body.buyer_email === 'string' ? body.buyer_email.trim() : '';
   if (!email) return bad('buyer_email is required');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return bad('buyer_email is invalid');
+  if (email.length > 254) return bad('buyer_email is too long');
+
+  if (typeof body.buyer_name === 'string' && body.buyer_name.length > 200) return bad('buyer_name is too long');
+  if (typeof body.buyer_phone === 'string' && body.buyer_phone.length > 30) return bad('buyer_phone is too long');
+  if (typeof body.message === 'string' && body.message.length > 2000) return bad('message is too long');
 
   const part_id = typeof body.part_id === 'string' && body.part_id.trim() ? body.part_id.trim() : null;
 

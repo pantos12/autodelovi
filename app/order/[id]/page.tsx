@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,8 +57,14 @@ async function getOrder(id: string): Promise<OrderRow | null> {
 }
 
 export default async function OrderPage({ params }: { params: { id: string } }) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/auth/login');
+
   const order = await getOrder(params.id);
   if (!order) notFound();
+
+  if (user.email !== order.buyer_email) notFound();
 
   const paid = order.status === 'paid';
   const currency = order.currency || 'RSD';

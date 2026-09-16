@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Part } from '@/lib/types';
 
 interface Props {
@@ -17,16 +17,24 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<Element | null>(null);
 
-  // Reset on open/close
   useEffect(() => {
     if (open) {
       setError(null);
       setSuccess(false);
+      previousFocusRef.current = document.activeElement;
+      requestAnimationFrame(() => {
+        const first = dialogRef.current?.querySelector<HTMLElement>('input, textarea, button');
+        first?.focus();
+      });
+    } else if (previousFocusRef.current instanceof HTMLElement) {
+      previousFocusRef.current.focus();
+      previousFocusRef.current = null;
     }
   }, [open]);
 
-  // Auto-close on success
   useEffect(() => {
     if (!success) return;
     const t = setTimeout(() => {
@@ -40,11 +48,25 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
     return () => clearTimeout(t);
   }, [success, onClose]);
 
-  // Escape to close
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'input, textarea, button, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -102,9 +124,11 @@ export default function InquiryModal({ part, merchantId, open, onClose }: Props)
         .inquiry-modal input:focus, .inquiry-modal textarea:focus { border-color: #f9372c !important; }
       `}</style>
       <div
+        ref={dialogRef}
         className="inquiry-modal"
         role="dialog"
         aria-modal="true"
+        aria-label="Pošalji upit"
         style={{
           width: '100%', maxWidth: '460px', background: '#1a1b1f',
           border: '1px solid #2a2b2f', borderRadius: '12px', padding: '24px',
