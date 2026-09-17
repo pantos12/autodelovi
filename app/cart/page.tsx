@@ -96,9 +96,20 @@ export default function CartPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+                {shipping === 0 ? 'Besplatna dostava' : `${shipping.toLocaleString('sr-RS')} RSD`}
               </span>
             </div>
+
+            {shipping > 0 && (
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ background: '#252629', borderRadius: '4px', height: '6px', overflow: 'hidden', marginBottom: '6px' }}>
+                  <div style={{ background: '#f9372c', height: '100%', borderRadius: '4px', width: `${Math.min(100, (subtotal / freeShippingThreshold) * 100)}%`, transition: 'width 0.3s ease' }} />
+                </div>
+                <p style={{ color: '#888', fontSize: '12px', textAlign: 'center' }}>
+                  Jos {(freeShippingThreshold - subtotal).toLocaleString('sr-RS')} RSD do besplatne dostave
+                </p>
+              </div>
+            )}
 
             <div style={{ height: '1px', background: '#2a2b2f', margin: '14px 0' }} />
 

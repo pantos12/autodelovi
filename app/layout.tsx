@@ -1,7 +1,15 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import NavBar from './components/NavBar';
+import Footer from './components/Footer';
 import CartProvider from './components/CartProvider';
+
+const inter = Inter({
+  subsets: ['latin', 'latin-ext'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -34,11 +42,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="sr">
-      <body style={{ margin: 0, background: '#0c0d0f' }}>
+    <html lang="sr" className={inter.variable}>
+      <body style={{ margin: 0, background: '#0c0d0f', fontFamily: 'var(--font-inter), "Helvetica Neue", sans-serif' }}>
         <CartProvider>
+          <a href="#main-content" className="skip-to-content">Preskoči na sadržaj</a>
           <NavBar />
-          {children}
+          <main id="main-content">
+            {children}
+          </main>
+          <Footer />
         </CartProvider>
       </body>
     </html>
