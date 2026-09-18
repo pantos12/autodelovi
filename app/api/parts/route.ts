@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const params: PartsQueryParams = {
-      q:         searchParams.get('q') ?? undefined,
+      q:         searchParams.get('q')?.trim().slice(0, 200) || undefined,
       category:  searchParams.get('category') ?? undefined,
       make:      searchParams.get('make') ?? undefined,
       model:     searchParams.get('model') ?? undefined,
