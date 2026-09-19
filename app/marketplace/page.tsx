@@ -100,10 +100,18 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
   });
+
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 600);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -184,7 +192,7 @@ function MarketplaceContent() {
   const s = {
     page: { background: '#0c0d0f', minHeight: '100vh' } as React.CSSProperties,
     container: { maxWidth: '1200px', margin: '0 auto', padding: '24px 16px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' } as React.CSSProperties,
-    sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky', top: '80px' } as React.CSSProperties,
+    sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky' as const, top: '80px' } as React.CSSProperties,
     label: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '4px' } as React.CSSProperties,
     select: { width: '100%', padding: '8px 12px', background: '#0c0d0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' } as React.CSSProperties,
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
@@ -211,8 +219,25 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      {/* Mobile filter toggle */}
+      <div style={{ display: 'none', padding: '12px 16px' }} className="mobile-filter-toggle">
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          style={{ width: '100%', padding: '10px 16px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <span>Filteri {(filterMake || filterCategory || filterInStock || searchQuery) ? '(aktivni)' : ''}</span>
+          <span style={{ transform: showFilters ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+        </button>
+      </div>
+      <style>{`
+        @media (max-width: 768px) {
+          .mobile-filter-toggle { display: block !important; }
+          .marketplace-sidebar { display: ${showFilters ? 'block' : 'none'} !important; }
+        }
+      `}</style>
+
+      <div className="marketplace-layout" style={s.container}>
+        <div className="marketplace-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -380,6 +405,30 @@ function MarketplaceContent() {
             </div>
           )}
 
+          {/* Active filters summary */}
+          {(filterMake || filterCategory || searchQuery || filterInStock || availOnly) && (
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px', marginBottom: '-4px' }}>
+              {searchQuery && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', background: 'rgba(249,55,44,0.15)', border: '1px solid rgba(249,55,44,0.3)', borderRadius: '16px', fontSize: '12px', color: '#f9372c' }}>
+                  &quot;{searchQuery}&quot;
+                  <button onClick={clearSearch} style={{ background: 'none', border: 'none', color: '#f9372c', cursor: 'pointer', padding: 0, fontSize: '14px', lineHeight: 1 }}>×</button>
+                </span>
+              )}
+              {filterMake && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid #333', borderRadius: '16px', fontSize: '12px', color: '#ccc' }}>
+                  {filterMake}
+                  <button onClick={() => setFilterMake('')} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: 0, fontSize: '14px', lineHeight: 1 }}>×</button>
+                </span>
+              )}
+              {filterCategory && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid #333', borderRadius: '16px', fontSize: '12px', color: '#ccc' }}>
+                  {STATIC_CATEGORIES.find(c => c.slug === filterCategory)?.name || filterCategory}
+                  <button onClick={() => setFilterCategory('')} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: 0, fontSize: '14px', lineHeight: 1 }}>×</button>
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Pagination */}
           {!loading && totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '32px', flexWrap: 'wrap' }}>
@@ -436,6 +485,23 @@ function MarketplaceContent() {
           )}
         </div>
       </div>
+
+      {/* Back to top */}
+      {showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Nazad na vrh"
+          style={{
+            position: 'fixed', bottom: '24px', right: '24px', width: '44px', height: '44px',
+            background: '#f9372c', border: 'none', borderRadius: '50%', color: '#fff',
+            fontSize: '18px', cursor: 'pointer', zIndex: 50, display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(249,55,44,0.3)', transition: 'opacity 0.2s',
+          }}
+        >
+          ↑
+        </button>
+      )}
     </div>
   );
 }

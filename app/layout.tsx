@@ -33,9 +33,23 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'AutoDelovi.sale',
+    url: 'https://autodelovi.sale',
+    description: 'Premium marketplace za auto delove u Srbiji',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: 'https://autodelovi.sale/marketplace?q={search_term_string}',
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
   return (
     <html lang="sr">
       <body style={{ margin: 0, background: '#0c0d0f' }}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <CartProvider>
           <NavBar />
           {children}
