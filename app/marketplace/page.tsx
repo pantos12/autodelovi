@@ -211,8 +211,14 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 900px) {
+          .marketplace-layout { grid-template-columns: 1fr !important; }
+          .marketplace-sidebar { position: static !important; }
+        }
+      `}</style>
+      <div style={s.container} className="marketplace-layout">
+        <div style={s.sidebar} className="marketplace-sidebar">
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -223,7 +229,7 @@ function MarketplaceContent() {
                 placeholder="Naziv, broj dela, brend..."
                 style={{ ...s.select, flex: 1, padding: '8px 12px' }}
               />
-              <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
+              <button type="submit" aria-label="Pretraži" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
                 🔍
               </button>
             </div>
@@ -353,7 +359,7 @@ function MarketplaceContent() {
 
                       <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
                         <Link href={partUrl} style={{ flex: 1, padding: '8px', background: '#333', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px' }}>Detalji</Link>
-                        <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
+                        <button onClick={() => toggleCompare(part.id)} aria-label={compareList.includes(part.id) ? 'Ukloni iz poređenja' : 'Dodaj u poređenje'} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
                       <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
