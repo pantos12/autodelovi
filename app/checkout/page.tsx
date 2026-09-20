@@ -166,8 +166,16 @@ export default function CheckoutPage() {
             </button>
 
             <p style={{ color: '#666', fontSize: '11px', textAlign: 'center', marginTop: '12px', marginBottom: 0 }}>
-              Bezbedno plaćanje preko Stripe platforme
+              🔒 Bezbedno plaćanje preko Stripe platforme
             </p>
+
+            {subtotal < freeShippingThreshold && (
+              <div style={{ marginTop: '14px', padding: '10px 14px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '8px' }}>
+                <p style={{ color: '#22c55e', fontSize: '12px', margin: 0 }}>
+                  Dodajte jos {(freeShippingThreshold - subtotal).toLocaleString('sr-RS')} {currency} za besplatnu dostavu
+                </p>
+              </div>
+            )}
           </form>
 
           {/* Summary */}

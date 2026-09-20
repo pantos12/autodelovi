@@ -211,8 +211,14 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 900px) {
+          .marketplace-layout { grid-template-columns: 1fr !important; }
+          .marketplace-sidebar { position: static !important; }
+        }
+      `}</style>
+      <div style={s.container} className="marketplace-layout">
+        <div style={s.sidebar} className="marketplace-sidebar">
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
