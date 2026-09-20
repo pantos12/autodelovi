@@ -68,9 +68,8 @@ function ComparisonContent() {
   useEffect(() => {
     if (selectedIds.length === 0) { setParts([]); return; }
     setLoading(true);
-    Promise.all(selectedIds.map(id => fetch(`/api/parts/${id}`).then(r => r.json()).then(d => d.data || d)))
-      .then(results => setParts(results.filter(Boolean)))
-      .catch(() => setParts([]))
+    Promise.allSettled(selectedIds.map(id => fetch(`/api/parts/${id}`).then(r => r.json()).then(d => d.data || d)))
+      .then(results => setParts(results.filter((r): r is PromiseFulfilledResult<Part> => r.status === 'fulfilled').map(r => r.value).filter(Boolean)))
       .finally(() => setLoading(false));
   }, [selectedIds]);
 
@@ -105,12 +104,12 @@ function ComparisonContent() {
               <p style={{ color: '#888', fontSize: '13px', padding: '10px' }}>Nema rezultata</p>
             )}
             {searchResults.map(p => (
-              <div key={p.id} onClick={() => addPart(p.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1a1b1f', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', transition: 'background 0.15s' }}
+              <button key={p.id} onClick={() => addPart(p.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#1a1b1f', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', transition: 'background 0.15s', border: 'none', width: '100%', textAlign: 'left', fontFamily: 'inherit' }}
                 onMouseEnter={e => (e.currentTarget.style.background = '#252629')}
                 onMouseLeave={e => (e.currentTarget.style.background = '#1a1b1f')}>
                 <span style={{ color: '#fff', fontSize: '14px' }}>{p.name_sr || p.name}</span>
                 <span style={{ color: '#ff4d00', fontSize: '14px', fontWeight: 600 }}>{p.price.toLocaleString('sr-RS')} RSD</span>
-              </div>
+              </button>
             ))}
           </div>
           <Link href="/marketplace" style={{ color: '#ff4d00', textDecoration: 'none', fontSize: '14px' }}>← Nazad na marketplace</Link>
@@ -145,9 +144,9 @@ function ComparisonContent() {
                     <input style={{ ...s.input, fontSize: '12px', padding: '6px 10px' }} placeholder="Pretraži (min. 2 slova)..." value={search} onChange={e => setSearch(e.target.value)} />
                     {searchLoading && <p style={{ color: '#888', fontSize: '11px', marginTop: '4px' }}>Pretraga...</p>}
                     {search.length >= 2 && searchResults.slice(0, 5).map(p => (
-                      <div key={p.id} onClick={() => addPart(p.id)} style={{ padding: '6px 10px', background: '#252629', borderRadius: '6px', marginTop: '4px', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                      <button key={p.id} onClick={() => addPart(p.id)} style={{ padding: '6px 10px', background: '#252629', borderRadius: '6px', marginTop: '4px', cursor: 'pointer', width: '100%', textAlign: 'left', border: 'none', fontFamily: 'inherit' }}>
                         <span style={{ color: '#fff', fontSize: '12px' }}>{(p.name_sr || p.name).slice(0, 30)}</span>
-                      </div>
+                      </button>
                     ))}
                   </>
                 )}
