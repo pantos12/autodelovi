@@ -2,7 +2,7 @@
 // (Optional local check; not wired into CI.)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeBand, bandLabel, bandEmoji, type OfferSignal } from './confidence';
+import { computeBand, bandLabel, bandEmoji, type OfferSignal } from './confidence.ts';
 
 const NOW = new Date('2026-04-16T12:00:00Z');
 const hoursAgo = (h: number) => new Date(NOW.getTime() - h * 3_600_000).toISOString();
