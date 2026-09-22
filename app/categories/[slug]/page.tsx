@@ -117,7 +117,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
                     <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{part.brand || ''}</p>
                     <h3 style={{ color: '#fff', fontSize: '14px', marginBottom: '8px', lineHeight: '1.3' }}>{part.name_sr || part.name}</h3>
                     <p style={{ color: '#ff4d00', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>
-                      {part.price.toLocaleString('sr-RS')} RSD
+                      {part.price != null ? `${part.price.toLocaleString('sr-RS')} RSD` : 'Cena na upit'}
                     </p>
                     <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '12px', marginBottom: '10px' }}>
                       {inStock ? '✓ Na stanju' : '✗ Nema na stanju'}

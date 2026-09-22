@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { Metadata } from 'next';
 import { vehicleMakes, getModels, getEngines, getYears } from './lib/data';
 
 export default function Home() {
@@ -78,7 +77,7 @@ export default function Home() {
           </p>
 
           {/* TEXT SEARCH */}
-          <form onSubmit={e => { e.preventDefault(); if (textSearch.trim().length >= 2) router.push('/marketplace?q=' + encodeURIComponent(textSearch.trim())); }} style={{ marginBottom: '16px' }}>
+          <form onSubmit={e => { e.preventDefault(); if (textSearch.trim().length >= 2) router.push('/marketplace?q=' + encodeURIComponent(textSearch.trim())); }} style={{ marginBottom: '16px' }} role="search">
             <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
               <input
                 type="text"
@@ -97,19 +96,19 @@ export default function Home() {
           <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px' }}>
             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '12px' }}>Ili izaberite vozilo</p>
             <div className="search-bar" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <select value={make} onChange={e => { setMake(e.target.value); setModel(''); setEngine(''); }} style={{ ...sel, color: make ? '#fff' : '#888' }}>
+              <select aria-label="Marka vozila" value={make} onChange={e => { setMake(e.target.value); setModel(''); setEngine(''); }} style={{ ...sel, color: make ? '#fff' : '#888' }}>
                 <option value="">MARKA</option>
                 {vehicleMakes.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
-              <select value={model} onChange={e => { setModel(e.target.value); setEngine(''); }} style={{ ...sel, color: model ? '#fff' : '#888' }} disabled={!make}>
+              <select aria-label="Model vozila" value={model} onChange={e => { setModel(e.target.value); setEngine(''); }} style={{ ...sel, color: model ? '#fff' : '#888' }} disabled={!make}>
                 <option value="">MODEL</option>
                 {models.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
-              <select value={year} onChange={e => setYear(e.target.value)} style={{ ...sel, color: year ? '#fff' : '#888' }}>
+              <select aria-label="Godiste vozila" value={year} onChange={e => setYear(e.target.value)} style={{ ...sel, color: year ? '#fff' : '#888' }}>
                 <option value="">GODISTE</option>
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
-              <select value={engine} onChange={e => setEngine(e.target.value)} style={{ ...sel, color: engine ? '#fff' : '#888' }} disabled={!model}>
+              <select aria-label="Motor" value={engine} onChange={e => setEngine(e.target.value)} style={{ ...sel, color: engine ? '#fff' : '#888' }} disabled={!model}>
                 <option value="">MOTOR</option>
                 {engines.map(e => <option key={e} value={e}>{e}</option>)}
               </select>
