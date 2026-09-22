@@ -49,9 +49,22 @@ export default function NavBar() {
     }
   }
 
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (searchOpen && searchRef.current) searchRef.current.focus();
   }, [searchOpen]);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [userMenuOpen]);
 
   return (
     <>
@@ -102,7 +115,7 @@ export default function NavBar() {
 
         {/* Cart + Auth buttons - desktop */}
         <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-          <Link href="/cart" style={{ position: 'relative', textDecoration: 'none', fontSize: '20px', padding: '4px' }}>
+          <Link href="/cart" aria-label={`Korpa${cartCount > 0 ? ` (${cartCount} artikala)` : ''}`} style={{ position: 'relative', textDecoration: 'none', fontSize: '20px', padding: '4px' }}>
             🛒
             {cartCount > 0 && (
               <span style={{ position: 'absolute', top: '-4px', right: '-8px', background: '#f9372c', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -113,8 +126,8 @@ export default function NavBar() {
         </div>
         <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
           {user ? (
-            <div style={{ position: 'relative' }}>
-              <button onClick={() => setUserMenuOpen(!userMenuOpen)} style={{ background: '#f9372c', border: 'none', borderRadius: '50%', width: '34px', height: '34px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div ref={userMenuRef} style={{ position: 'relative' }}>
+              <button aria-label="Korisnicki meni" aria-expanded={userMenuOpen} onClick={() => setUserMenuOpen(!userMenuOpen)} style={{ background: '#f9372c', border: 'none', borderRadius: '50%', width: '34px', height: '34px', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {user.email?.[0]?.toUpperCase() || 'U'}
               </button>
               {userMenuOpen && (
@@ -141,7 +154,7 @@ export default function NavBar() {
         </div>
 
         {/* Hamburger */}
-        <button className="nav-hamburger" onClick={() => setMenuOpen(!menuOpen)} style={{ display: 'none', flexDirection: 'column', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', padding: '8px', zIndex: 101 }}>
+        <button className="nav-hamburger" aria-label={menuOpen ? 'Zatvori meni' : 'Otvori meni'} aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)} style={{ display: 'none', flexDirection: 'column', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', padding: '8px', zIndex: 101 }}>
           <span style={{ display: 'block', width: '22px', height: '2px', background: '#fff', transition: 'all 0.2s', transform: menuOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none' }} />
           <span style={{ display: 'block', width: '22px', height: '2px', background: '#fff', transition: 'all 0.2s', opacity: menuOpen ? 0 : 1 }} />
           <span style={{ display: 'block', width: '22px', height: '2px', background: '#fff', transition: 'all 0.2s', transform: menuOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none' }} />
