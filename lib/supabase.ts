@@ -2,6 +2,10 @@ import { createClient } from '@supabase/supabase-js';
 import type { Part, Category, Supplier, PriceRecord, ScrapingJob, NormalizedPart, PriceAlert, Offer } from './types';
 import { computeBand, type Band } from './confidence';
 
+function sanitizeFilterValue(value: string): string {
+  return value.replace(/[%_\\*(),.]/g, '');
+}
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
 // When the service role key is not configured, fall back to the anon key so
@@ -33,7 +37,10 @@ export async function getParts(params: {
     .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`, { count: 'exact' })
     .eq('status', 'active');
 
-  if (q) query = query.or(`name.ilike.%${q}%,name_sr.ilike.%${q}%,part_number.ilike.%${q}%,oem_number.ilike.%${q}%,brand.ilike.%${q}%`);
+  if (q) {
+    const sq = sanitizeFilterValue(q);
+    query = query.or(`name.ilike.%${sq}%,name_sr.ilike.%${sq}%,part_number.ilike.%${sq}%,oem_number.ilike.%${sq}%,brand.ilike.%${sq}%`);
+  }
   if (category) query = query.eq('category_id', category);
   if (supplier) query = query.eq('supplier_id', supplier);
   if (min_price !== undefined) query = query.gte('price', min_price);
