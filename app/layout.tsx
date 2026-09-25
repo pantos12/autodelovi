@@ -32,10 +32,37 @@ export const metadata: Metadata = {
   },
 };
 
+const siteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'AutoDelovi.sale',
+  url: 'https://autodelovi.sale',
+  description: 'Premium marketplace za auto delove u Srbiji. 50,000+ delova od 200+ proverenih dobavljaca.',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: 'https://autodelovi.sale/marketplace?q={search_term_string}',
+    'query-input': 'required name=search_term_string',
+  },
+};
+
+const orgJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'AutoDelovi.sale',
+  url: 'https://autodelovi.sale',
+  logo: 'https://autodelovi.sale/images/part-placeholder.svg',
+  contactPoint: { '@type': 'ContactPoint', contactType: 'customer service', availableLanguage: 'Serbian' },
+  areaServed: { '@type': 'Country', name: 'RS' },
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="sr">
       <body style={{ margin: 0, background: '#0c0d0f' }}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify([siteJsonLd, orgJsonLd]) }}
+        />
         <CartProvider>
           <NavBar />
           {children}
