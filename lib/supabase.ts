@@ -15,6 +15,10 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 
 const isConfigured = () => !!process.env.NEXT_PUBLIC_SUPABASE_URL;
 
+function sanitizeSearchInput(input: string): string {
+  return input.replace(/[%_\\(),."']/g, '');
+}
+
 export async function getParts(params: {
   q?: string; category?: string; make?: string; model?: string; year?: number;
   supplier?: string; min_price?: number; max_price?: number;
@@ -33,7 +37,10 @@ export async function getParts(params: {
     .select(`*, category:categories(*), supplier:suppliers(id,name,slug,city,is_verified,logo_url)`, { count: 'exact' })
     .eq('status', 'active');
 
-  if (q) query = query.or(`name.ilike.%${q}%,name_sr.ilike.%${q}%,part_number.ilike.%${q}%,oem_number.ilike.%${q}%,brand.ilike.%${q}%`);
+  if (q) {
+    const sq = sanitizeSearchInput(q);
+    if (sq) query = query.or(`name.ilike.%${sq}%,name_sr.ilike.%${sq}%,part_number.ilike.%${sq}%,oem_number.ilike.%${sq}%,brand.ilike.%${sq}%`);
+  }
   if (category) query = query.eq('category_id', category);
   if (supplier) query = query.eq('supplier_id', supplier);
   if (min_price !== undefined) query = query.gte('price', min_price);
