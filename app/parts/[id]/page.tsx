@@ -69,7 +69,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
           <span style={{ color: '#fff' }}>{part.name_sr || part.name}</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
+        <div className="part-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
           {/* Left column */}
           <div>
             {/* Image */}

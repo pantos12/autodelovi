@@ -10,8 +10,7 @@ test.describe('home page', () => {
   });
 
   test('renders hero, search, category cards, footer', async ({ page }) => {
-    // Hero / landing content
-    await expect(page.locator('main, body')).toBeVisible();
+    await expect(page.locator('main')).toBeVisible();
     // Some kind of search input on home.
     const search = page.getByRole('searchbox').or(
       page.getByPlaceholder(/pretra|search|trazi/i)
