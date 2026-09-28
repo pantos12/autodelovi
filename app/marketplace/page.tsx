@@ -209,10 +209,20 @@ function MarketplaceContent() {
     return out;
   }
 
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-grid { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none; }
+          .mp-sidebar.mp-sidebar-open { display: block; position: fixed; inset: 0; top: 64px; z-index: 90; background: rgba(12,13,15,0.98); padding: 20px; overflow-y: auto; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+      `}</style>
+      <div style={s.container} className="mp-grid">
+        <div style={s.sidebar} className={`mp-sidebar${mobileFiltersOpen ? ' mp-sidebar-open' : ''}`}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -286,12 +296,28 @@ function MarketplaceContent() {
           <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
             Resetuj sve
           </button>
+          <button
+            onClick={() => setMobileFiltersOpen(false)}
+            className="mp-filter-toggle"
+            style={{ display: 'none', width: '100%', padding: '12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600, marginTop: '12px', justifyContent: 'center', alignItems: 'center' }}
+          >
+            Primeni filtere
+          </button>
         </div>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-            <p style={{ color: '#aaa', fontSize: '14px' }}>
-              {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                onClick={() => setMobileFiltersOpen(true)}
+                className="mp-filter-toggle"
+                style={{ display: 'none', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#252629', border: '1px solid #333', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}
+              >
+                ☰ Filteri
+              </button>
+              <p style={{ color: '#aaa', fontSize: '14px' }}>
+                {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
+              </p>
+            </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <select style={{ ...s.select, width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
                 <option value="price_asc">Cena: niža → viša</option>
