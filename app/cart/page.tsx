@@ -93,12 +93,29 @@ export default function CartPage() {
               <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600 }}>{subtotal.toLocaleString('sr-RS')} {currency}</span>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
-              <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+              <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600 }}>
+                {shipping === 0 ? 'Besplatna dostava' : `${shipping.toLocaleString('sr-RS')} RSD`}
               </span>
             </div>
+
+            {/* Free shipping progress */}
+            {shipping > 0 && (
+              <div style={{ marginBottom: '10px' }}>
+                <div style={{ background: '#252629', borderRadius: '4px', height: '6px', overflow: 'hidden', marginBottom: '6px' }}>
+                  <div style={{ background: 'linear-gradient(90deg, #f9372c, #ff6b00)', height: '100%', borderRadius: '4px', width: `${Math.min(100, (subtotal / freeShippingThreshold) * 100)}%`, transition: 'width 0.3s ease' }} />
+                </div>
+                <p style={{ color: '#888', fontSize: '11px', textAlign: 'center' }}>
+                  Jos {(freeShippingThreshold - subtotal).toLocaleString('sr-RS')} {currency} do besplatne dostave
+                </p>
+              </div>
+            )}
+            {shipping === 0 && (
+              <p style={{ color: '#22c55e', fontSize: '11px', textAlign: 'center', marginBottom: '10px' }}>
+                ✓ Ostvarili ste besplatnu dostavu!
+              </p>
+            )}
 
             <div style={{ height: '1px', background: '#2a2b2f', margin: '14px 0' }} />
 
