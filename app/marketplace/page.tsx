@@ -190,6 +190,8 @@ function MarketplaceContent() {
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
   };
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   // Client-side avail filter (green + yellow)
   const displayParts = availOnly
     ? parts.filter(p => {
@@ -211,8 +213,26 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none; position: fixed !important; top: 64px; left: 0; right: 0; bottom: 0; z-index: 50; border-radius: 0 !important; overflow-y: auto; }
+          .mp-sidebar.mp-sidebar-open { display: block !important; }
+          .mp-filter-toggle { display: flex !important; }
+          .mp-sidebar-overlay { display: block !important; }
+        }
+      `}</style>
+
+      {sidebarOpen && (
+        <div
+          className="mp-sidebar-overlay"
+          onClick={() => setSidebarOpen(false)}
+          style={{ display: 'none', position: 'fixed', inset: 0, top: '64px', background: 'rgba(0,0,0,0.5)', zIndex: 49 }}
+        />
+      )}
+
+      <div className="mp-container" style={s.container}>
+        <div className={`mp-sidebar${sidebarOpen ? ' mp-sidebar-open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -286,12 +306,28 @@ function MarketplaceContent() {
           <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
             Resetuj sve
           </button>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="mp-filter-toggle"
+            style={{ display: 'none', width: '100%', padding: '10px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600, marginTop: '12px', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+          >
+            Primeni filtere
+          </button>
         </div>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-            <p style={{ color: '#aaa', fontSize: '14px' }}>
-              {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button
+                className="mp-filter-toggle"
+                onClick={() => setSidebarOpen(true)}
+                style={{ display: 'none', padding: '8px 14px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600, alignItems: 'center', gap: '6px' }}
+              >
+                Filteri
+              </button>
+              <p style={{ color: '#aaa', fontSize: '14px', margin: 0 }}>
+                {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
+              </p>
+            </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <select style={{ ...s.select, width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
                 <option value="price_asc">Cena: niža → viša</option>
