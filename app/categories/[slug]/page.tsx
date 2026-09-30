@@ -110,14 +110,13 @@ export default async function CategoryPage({ params }: { params: { slug: string 
                       style={{ objectFit: 'cover' }}
                       priority={idx < 4}
                       loading={idx < 4 ? undefined : 'lazy'}
-                      unoptimized
                     />
                   </div>
                   <div style={{ padding: '12px' }}>
                     <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{part.brand || ''}</p>
                     <h3 style={{ color: '#fff', fontSize: '14px', marginBottom: '8px', lineHeight: '1.3' }}>{part.name_sr || part.name}</h3>
                     <p style={{ color: '#ff4d00', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>
-                      {part.price.toLocaleString('sr-RS')} RSD
+                      {(part.price ?? 0).toLocaleString('sr-RS')} RSD
                     </p>
                     <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '12px', marginBottom: '10px' }}>
                       {inStock ? '✓ Na stanju' : '✗ Nema na stanju'}
