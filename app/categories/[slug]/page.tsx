@@ -48,8 +48,18 @@ export default async function CategoryPage({ params }: { params: { slug: string 
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .cat-hero-title { font-size: 24px !important; }
+          .cat-hero-icon { font-size: 36px !important; }
+          .cat-hero { padding: 32px 16px !important; }
+          .cat-tabs { gap: 0 !important; }
+          .cat-tabs a { padding: 10px 14px !important; font-size: 12px !important; }
+          .cat-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important; }
+        }
+      `}</style>
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #1a1b1f 0%, #0c0d0f 100%)', padding: '48px 16px' }}>
+      <div className="cat-hero" style={{ background: 'linear-gradient(135deg, #1a1b1f 0%, #0c0d0f 100%)', padding: '48px 16px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
             <Link href="/" style={{ color: '#aaa', textDecoration: 'none', fontSize: '14px' }}>Početna</Link>
@@ -59,9 +69,9 @@ export default async function CategoryPage({ params }: { params: { slug: string 
             <span style={{ color: '#fff', fontSize: '14px' }}>{category.name}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <span style={{ fontSize: '48px' }}>{category.icon}</span>
+            <span className="cat-hero-icon" style={{ fontSize: '48px' }}>{category.icon}</span>
             <div>
-              <h1 style={{ color: '#fff', fontSize: '32px', fontWeight: 800, marginBottom: '8px' }}>{category.name}</h1>
+              <h1 className="cat-hero-title" style={{ color: '#fff', fontSize: '32px', fontWeight: 800, marginBottom: '8px' }}>{category.name}</h1>
               <p style={{ color: '#aaa', fontSize: '16px' }}>{category.description}</p>
             </div>
           </div>
@@ -70,7 +80,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
 
       {/* Category tabs */}
       <div style={{ borderBottom: '1px solid #252629', background: '#141517' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '0', overflowX: 'auto' }}>
+        <div className="cat-tabs" style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '0', overflowX: 'auto' }}>
           {STATIC_CATEGORIES.map(cat => (
             <Link
               key={cat.slug}
@@ -95,7 +105,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 16px' }}>
         <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '24px' }}>{parts.length} delova u kategoriji "{category.name}"</p>
         {parts.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+          <div className="cat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
             {parts.map((part: any, idx: number) => {
               const inStock = (part.stock_quantity ?? 0) > 0;
               const imgSrc = part.images?.[0] || '/images/part-placeholder.svg';

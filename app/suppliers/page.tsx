@@ -17,15 +17,25 @@ export default async function SuppliersPage() {
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .sup-hero-title { font-size: 28px !important; }
+          .sup-hero { padding: 40px 16px !important; }
+          .sup-stats { gap: 24px !important; }
+          .sup-grid { grid-template-columns: 1fr !important; }
+          .sup-cta { padding: 28px 20px !important; }
+          .sup-cta h2 { font-size: 22px !important; }
+        }
+      `}</style>
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #1a1b1f 0%, #0c0d0f 100%)', padding: '60px 16px', textAlign: 'center' }}>
-        <h1 style={{ color: '#fff', fontSize: '36px', fontWeight: 800, marginBottom: '16px' }}>
+      <div className="sup-hero" style={{ background: 'linear-gradient(135deg, #1a1b1f 0%, #0c0d0f 100%)', padding: '60px 16px', textAlign: 'center' }}>
+        <h1 className="sup-hero-title" style={{ color: '#fff', fontSize: '36px', fontWeight: 800, marginBottom: '16px' }}>
           Naši <span style={{ color: '#f9372c' }}>Dobavljači</span>
         </h1>
         <p style={{ color: '#aaa', fontSize: '16px', maxWidth: '600px', margin: '0 auto 40px' }}>
           Sarađujemo isključivo sa proverenim dobavljačima koji garantuju kvalitet i originalnost delova.
         </p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
+        <div className="sup-stats" style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
           {stats.map(stat => (
             <div key={stat.label} style={{ textAlign: 'center' }}>
               <div style={{ color: '#f9372c', fontSize: '32px', fontWeight: 800 }}>{stat.value}</div>
@@ -44,7 +54,7 @@ export default async function SuppliersPage() {
             <Link href="/marketplace" style={{ color: '#f9372c', textDecoration: 'none' }}>← Pogledaj delove</Link>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+          <div className="sup-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
             {suppliers.map(supplier => (
               <div key={supplier.id} style={{ background: '#1a1b1f', borderRadius: '12px', padding: '24px', border: '1px solid #252629' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
@@ -83,7 +93,7 @@ export default async function SuppliersPage() {
         )}
 
         {/* Partner CTA */}
-        <div style={{ marginTop: '60px', background: 'linear-gradient(135deg, #f9372c 0%, #cc3d00 100%)', borderRadius: '16px', padding: '40px', textAlign: 'center' }}>
+        <div className="sup-cta" style={{ marginTop: '60px', background: 'linear-gradient(135deg, #f9372c 0%, #cc3d00 100%)', borderRadius: '16px', padding: '40px', textAlign: 'center' }}>
           <h2 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '12px' }}>
             Postanite naš partner
           </h2>
