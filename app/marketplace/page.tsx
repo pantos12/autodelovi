@@ -100,6 +100,7 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -190,6 +191,8 @@ function MarketplaceContent() {
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
   };
 
+  const activeFilterCount = [filterMake, filterCategory, filterInStock, availOnly, searchQuery].filter(Boolean).length;
+
   // Client-side avail filter (green + yellow)
   const displayParts = availOnly
     ? parts.filter(p => {
@@ -211,8 +214,28 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 900px) {
+          .mp-grid { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none !important; }
+          .mp-sidebar.mp-sidebar-open { display: block !important; position: fixed !important; top: 64px !important; left: 0 !important; right: 0 !important; bottom: 0 !important; z-index: 50 !important; border-radius: 0 !important; overflow-y: auto !important; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+      `}</style>
+      <div className="mp-grid" style={s.container}>
+        {/* Mobile filter toggle */}
+        <button
+          className="mp-filter-toggle"
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          style={{ display: 'none', alignItems: 'center', justifyContent: 'center', gap: '8px', gridColumn: '1 / -1', padding: '12px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '10px', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+        >
+          <span>{filtersOpen ? '✕ Zatvori filtere' : '☰ Filteri'}</span>
+          {activeFilterCount > 0 && !filtersOpen && (
+            <span style={{ background: '#f9372c', color: '#fff', fontSize: '11px', fontWeight: 700, borderRadius: '10px', padding: '2px 8px' }}>{activeFilterCount}</span>
+          )}
+        </button>
+
+        <div className={`mp-sidebar${filtersOpen ? ' mp-sidebar-open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -283,8 +306,11 @@ function MarketplaceContent() {
             <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); setFiltersOpen(false); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px', marginBottom: '8px' }}>
             Resetuj sve
+          </button>
+          <button onClick={() => setFiltersOpen(false)} className="mp-filter-toggle" style={{ display: 'none', width: '100%', padding: '10px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}>
+            Primeni filtere
           </button>
         </div>
         <div>
