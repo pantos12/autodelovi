@@ -45,12 +45,12 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ display: 'block', color: '#aaa', fontSize: '13px', marginBottom: '6px' }}>Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vas@email.com" required style={inputStyle} />
+            <label htmlFor="login-email" style={{ display: 'block', color: '#aaa', fontSize: '13px', marginBottom: '6px' }}>Email</label>
+            <input id="login-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vas@email.com" required style={inputStyle} />
           </div>
           <div>
-            <label style={{ display: 'block', color: '#aaa', fontSize: '13px', marginBottom: '6px' }}>Lozinka</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Unesite lozinku" required minLength={6} style={inputStyle} />
+            <label htmlFor="login-password" style={{ display: 'block', color: '#aaa', fontSize: '13px', marginBottom: '6px' }}>Lozinka</label>
+            <input id="login-password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Unesite lozinku" required minLength={6} style={inputStyle} />
           </div>
 
           {error && (
