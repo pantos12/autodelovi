@@ -71,16 +71,16 @@ export default function SignUpPage() {
 
         <form onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ display: 'block', color: '#aaa', fontSize: '13px', marginBottom: '6px' }}>Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vas@email.com" required style={inputStyle} />
+            <label htmlFor="signup-email" style={{ display: 'block', color: '#aaa', fontSize: '13px', marginBottom: '6px' }}>Email</label>
+            <input id="signup-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vas@email.com" required style={inputStyle} />
           </div>
           <div>
-            <label style={{ display: 'block', color: '#aaa', fontSize: '13px', marginBottom: '6px' }}>Lozinka</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Minimum 6 karaktera" required minLength={6} style={inputStyle} />
+            <label htmlFor="signup-password" style={{ display: 'block', color: '#aaa', fontSize: '13px', marginBottom: '6px' }}>Lozinka</label>
+            <input id="signup-password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Minimum 6 karaktera" required minLength={6} style={inputStyle} />
           </div>
           <div>
-            <label style={{ display: 'block', color: '#aaa', fontSize: '13px', marginBottom: '6px' }}>Potvrdite lozinku</label>
-            <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Ponovite lozinku" required minLength={6} style={inputStyle} />
+            <label htmlFor="signup-confirm" style={{ display: 'block', color: '#aaa', fontSize: '13px', marginBottom: '6px' }}>Potvrdite lozinku</label>
+            <input id="signup-confirm" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Ponovite lozinku" required minLength={6} style={inputStyle} />
           </div>
 
           {error && (

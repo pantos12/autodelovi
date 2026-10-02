@@ -94,7 +94,7 @@ export default function NavBar() {
               placeholder="Pretrazi delove..."
               style={{ flex: 1, padding: '8px 12px', background: 'transparent', border: 'none', color: '#fff', fontSize: '13px', outline: 'none' }}
             />
-            <button type="submit" style={{ padding: '8px 14px', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
+            <button type="submit" aria-label="Pretraži" style={{ padding: '8px 14px', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
               🔍
             </button>
           </div>
@@ -114,7 +114,7 @@ export default function NavBar() {
 
         {/* Cart + Auth buttons - desktop */}
         <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-          <Link href="/cart" style={{ position: 'relative', textDecoration: 'none', fontSize: '20px', padding: '4px' }}>
+          <Link href="/cart" aria-label="Korpa" style={{ position: 'relative', textDecoration: 'none', fontSize: '20px', padding: '4px' }}>
             🛒
             {cartCount > 0 && (
               <span style={{ position: 'absolute', top: '-4px', right: '-8px', background: '#f9372c', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -172,7 +172,7 @@ export default function NavBar() {
               placeholder="Pretrazi delove..."
               style={{ flex: 1, padding: '10px 12px', background: 'transparent', border: 'none', color: '#fff', fontSize: '14px', outline: 'none' }}
             />
-            <button type="submit" style={{ padding: '10px 14px', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '16px' }}>
+            <button type="submit" aria-label="Pretraži" style={{ padding: '10px 14px', background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '16px' }}>
               🔍
             </button>
           </div>
