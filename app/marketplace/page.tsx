@@ -81,7 +81,6 @@ function SmartImage({
       priority={!!priority}
       loading={priority ? undefined : 'lazy'}
       onError={() => setErrored(true)}
-      unoptimized
     />
   );
 }
@@ -112,6 +111,14 @@ function MarketplaceContent() {
       setSearchInput(q);
     }
   }, [searchParams]);
+
+  const [filterVersion, setFilterVersion] = useState(0);
+
+  useEffect(() => {
+    setPage(1);
+    setFilterVersion(v => v + 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
 
   useEffect(() => {
     const load = async () => {
@@ -148,12 +155,8 @@ function MarketplaceContent() {
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, filterVersion]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -211,8 +214,14 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { position: static !important; }
+        }
+      `}</style>
+      <div className="mp-container" style={s.container}>
+        <div className="mp-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
