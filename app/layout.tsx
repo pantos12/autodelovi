@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import NavBar from './components/NavBar';
 import CartProvider from './components/CartProvider';
+import ToastProvider from './components/Toast';
 
 export const metadata: Metadata = {
   title: {
@@ -37,8 +38,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="sr">
       <body style={{ margin: 0, background: '#0c0d0f' }}>
         <CartProvider>
-          <NavBar />
-          {children}
+          <ToastProvider>
+            <NavBar />
+            {children}
+          </ToastProvider>
         </CartProvider>
       </body>
     </html>

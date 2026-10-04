@@ -33,6 +33,7 @@ export default function AddToCartButton({ part, label, full, inStock }: Props) {
     addToCart(item);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
+    window.dispatchEvent(new CustomEvent('toast:show', { detail: { message: `${item.name} dodat u korpu`, type: 'success' } }));
   }
 
   const baseStyle: React.CSSProperties = full
