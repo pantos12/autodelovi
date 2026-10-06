@@ -100,6 +100,7 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -184,7 +185,7 @@ function MarketplaceContent() {
   const s = {
     page: { background: '#0c0d0f', minHeight: '100vh' } as React.CSSProperties,
     container: { maxWidth: '1200px', margin: '0 auto', padding: '24px 16px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' } as React.CSSProperties,
-    sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky', top: '80px' } as React.CSSProperties,
+    sidebar: { background: '#1a1b1f', borderRadius: '12px', padding: '20px', height: 'fit-content', position: 'sticky' as const, top: '80px' } as React.CSSProperties,
     label: { color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '4px' } as React.CSSProperties,
     select: { width: '100%', padding: '8px 12px', background: '#0c0d0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' } as React.CSSProperties,
     card: { background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden' } as React.CSSProperties,
@@ -211,8 +212,15 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <div className="marketplace-layout" style={s.container}>
+        <button
+          className="mobile-filter-toggle"
+          onClick={() => setMobileFiltersOpen(prev => !prev)}
+          style={{ alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px 16px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600, width: '100%' }}
+        >
+          {mobileFiltersOpen ? '✕ Zatvori filtere' : '☰ Filteri i pretraga'}
+        </button>
+        <div className={`marketplace-sidebar${mobileFiltersOpen ? ' filters-open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
