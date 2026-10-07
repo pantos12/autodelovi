@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { Metadata } from 'next';
+import { useMemo } from 'react';
 import { vehicleMakes, getModels, getEngines, getYears } from './lib/data';
 
 export default function Home() {
@@ -13,9 +13,9 @@ export default function Home() {
   const [engine, setEngine] = useState('');
   const [textSearch, setTextSearch] = useState('');
 
-  const models = getModels(make);
-  const engines = getEngines(make, model);
-  const years = getYears();
+  const models = useMemo(() => getModels(make), [make]);
+  const engines = useMemo(() => getEngines(make, model), [make, model]);
+  const years = useMemo(() => getYears(), []);
 
   function handleSearch() {
     const params = new URLSearchParams();

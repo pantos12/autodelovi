@@ -1,5 +1,7 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
 import { supabaseAdmin } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -56,6 +58,20 @@ async function getOrder(id: string): Promise<OrderRow | null> {
 }
 
 export default async function OrderPage({ params }: { params: { id: string } }) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (supabaseUrl && supabaseKey) {
+    const cookieStore = cookies();
+    const supabase = createServerClient(supabaseUrl, supabaseKey, {
+      cookies: {
+        getAll() { return cookieStore.getAll(); },
+        setAll() {},
+      },
+    });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect('/auth/login');
+  }
+
   const order = await getOrder(params.id);
   if (!order) notFound();
 

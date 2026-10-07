@@ -42,9 +42,20 @@ function ConfirmContent() {
           setStatus('error');
         });
     } else {
-      // No token — came here after callback redirect
-      setStatus('success');
-      setTimeout(() => router.push('/marketplace'), 3000);
+      // No token — check if user is already authenticated (came via callback redirect)
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data }) => {
+        if (data.user) {
+          setStatus('success');
+          setTimeout(() => router.push('/marketplace'), 3000);
+        } else {
+          setErrorMsg('Link za potvrdu je nevažeći ili je istekao.');
+          setStatus('error');
+        }
+      }).catch(() => {
+        setErrorMsg('Greška pri proveri naloga.');
+        setStatus('error');
+      });
     }
   }, [searchParams, router]);
 
