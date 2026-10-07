@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -113,7 +113,25 @@ function MarketplaceContent() {
     }
   }, [searchParams]);
 
+  const [fetchKey, setFetchKey] = useState(0);
+  const prevFiltersRef = useRef({ filterMake, filterCategory, filterInStock, sortBy, searchQuery });
+
   useEffect(() => {
+    const prev = prevFiltersRef.current;
+    const filtersChanged =
+      prev.filterMake !== filterMake ||
+      prev.filterCategory !== filterCategory ||
+      prev.filterInStock !== filterInStock ||
+      prev.sortBy !== sortBy ||
+      prev.searchQuery !== searchQuery;
+    prevFiltersRef.current = { filterMake, filterCategory, filterInStock, sortBy, searchQuery };
+
+    if (filtersChanged && page !== 1) {
+      setPage(1);
+      return;
+    }
+
+    let cancelled = false;
     const load = async () => {
       setLoading(true);
       try {
@@ -126,8 +144,7 @@ function MarketplaceContent() {
           params.set('page', String(page));
           const res = await fetch(`/api/search?${params}`);
           const json = await res.json();
-          setParts(json.data || []);
-          setTotal(json.meta?.total || json.data?.length || 0);
+          if (!cancelled) { setParts(json.data || []); setTotal(json.meta?.total || json.data?.length || 0); }
         } else {
           const params = new URLSearchParams();
           if (filterMake) params.set('make', filterMake);
@@ -138,22 +155,17 @@ function MarketplaceContent() {
           params.set('page', String(page));
           const res = await fetch(`/api/parts?${params}`);
           const json = await res.json();
-          setParts(json.data || []);
-          setTotal(json.meta?.total || json.data?.length || 0);
+          if (!cancelled) { setParts(json.data || []); setTotal(json.meta?.total || json.data?.length || 0); }
         }
       } catch {
-        setParts([]);
+        if (!cancelled) setParts([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     load();
+    return () => { cancelled = true; };
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -356,9 +368,11 @@ function MarketplaceContent() {
                         <button onClick={() => toggleCompare(part.id)} style={{ padding: '8px', background: compareList.includes(part.id) ? '#ff4d00' : '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>≈</button>
                       </div>
 
-                      <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
-                        Poslednji put provereno: upravo
-                      </p>
+                      {part.updated_at && (
+                        <p style={{ color: '#666', fontSize: '10px', marginTop: '8px' }}>
+                          Ažurirano: {new Date(part.updated_at).toLocaleDateString('sr-RS')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
