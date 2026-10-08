@@ -24,6 +24,8 @@ export default function NavBar() {
   const searchRef = useRef<HTMLInputElement>(null);
   const { cartCount } = useCart();
 
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setUser(data.user)).catch(() => {});
@@ -52,6 +54,16 @@ export default function NavBar() {
   useEffect(() => {
     if (searchOpen && searchRef.current) searchRef.current.focus();
   }, [searchOpen]);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const handleClick = () => setUserMenuOpen(false);
+    const timer = setTimeout(() => document.addEventListener('click', handleClick), 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('click', handleClick);
+    };
+  }, [userMenuOpen]);
 
   return (
     <>
@@ -105,7 +117,7 @@ export default function NavBar() {
           <Link href="/cart" style={{ position: 'relative', textDecoration: 'none', fontSize: '20px', padding: '4px' }}>
             🛒
             {cartCount > 0 && (
-              <span style={{ position: 'absolute', top: '-4px', right: '-8px', background: '#f9372c', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span data-testid="nav-cart-count" style={{ position: 'absolute', top: '-4px', right: '-8px', background: '#f9372c', color: '#fff', fontSize: '10px', fontWeight: 700, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {cartCount}
               </span>
             )}
