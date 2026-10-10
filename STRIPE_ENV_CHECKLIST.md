@@ -25,7 +25,7 @@ Notes:
 
 Configure in **Stripe Dashboard → Developers → Webhooks**:
 
-- **Endpoint URL:** `https://autodelovi.sale/api/stripe/webhook`
+- **Endpoint URL:** `https://autodelovi.sale/api/webhook/stripe`
 - **API version:** account default (or the version pinned in `lib/stripe.ts`)
 - **Subscribed events:**
   - `checkout.session.completed`

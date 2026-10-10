@@ -170,7 +170,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px' }}>
             <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
             <span style={{ color: order.shipping_fee === 0 ? '#22c55e' : '#fff', fontSize: '14px' }}>
-              {order.shipping_fee === 0 ? 'Besplatno' : `${order.shipping_fee.toLocaleString('sr-RS')} ${currency}`}
+              {order.shipping_fee === 0 ? 'Besplatna dostava' : `${order.shipping_fee.toLocaleString('sr-RS')} ${currency}`}
             </span>
           </div>
           <div style={{ height: '1px', background: '#2a2b2f', margin: '14px 0' }} />
