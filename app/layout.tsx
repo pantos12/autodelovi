@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import NavBar from './components/NavBar';
+import Footer from './components/Footer';
 import CartProvider from './components/CartProvider';
 
 export const metadata: Metadata = {
@@ -35,10 +36,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="sr">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
       <body style={{ margin: 0, background: '#0c0d0f' }}>
         <CartProvider>
           <NavBar />
           {children}
+          <Footer />
         </CartProvider>
       </body>
     </html>
