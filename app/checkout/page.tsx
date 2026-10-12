@@ -89,7 +89,7 @@ export default function CheckoutPage() {
 
   if (!items || items.length === 0) {
     return (
-      <div style={{ background: '#0c0d0f', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontFamily: 'Inter, "Helvetica Neue", sans-serif' }}>
+      <div style={{ background: '#0c0d0f', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa' }}>
         Preusmeravanje...
       </div>
     );
@@ -99,7 +99,7 @@ export default function CheckoutPage() {
   const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 12px', background: '#0c0d0f', border: '1px solid #2a2b2f', borderRadius: '8px', color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' };
 
   return (
-    <div style={{ background: '#0c0d0f', minHeight: '100vh', fontFamily: 'Inter, "Helvetica Neue", sans-serif' }}>
+    <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
       <style>{`
         @media (max-width: 900px) {
           .checkout-grid { grid-template-columns: 1fr !important; }
