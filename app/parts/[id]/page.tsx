@@ -2,23 +2,22 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import { getPartBySlug, getPartById, getRelatedParts } from '@/lib/supabase';
 import type { Part } from '@/lib/types';
 import AddToCartButton from '@/app/components/AddToCartButton';
 
 export const dynamic = 'force-dynamic';
 
-async function fetchPart(id: string): Promise<Part | null> {
-  // Try slug first, then UUID
+const fetchPart = cache(async (id: string): Promise<Part | null> => {
   const bySlug = await getPartBySlug(id);
   if (bySlug) return bySlug;
   return getPartById(id);
-}
+});
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const part = await fetchPart(params.id);
-  if (!part) return { title: 'Deo nije pronađen' };
-  const vehicle = part.compatible_vehicles?.[0];
+  if (!part) return { title: 'Deo nije pronadjen' };
   return {
     title: (part.name_sr || part.name) + ' | AutoDelovi.sale',
     description: part.description_sr || part.description || `${part.name_sr || part.name}. OEM: ${part.oem_number || part.part_number}.`,
@@ -26,6 +25,9 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     openGraph: {
       title: part.name_sr || part.name,
       description: `${part.brand} - ${part.price.toLocaleString('sr-RS')} RSD`,
+    },
+    alternates: {
+      canonical: `https://autodelovi.sale/parts/${part.slug || part.id}`,
     },
   };
 }
@@ -81,7 +83,6 @@ export default async function PartDetail({ params }: { params: { id: string } })
                 sizes="(max-width: 1200px) 100vw, 800px"
                 style={{ objectFit: part.images?.[0] ? 'contain' : 'cover', padding: part.images?.[0] ? '16px' : 0 }}
                 priority
-                unoptimized
               />
             </div>
 
@@ -179,7 +180,6 @@ export default async function PartDetail({ params }: { params: { id: string } })
                         sizes="(max-width: 768px) 50vw, 220px"
                         style={{ objectFit: 'cover' }}
                         loading="lazy"
-                        unoptimized
                       />
                     </div>
                     <div style={{ padding: '12px' }}>

@@ -37,8 +37,8 @@ export default function CartPage() {
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
           <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, margin: 0 }}>Vaša korpa <span style={{ color: '#aaa', fontWeight: 400, fontSize: '18px' }}>({count})</span></h1>
-          <button onClick={clear} style={{ background: 'none', border: '1px solid #2a2b2f', borderRadius: '8px', padding: '8px 16px', color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>
-            Obriši korpu
+          <button onClick={() => { if (window.confirm('Da li ste sigurni da zelite da obrisete korpu?')) clear(); }} style={{ background: 'none', border: '1px solid #2a2b2f', borderRadius: '8px', padding: '8px 16px', color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>
+            Obrisi korpu
           </button>
         </div>
 
@@ -57,7 +57,6 @@ export default function CartPage() {
                       sizes="60px"
                       style={{ objectFit: 'cover' }}
                       loading="lazy"
-                      unoptimized
                     />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -70,7 +69,7 @@ export default function CartPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <button onClick={() => updateQty(item.part_id, Math.max(1, item.quantity - 1))} style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
                       <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600, minWidth: '24px', textAlign: 'center' }}>{item.quantity}</span>
-                      <button onClick={() => updateQty(item.part_id, item.quantity + 1)} style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                      <button onClick={() => updateQty(item.part_id, Math.min(99, item.quantity + 1))} style={{ width: '28px', height: '28px', background: '#252629', border: '1px solid #2a2b2f', borderRadius: '6px', color: '#fff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
                     </div>
                     <div style={{ color: '#fff', fontSize: '15px', fontWeight: 700 }}>{lineTotal.toLocaleString('sr-RS')} {item.price_currency}</div>
                     <button onClick={() => remove(item.part_id)} aria-label="Ukloni" style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '18px', cursor: 'pointer', padding: '2px 6px' }}>×</button>
