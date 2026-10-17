@@ -53,9 +53,19 @@ export default async function PartDetail({ params }: { params: { id: string } })
 
   return (
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .part-detail-grid { grid-template-columns: 1fr !important; }
+          .part-buy-card { position: static !important; }
+          .part-image-box { height: 220px !important; }
+          .part-title { font-size: 22px !important; }
+          .part-subtitle { font-size: 14px !important; }
+          .part-price-lg { font-size: 26px !important; }
+        }
+      `}</style>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
         {/* Breadcrumb */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', fontSize: '14px', flexWrap: 'wrap' }}>
           <Link href="/" style={{ color: '#aaa', textDecoration: 'none' }}>Početna</Link>
           <span style={{ color: '#555' }}>/</span>
           <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none' }}>Marketplace</Link>
@@ -69,11 +79,11 @@ export default async function PartDetail({ params }: { params: { id: string } })
           <span style={{ color: '#fff' }}>{part.name_sr || part.name}</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
+        <div className="part-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
           {/* Left column */}
           <div>
             {/* Image */}
-            <div style={{ position: 'relative', background: '#1a1b1f', borderRadius: '16px', height: '320px', marginBottom: '24px', border: '1px solid #252629', overflow: 'hidden' }}>
+            <div className="part-image-box" style={{ position: 'relative', background: '#1a1b1f', borderRadius: '16px', height: '320px', marginBottom: '24px', border: '1px solid #252629', overflow: 'hidden' }}>
               <Image
                 src={part.images?.[0] || '/images/part-placeholder.svg'}
                 alt={part.name}
@@ -86,8 +96,8 @@ export default async function PartDetail({ params }: { params: { id: string } })
             </div>
 
             {/* Title */}
-            <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>{part.name_sr || part.name}</h1>
-            <p style={{ color: '#aaa', fontSize: '16px', marginBottom: '24px' }}>{part.name_sr ? part.name : part.part_number}</p>
+            <h1 className="part-title" style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>{part.name_sr || part.name}</h1>
+            <p className="part-subtitle" style={{ color: '#aaa', fontSize: '16px', marginBottom: '24px' }}>{part.name_sr ? part.name : part.part_number}</p>
 
             {/* Specs */}
             <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629', marginBottom: '24px' }}>
@@ -123,9 +133,9 @@ export default async function PartDetail({ params }: { params: { id: string } })
           </div>
 
           {/* Right: Buy card */}
-          <div style={{ position: 'sticky', top: '80px' }}>
+          <div className="part-buy-card" style={{ position: 'sticky', top: '80px' }}>
             <div style={{ background: '#1a1b1f', borderRadius: '16px', padding: '24px', border: '1px solid #252629' }}>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: '#ff4d00', marginBottom: '4px' }}>
+              <div className="part-price-lg" style={{ fontSize: '32px', fontWeight: 800, color: '#ff4d00', marginBottom: '4px' }}>
                 {part.price.toLocaleString('sr-RS')} RSD
               </div>
               {part.price_eur && (
