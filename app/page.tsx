@@ -74,7 +74,7 @@ export default function Home() {
             <span style={{ color: '#fff', display: 'block' }}>JEDNOM MESTU.</span>
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px', marginBottom: '40px', maxWidth: '480px', lineHeight: 1.6 }}>
-            Agregiramo delimicno skladiste od 50,000+ delova od 200+ proverenih dobavljaca sirom Srbije.
+            Agregiramo ponudu od 50,000+ delova od 200+ proverenih dobavljača širom Srbije.
           </p>
 
           {/* TEXT SEARCH */}
@@ -84,7 +84,7 @@ export default function Home() {
                 type="text"
                 value={textSearch}
                 onChange={e => setTextSearch(e.target.value)}
-                placeholder="Pretrazi po nazivu, broju dela, brendu..."
+                placeholder="Pretraži po nazivu, broju dela, brendu..."
                 style={{ flex: 1, padding: '14px 16px', background: 'transparent', border: 'none', color: '#fff', fontSize: '15px', outline: 'none' }}
               />
               <button type="submit" style={{ padding: '14px 24px', background: '#f9372c', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', letterSpacing: '1px' }}>
@@ -126,9 +126,9 @@ export default function Home() {
         <section className="section-pad" style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '0 24px 60px' }}>
           <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
             {[
-              { title: 'Agregirano pretrazivanje', desc: 'Jedan upit, 200+ dobavljaca pretrazeno istovremeno u realnom vremenu.' },
+              { title: 'Agregirano pretraživanje', desc: 'Jedan upit, 200+ dobavljača pretraženo istovremeno u realnom vremenu.' },
               { title: 'Real-time provera zaliha', desc: 'Live informacije o dostupnosti — bez zastarelih podataka.' },
-              { title: 'OE Cross-referencing', desc: 'Automatsko uporedjivanje OEM i aftermarket referenci za svaki deo.' },
+              { title: 'OE Cross-referencing', desc: 'Automatsko upoređivanje OEM i aftermarket referenci za svaki deo.' },
             ].map((f, i) => (
               <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '24px' }}>
                 <div style={{ width: '32px', height: '2px', background: '#f9372c', marginBottom: '16px', borderRadius: '2px' }} />
