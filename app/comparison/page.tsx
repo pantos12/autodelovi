@@ -73,9 +73,18 @@ function ComparisonContent() {
     td: { padding: '12px 16px', borderBottom: '1px solid #1a1b1f', fontSize: '14px' },
   };
 
+  const responsiveStyles = `
+    @media (max-width: 768px) {
+      .compare-grid { grid-template-columns: 1fr !important; }
+      .compare-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .compare-table-wrap table { min-width: 500px; }
+    }
+  `;
+
   if (parts.length === 0 && selectedIds.length === 0) {
     return (
       <div style={s.page}>
+        <style>{responsiveStyles}</style>
         <div style={{ ...s.container, textAlign: 'center', paddingTop: '80px' }}>
           <p style={{ fontSize: '64px', marginBottom: '16px' }}>⚖️</p>
           <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 800, marginBottom: '12px' }}>Poređenje delova</h1>
@@ -97,6 +106,7 @@ function ComparisonContent() {
 
   return (
     <div style={s.page}>
+      <style>{responsiveStyles}</style>
       <div style={s.container}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: 800 }}>Poređenje delova</h1>
@@ -104,7 +114,7 @@ function ComparisonContent() {
         </div>
 
         {/* Part selector */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
+        <div className="compare-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
           {Array.from({ length: 3 }).map((_, i) => {
             const part = parts[i];
             return (
@@ -133,7 +143,7 @@ function ComparisonContent() {
 
         {/* Comparison table */}
         {parts.length > 0 && (
-          <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
+          <div className="compare-table-wrap" style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
