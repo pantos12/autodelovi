@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
       supplier:  searchParams.get('supplier') ?? undefined,
       min_price: searchParams.get('min_price') ? parseFloat(searchParams.get('min_price')!) : undefined,
       max_price: searchParams.get('max_price') ? parseFloat(searchParams.get('max_price')!) : undefined,
+      condition: (searchParams.get('condition') as PartsQueryParams['condition']) ?? undefined,
       in_stock:  searchParams.get('in_stock') === 'true' ? true : undefined,
       sort:      (searchParams.get('sort') as any) ?? 'newest',
       page:      searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1,
