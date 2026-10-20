@@ -17,7 +17,7 @@ const isConfigured = () => !!process.env.NEXT_PUBLIC_SUPABASE_URL;
 
 export async function getParts(params: {
   q?: string; category?: string; make?: string; model?: string; year?: number;
-  supplier?: string; min_price?: number; max_price?: number;
+  supplier?: string; min_price?: number; max_price?: number; condition?: string;
   in_stock?: boolean; sort?: string; page?: number; per_page?: number;
 } = {}) {
   if (!isConfigured()) {
@@ -26,7 +26,7 @@ export async function getParts(params: {
   }
 
   const { q, category, make, model, year, supplier, min_price, max_price,
-    in_stock, sort = 'newest', page = 1, per_page = 24 } = params;
+    condition, in_stock, sort = 'newest', page = 1, per_page = 24 } = params;
 
   let query = supabase
     .from('parts_v2')
@@ -38,6 +38,7 @@ export async function getParts(params: {
   if (supplier) query = query.eq('supplier_id', supplier);
   if (min_price !== undefined) query = query.gte('price', min_price);
   if (max_price !== undefined) query = query.lte('price', max_price);
+  if (condition && ['new', 'used', 'refurbished'].includes(condition)) query = query.eq('condition', condition);
   if (in_stock) query = query.gt('stock_quantity', 0);
   if (make) query = query.contains('compatible_vehicles', [{ make }]);
 
