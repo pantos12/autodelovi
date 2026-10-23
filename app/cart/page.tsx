@@ -2,13 +2,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '../components/CartProvider';
+import { computeShipping, DEFAULT_CURRENCY, FREE_SHIPPING_THRESHOLD } from '@/lib/constants';
 
 export default function CartPage() {
   const { items, count, subtotal, updateQty, remove, clear } = useCart();
 
-  const currency = items[0]?.price_currency || 'RSD';
-  const freeShippingThreshold = 10000;
-  const shipping = subtotal >= freeShippingThreshold ? 0 : 600;
+  const currency = items[0]?.price_currency || DEFAULT_CURRENCY;
+  const shipping = computeShipping(subtotal);
   const total = subtotal + shipping;
 
   if (!items || items.length === 0) {
