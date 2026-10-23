@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import NavBar from './components/NavBar';
 import CartProvider from './components/CartProvider';
+
+const inter = Inter({ subsets: ['latin', 'latin-ext'], display: 'swap' });
 
 export const metadata: Metadata = {
   title: {
@@ -35,10 +38,20 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="sr">
-      <body style={{ margin: 0, background: '#0c0d0f' }}>
+      <body className={inter.className} style={{ margin: 0, background: '#0c0d0f', display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <CartProvider>
           <NavBar />
-          {children}
+          <main style={{ flex: 1 }}>
+            {children}
+          </main>
+          <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>© 2026 AutoDelovi.sale</span>
+            <div style={{ display: 'flex', gap: '24px' }}>
+              <a href="/marketplace" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Marketplace</a>
+              <a href="/suppliers" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Dobavljaci</a>
+              <a href="/comparison" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Poredenje</a>
+            </div>
+          </footer>
         </CartProvider>
       </body>
     </html>
