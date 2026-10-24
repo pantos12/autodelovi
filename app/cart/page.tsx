@@ -93,10 +93,33 @@ export default function CartPage() {
               <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600 }}>{subtotal.toLocaleString('sr-RS')} {currency}</span>
             </div>
 
+            {(() => {
+              const remaining = Math.max(0, freeShippingThreshold - subtotal);
+              const progress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
+              return (
+                <div style={{ marginBottom: '12px' }}>
+                  {remaining > 0 ? (
+                    <>
+                      <p style={{ color: '#aaa', fontSize: '12px', marginBottom: '6px' }}>
+                        Još <span style={{ color: '#fff', fontWeight: 600 }}>{remaining.toLocaleString('sr-RS')} RSD</span> do besplatne dostave
+                      </p>
+                      <div style={{ background: '#252629', borderRadius: '4px', height: '4px', overflow: 'hidden' }}>
+                        <div style={{ background: '#22c55e', height: '100%', width: `${progress}%`, borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                      </div>
+                    </>
+                  ) : (
+                    <p style={{ color: '#22c55e', fontSize: '13px', fontWeight: 600 }}>
+                      &#10003; Besplatna dostava!
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+                {shipping === 0 ? 'Besplatno' : `${shipping.toLocaleString('sr-RS')} RSD`}
               </span>
             </div>
 
