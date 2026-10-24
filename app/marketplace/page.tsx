@@ -100,6 +100,7 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -211,8 +212,16 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .marketplace-grid { grid-template-columns: 1fr !important; }
+          .marketplace-sidebar { position: static !important; display: none; }
+          .marketplace-sidebar.open { display: block; }
+          .marketplace-filter-toggle { display: flex !important; }
+        }
+      `}</style>
+      <div className="marketplace-grid" style={s.container}>
+        <div className={`marketplace-sidebar${filtersOpen ? ' open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -293,6 +302,13 @@ function MarketplaceContent() {
               {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
             </p>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <button
+                className="marketplace-filter-toggle"
+                onClick={() => setFiltersOpen(o => !o)}
+                style={{ display: 'none', alignItems: 'center', gap: '6px', padding: '8px 14px', background: filtersOpen ? '#f9372c' : '#252629', border: '1px solid #333', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}
+              >
+                {filtersOpen ? '✕ Zatvori' : '☰ Filteri'}
+              </button>
               <select style={{ ...s.select, width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
                 <option value="price_asc">Cena: niža → viša</option>
                 <option value="price_desc">Cena: viša → niža</option>
