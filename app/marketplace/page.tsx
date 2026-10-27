@@ -99,6 +99,7 @@ function MarketplaceContent() {
   const [sortBy, setSortBy] = useState('price_asc');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
@@ -114,40 +115,43 @@ function MarketplaceContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        if (searchQuery && searchQuery.length >= 2) {
-          const params = new URLSearchParams();
-          params.set('q', searchQuery);
-          if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
-          params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
-          const res = await fetch(`/api/search?${params}`);
-          const json = await res.json();
-          setParts(json.data || []);
-          setTotal(json.meta?.total || json.data?.length || 0);
-        } else {
-          const params = new URLSearchParams();
-          if (filterMake) params.set('make', filterMake);
-          if (filterCategory) params.set('category', filterCategory);
-          if (filterInStock) params.set('in_stock', 'true');
-          params.set('sort', sortBy);
-          params.set('per_page', String(PER_PAGE));
-          params.set('page', String(page));
-          const res = await fetch(`/api/parts?${params}`);
-          const json = await res.json();
-          setParts(json.data || []);
-          setTotal(json.meta?.total || json.data?.length || 0);
+    const timer = setTimeout(() => {
+      const load = async () => {
+        setLoading(true);
+        try {
+          if (searchQuery && searchQuery.length >= 2) {
+            const params = new URLSearchParams();
+            params.set('q', searchQuery);
+            if (filterCategory) params.set('category', filterCategory);
+            if (filterInStock) params.set('in_stock', 'true');
+            params.set('per_page', String(PER_PAGE));
+            params.set('page', String(page));
+            const res = await fetch(`/api/search?${params}`);
+            const json = await res.json();
+            setParts(json.data || []);
+            setTotal(json.meta?.total || json.data?.length || 0);
+          } else {
+            const params = new URLSearchParams();
+            if (filterMake) params.set('make', filterMake);
+            if (filterCategory) params.set('category', filterCategory);
+            if (filterInStock) params.set('in_stock', 'true');
+            params.set('sort', sortBy);
+            params.set('per_page', String(PER_PAGE));
+            params.set('page', String(page));
+            const res = await fetch(`/api/parts?${params}`);
+            const json = await res.json();
+            setParts(json.data || []);
+            setTotal(json.meta?.total || json.data?.length || 0);
+          }
+        } catch {
+          setParts([]);
+        } finally {
+          setLoading(false);
         }
-      } catch {
-        setParts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+      };
+      load();
+    }, 300);
+    return () => clearTimeout(timer);
   }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
 
   // Reset to page 1 when filters change
@@ -211,8 +215,23 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none; }
+          .mp-sidebar.mp-sidebar--open { display: block; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+      `}</style>
+      <button
+        className="mp-filter-toggle"
+        onClick={() => setFiltersOpen(v => !v)}
+        style={{ display: 'none', alignItems: 'center', gap: '8px', margin: '16px auto 0', padding: '10px 20px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+      >
+        {filtersOpen ? '✕ Zatvori filtere' : '☰ Filteri'}
+      </button>
+      <div className="mp-container" style={s.container}>
+        <div className={`mp-sidebar${filtersOpen ? ' mp-sidebar--open' : ''}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
