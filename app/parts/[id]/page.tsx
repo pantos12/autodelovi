@@ -52,6 +52,13 @@ export default async function PartDetail({ params }: { params: { id: string } })
   ].filter(s => s.value);
 
   return (
+    <>
+    <style>{`
+      @media (max-width: 900px) {
+        .pd-grid { grid-template-columns: 1fr !important; }
+        .pd-sticky { position: static !important; }
+      }
+    `}</style>
     <div style={{ background: '#0c0d0f', minHeight: '100vh' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
         {/* Breadcrumb */}
@@ -69,7 +76,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
           <span style={{ color: '#fff' }}>{part.name_sr || part.name}</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
+        <div className="pd-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px', alignItems: 'start' }}>
           {/* Left column */}
           <div>
             {/* Image */}
@@ -123,7 +130,7 @@ export default async function PartDetail({ params }: { params: { id: string } })
           </div>
 
           {/* Right: Buy card */}
-          <div style={{ position: 'sticky', top: '80px' }}>
+          <div className="pd-sticky" style={{ position: 'sticky', top: '80px' }}>
             <div style={{ background: '#1a1b1f', borderRadius: '16px', padding: '24px', border: '1px solid #252629' }}>
               <div style={{ fontSize: '32px', fontWeight: 800, color: '#ff4d00', marginBottom: '4px' }}>
                 {part.price.toLocaleString('sr-RS')} RSD
@@ -196,5 +203,6 @@ export default async function PartDetail({ params }: { params: { id: string } })
         )}
       </div>
     </div>
+    </>
   );
 }

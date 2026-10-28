@@ -36,6 +36,35 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="sr">
       <body style={{ margin: 0, background: '#0c0d0f' }}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@graph': [
+                {
+                  '@type': 'Organization',
+                  '@id': 'https://autodelovi.sale/#org',
+                  name: 'AutoDelovi.sale',
+                  url: 'https://autodelovi.sale',
+                  description: 'Premium marketplace za auto delove u Srbiji.',
+                },
+                {
+                  '@type': 'WebSite',
+                  '@id': 'https://autodelovi.sale/#website',
+                  url: 'https://autodelovi.sale',
+                  name: 'AutoDelovi.sale',
+                  publisher: { '@id': 'https://autodelovi.sale/#org' },
+                  potentialAction: {
+                    '@type': 'SearchAction',
+                    target: 'https://autodelovi.sale/marketplace?q={search_term_string}',
+                    'query-input': 'required name=search_term_string',
+                  },
+                },
+              ],
+            }),
+          }}
+        />
         <CartProvider>
           <NavBar />
           {children}
