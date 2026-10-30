@@ -163,12 +163,42 @@ export default function Home() {
         </section>
 
         {/* FOOTER */}
-        <footer style={{ position: 'relative', zIndex: 5, borderTop: '1px solid rgba(255,255,255,0.06)', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>© 2026 AutoDelovi.sale</span>
-          <div style={{ display: 'flex', gap: '24px' }}>
-            <Link href="/marketplace" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Marketplace</Link>
-            <Link href="/suppliers" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Dobavljaci</Link>
-            <Link href="/comparison" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Poredenje</Link>
+        <footer style={{ position: 'relative', zIndex: 5, borderTop: '1px solid rgba(255,255,255,0.06)', padding: '40px 24px 24px' }}>
+          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '32px', marginBottom: '32px' }}>
+              <div>
+                <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff', display: 'block', marginBottom: '16px' }}>AutoDelovi<span style={{ color: '#f9372c' }}>.sale</span></span>
+                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', lineHeight: 1.6 }}>Premium marketplace za auto delove u Srbiji. 50,000+ delova od 200+ dobavljaca.</p>
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '1px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' as const, display: 'block', marginBottom: '12px' }}>Kupovina</span>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
+                  <Link href="/marketplace" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Marketplace</Link>
+                  <Link href="/vehicle-selection" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Izbor vozila</Link>
+                  <Link href="/comparison" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Poredenje delova</Link>
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '1px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' as const, display: 'block', marginBottom: '12px' }}>Kategorije</span>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
+                  <Link href="/categories/motor" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Motor</Link>
+                  <Link href="/categories/kocnice" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Kocnice</Link>
+                  <Link href="/categories/elektronika" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Elektronika</Link>
+                  <Link href="/categories/karoserija" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Karoserija</Link>
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '1px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' as const, display: 'block', marginBottom: '12px' }}>Partneri</span>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
+                  <Link href="/suppliers" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Dobavljaci</Link>
+                  <a href="mailto:dobavljaci@autodelovi.sale" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Postanite partner</a>
+                </div>
+              </div>
+            </div>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.25)' }}>© 2026 AutoDelovi.sale — Sva prava zadrzana</span>
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)' }}>Beograd, Srbija</span>
+            </div>
           </div>
         </footer>
       </div>

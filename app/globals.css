@@ -33,10 +33,19 @@
   --on-surface-variant: #c5c6ca;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+::selection {
+  background: rgba(249, 55, 44, 0.3);
+  color: #fff;
 }
 
 body {
