@@ -88,6 +88,22 @@ export default function CartPage() {
           <div className="cart-summary" style={{ background: '#1a1b1f', borderRadius: '12px', padding: '20px', border: '1px solid #2a2b2f', position: 'sticky', top: '80px' }}>
             <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, margin: '0 0 16px' }}>Pregled porudžbine</h2>
 
+            {subtotal < freeShippingThreshold && (
+              <div style={{ marginBottom: '16px', padding: '12px', background: '#0c0d0f', borderRadius: '8px' }}>
+                <p style={{ color: '#aaa', fontSize: '12px', marginBottom: '8px' }}>
+                  Dodajte jos <strong style={{ color: '#f9372c' }}>{(freeShippingThreshold - subtotal).toLocaleString('sr-RS')} RSD</strong> za besplatnu dostavu
+                </p>
+                <div style={{ height: '4px', background: '#2a2b2f', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', background: '#f9372c', borderRadius: '2px', width: `${Math.min(100, (subtotal / freeShippingThreshold) * 100)}%`, transition: 'width 0.3s ease' }} />
+                </div>
+              </div>
+            )}
+            {subtotal >= freeShippingThreshold && (
+              <div style={{ marginBottom: '16px', padding: '10px 12px', background: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.2)', borderRadius: '8px' }}>
+                <p style={{ color: '#22c55e', fontSize: '12px', fontWeight: 600, margin: 0 }}>Kvalifikujete se za besplatnu dostavu</p>
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Subtotal</span>
               <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600 }}>{subtotal.toLocaleString('sr-RS')} {currency}</span>
@@ -96,7 +112,7 @@ export default function CartPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+                {shipping === 0 ? 'Besplatna dostava' : `${shipping.toLocaleString('sr-RS')} RSD`}
               </span>
             </div>
 
