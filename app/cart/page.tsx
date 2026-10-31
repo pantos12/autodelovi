@@ -96,8 +96,20 @@ export default function CartPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+                {shipping === 0 ? 'Besplatno' : `${shipping} RSD`}
               </span>
+            </div>
+
+            {/* Free shipping progress */}
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ height: '6px', borderRadius: '3px', background: '#252629', overflow: 'hidden' }}>
+                <div style={{ height: '100%', borderRadius: '3px', width: `${Math.min(100, (subtotal / freeShippingThreshold) * 100)}%`, background: subtotal >= freeShippingThreshold ? '#22c55e' : '#f9372c', transition: 'width 0.3s ease' }} />
+              </div>
+              <p style={{ color: subtotal >= freeShippingThreshold ? '#22c55e' : '#aaa', fontSize: '12px', marginTop: '6px', textAlign: 'center' }}>
+                {subtotal >= freeShippingThreshold
+                  ? 'Besplatna dostava!'
+                  : `Još ${(freeShippingThreshold - subtotal).toLocaleString('sr-RS')} RSD do besplatne dostave`}
+              </p>
             </div>
 
             <div style={{ height: '1px', background: '#2a2b2f', margin: '14px 0' }} />
