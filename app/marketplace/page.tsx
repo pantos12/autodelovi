@@ -100,6 +100,9 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [filterMinPrice, setFilterMinPrice] = useState('');
+  const [filterMaxPrice, setFilterMaxPrice] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -122,6 +125,8 @@ function MarketplaceContent() {
           params.set('q', searchQuery);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (filterMinPrice) params.set('min_price', filterMinPrice);
+          if (filterMaxPrice) params.set('max_price', filterMaxPrice);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
           const res = await fetch(`/api/search?${params}`);
@@ -133,6 +138,8 @@ function MarketplaceContent() {
           if (filterMake) params.set('make', filterMake);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (filterMinPrice) params.set('min_price', filterMinPrice);
+          if (filterMaxPrice) params.set('max_price', filterMaxPrice);
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
@@ -148,12 +155,12 @@ function MarketplaceContent() {
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page, filterMinPrice, filterMaxPrice]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, filterMinPrice, filterMaxPrice]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -211,8 +218,44 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        .mp-filter-toggle { display: none; }
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { position: static !important; }
+          .mp-sidebar-hidden { display: none !important; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+      `}</style>
+      <div className="mp-container" style={s.container}>
+        {/* Mobile filter toggle */}
+        <button
+          className="mp-filter-toggle"
+          onClick={() => setFiltersOpen(f => !f)}
+          style={{
+            display: 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            width: '100%',
+            padding: '12px',
+            background: '#1a1b1f',
+            border: '1px solid #333',
+            borderRadius: '10px',
+            color: '#fff',
+            fontSize: '14px',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ fontSize: '16px' }}>{filtersOpen ? '✕' : '☰'}</span>
+          {filtersOpen ? 'Sakrij filtere' : 'Prikaži filtere'}
+        </button>
+        <div className={`mp-sidebar${filtersOpen ? '' : ' mp-sidebar-hidden'}`} style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -279,11 +322,33 @@ function MarketplaceContent() {
               {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
             </select>
           </div>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={s.label}>Cena (RSD)</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type="number"
+                min="0"
+                placeholder="Od"
+                value={filterMinPrice}
+                onChange={e => setFilterMinPrice(e.target.value)}
+                style={{ ...s.select, flex: 1, padding: '8px 10px' }}
+              />
+              <span style={{ color: '#555', fontSize: '13px' }}>–</span>
+              <input
+                type="number"
+                min="0"
+                placeholder="Do"
+                value={filterMaxPrice}
+                onChange={e => setFilterMaxPrice(e.target.value)}
+                style={{ ...s.select, flex: 1, padding: '8px 10px' }}
+              />
+            </div>
+          </div>
           <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); setFilterMinPrice(''); setFilterMaxPrice(''); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
             Resetuj sve
           </button>
         </div>

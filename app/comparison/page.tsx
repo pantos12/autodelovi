@@ -97,14 +97,22 @@ function ComparisonContent() {
 
   return (
     <div style={s.page}>
+      <style>{`
+        @media (max-width: 768px) {
+          .compare-header { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
+          .compare-selector { grid-template-columns: 1fr !important; }
+          .compare-table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+          .compare-table-wrap table { min-width: 500px; }
+        }
+      `}</style>
       <div style={s.container}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div className="compare-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: 800 }}>Poređenje delova</h1>
           <Link href="/marketplace" style={{ color: '#aaa', textDecoration: 'none', fontSize: '14px' }}>← Nazad</Link>
         </div>
 
         {/* Part selector */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
+        <div className="compare-selector" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
           {Array.from({ length: 3 }).map((_, i) => {
             const part = parts[i];
             return (
@@ -133,7 +141,7 @@ function ComparisonContent() {
 
         {/* Comparison table */}
         {parts.length > 0 && (
-          <div style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
+          <div className="compare-table-wrap" style={{ background: '#1a1b1f', borderRadius: '12px', overflow: 'hidden', border: '1px solid #252629' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
