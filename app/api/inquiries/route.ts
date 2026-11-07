@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     buyer_email: email,
     buyer_phone: typeof body.buyer_phone === 'string' && body.buyer_phone.trim() ? body.buyer_phone.trim() : null,
     message: typeof body.message === 'string' && body.message.trim() ? body.message.trim() : null,
-    status: 'new',
+    status: 'pending',
   };
 
   try {

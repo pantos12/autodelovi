@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { addToCart, type CartItem } from '@/lib/cart';
 import type { Part } from '@/lib/types';
 
@@ -13,8 +13,13 @@ interface Props {
 
 export default function AddToCartButton({ part, label, full, inStock }: Props) {
   const [added, setAdded] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const disabled = inStock === false;
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
 
   function handleAdd() {
     if (disabled) return;
@@ -32,7 +37,8 @@ export default function AddToCartButton({ part, label, full, inStock }: Props) {
     };
     addToCart(item);
     setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setAdded(false), 1500);
   }
 
   const baseStyle: React.CSSProperties = full
