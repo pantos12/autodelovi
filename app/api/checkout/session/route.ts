@@ -116,26 +116,30 @@ export async function POST(request: NextRequest) {
     if (typeof parsed === 'string') return bad(parsed);
     const { items, buyer } = parsed;
 
-    // Fetch and validate parts
-    const resolved: ResolvedItem[] = [];
-    for (const item of items) {
-      const { data, error } = await supabaseAdmin
-        .from('parts_v2')
-        .select('id, name, part_number, brand, supplier_id, images, price, stock_quantity, supplier:suppliers(name)')
-        .eq('id', item.part_id)
-        .maybeSingle();
+    // Fetch all parts in one batch query
+    const partIds = items.map(i => i.part_id);
+    const { data: partsData, error: partsErr } = await supabaseAdmin
+      .from('parts_v2')
+      .select('id, name, part_number, brand, supplier_id, images, price, stock_quantity, supplier:suppliers(name)')
+      .in('id', partIds);
 
-      if (error) {
-        return bad(`Failed to load part ${item.part_id}: ${error.message}`, 500);
-      }
-      if (!data) {
-        return bad(`Part not found: ${item.part_id}`, 404);
-      }
-      // supabase-js types join as array-or-object; normalize
+    if (partsErr) {
+      return bad(`Failed to load parts: ${partsErr.message}`, 500);
+    }
+
+    const partsMap = new Map<string, PartRow>();
+    for (const data of (partsData ?? [])) {
       const part = data as unknown as PartRow & { supplier: { name: string | null } | { name: string | null }[] | null };
       const supplier = Array.isArray(part.supplier) ? (part.supplier[0] ?? null) : part.supplier;
-      const normalized: PartRow = { ...part, supplier };
+      partsMap.set(part.id, { ...part, supplier });
+    }
 
+    const resolved: ResolvedItem[] = [];
+    for (const item of items) {
+      const normalized = partsMap.get(item.part_id);
+      if (!normalized) {
+        return bad(`Part not found: ${item.part_id}`, 404);
+      }
       if (typeof normalized.price !== 'number' || normalized.price <= 0) {
         return bad(`Part ${normalized.id} has no valid price`, 409);
       }

@@ -6,7 +6,8 @@ export const runtime = 'edge';
 export async function GET(request: NextRequest, { params }: { params: { partId: string } }) {
   try {
     const { searchParams } = new URL(request.url);
-    const days = Math.min(parseInt(searchParams.get('days') ?? '30'), 365);
+    const rawDays = parseInt(searchParams.get('days') ?? '30');
+    const days = Math.min(Number.isFinite(rawDays) && rawDays > 0 ? rawDays : 30, 365);
     const history = await getPriceHistory(params.partId, days);
     const prices = history.map(h => h.price);
     const stats = prices.length > 0 ? {
