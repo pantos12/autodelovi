@@ -53,6 +53,8 @@ export async function GET(
           model_year: cached.model_year ?? null,
           source: cached.source ?? SOURCE,
           cached: true,
+        }, {
+          headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=3600' },
         });
       }
     }

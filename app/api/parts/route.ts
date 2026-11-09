@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
       max_price: searchParams.get('max_price') ? parseFloat(searchParams.get('max_price')!) : undefined,
       in_stock:  searchParams.get('in_stock') === 'true' ? true : undefined,
       sort:      (searchParams.get('sort') as any) ?? 'newest',
-      page:      searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1,
-      per_page:  Math.min(parseInt(searchParams.get('per_page') ?? '24'), 100),
+      page:      Math.max(1, parseInt(searchParams.get('page') ?? '1') || 1),
+      per_page:  Math.min(Math.max(1, parseInt(searchParams.get('per_page') ?? '24') || 24), 100),
     };
     const result = await getParts(params);
     return NextResponse.json(
