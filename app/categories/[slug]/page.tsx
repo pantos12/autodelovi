@@ -40,7 +40,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontSize: '48px' }}>🔍</p>
           <h1 style={{ color: '#fff', fontSize: '24px', marginBottom: '12px' }}>Kategorija nije pronađena</h1>
-          <Link href="/marketplace" style={{ color: '#ff4d00', textDecoration: 'none' }}>← Nazad na marketplace</Link>
+          <Link href="/marketplace" style={{ color: '#f9372c', textDecoration: 'none' }}>← Nazad na marketplace</Link>
         </div>
       </div>
     );
@@ -77,11 +77,11 @@ export default async function CategoryPage({ params }: { params: { slug: string 
               href={`/categories/${cat.slug}`}
               style={{
                 padding: '14px 20px',
-                color: cat.slug === params.slug ? '#ff4d00' : '#aaa',
+                color: cat.slug === params.slug ? '#f9372c' : '#aaa',
                 textDecoration: 'none',
                 fontSize: '14px',
                 fontWeight: cat.slug === params.slug ? 600 : 400,
-                borderBottom: cat.slug === params.slug ? '2px solid #ff4d00' : '2px solid transparent',
+                borderBottom: cat.slug === params.slug ? '2px solid #f9372c' : '2px solid transparent',
                 whiteSpace: 'nowrap' as const,
               }}
             >
@@ -116,7 +116,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
                   <div style={{ padding: '12px' }}>
                     <p style={{ color: '#aaa', fontSize: '11px', marginBottom: '4px' }}>{part.brand || ''}</p>
                     <h3 style={{ color: '#fff', fontSize: '14px', marginBottom: '8px', lineHeight: '1.3' }}>{part.name_sr || part.name}</h3>
-                    <p style={{ color: '#ff4d00', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>
+                    <p style={{ color: '#f9372c', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>
                       {part.price.toLocaleString('sr-RS')} RSD
                     </p>
                     <p style={{ color: inStock ? '#22c55e' : '#ef4444', fontSize: '12px', marginBottom: '10px' }}>
@@ -124,7 +124,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
                     </p>
                     <Link
                       href={`/parts/${part.slug || part.id}`}
-                      style={{ display: 'block', padding: '8px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px', fontWeight: 600 }}
+                      style={{ display: 'block', padding: '8px', background: '#f9372c', borderRadius: '8px', color: '#fff', textDecoration: 'none', textAlign: 'center', fontSize: '13px', fontWeight: 600 }}
                     >
                       Vidi više
                     </Link>
@@ -137,7 +137,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
             <p style={{ fontSize: '48px', marginBottom: '16px' }}>📦</p>
             <p style={{ fontSize: '18px', color: '#aaa', marginBottom: '24px' }}>Nema delova u ovoj kategoriji</p>
-            <Link href="/marketplace" style={{ padding: '12px 28px', background: '#ff4d00', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontWeight: 700 }}>
+            <Link href="/marketplace" style={{ padding: '12px 28px', background: '#f9372c', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontWeight: 700 }}>
               Vidi sve delove
             </Link>
           </div>
