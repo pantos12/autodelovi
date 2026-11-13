@@ -210,9 +210,16 @@ function MarketplaceContent() {
   }
 
   return (
+    <>
+    <style>{`
+      @media (max-width: 768px) {
+        .marketplace-layout { grid-template-columns: 1fr !important; }
+        .marketplace-sidebar { position: static !important; }
+      }
+    `}</style>
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <div className="marketplace-layout" style={s.container}>
+        <div className="marketplace-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -382,6 +389,7 @@ function MarketplaceContent() {
 
           {/* Pagination */}
           {!loading && totalPages > 1 && (
+
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '32px', flexWrap: 'wrap' }}>
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
@@ -437,6 +445,7 @@ function MarketplaceContent() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

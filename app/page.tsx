@@ -171,6 +171,27 @@ export default function Home() {
             <Link href="/comparison" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Poredenje</Link>
           </div>
         </footer>
+
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'AutoDelovi.sale',
+              url: 'https://autodelovi.sale',
+              description: 'Premium marketplace za auto delove u Srbiji. 50,000+ delova od 200+ proverenih dobavljača.',
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: {
+                  '@type': 'EntryPoint',
+                  urlTemplate: 'https://autodelovi.sale/marketplace?q={search_term_string}',
+                },
+                'query-input': 'required name=search_term_string',
+              },
+            }),
+          }}
+        />
       </div>
     </>
   );
