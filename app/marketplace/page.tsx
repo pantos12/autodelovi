@@ -96,6 +96,8 @@ function MarketplaceContent() {
   const [filterMake, setFilterMake] = useState(searchParams.get('make') || '');
   const [filterCategory, setFilterCategory] = useState(searchParams.get('category') || '');
   const [filterInStock, setFilterInStock] = useState(false);
+  const [filterMinPrice, setFilterMinPrice] = useState('');
+  const [filterMaxPrice, setFilterMaxPrice] = useState('');
   const [sortBy, setSortBy] = useState('price_asc');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
@@ -117,11 +119,15 @@ function MarketplaceContent() {
     const load = async () => {
       setLoading(true);
       try {
+        const minP = filterMinPrice ? parseFloat(filterMinPrice) : NaN;
+        const maxP = filterMaxPrice ? parseFloat(filterMaxPrice) : NaN;
         if (searchQuery && searchQuery.length >= 2) {
           const params = new URLSearchParams();
           params.set('q', searchQuery);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (!isNaN(minP)) params.set('min_price', String(minP));
+          if (!isNaN(maxP)) params.set('max_price', String(maxP));
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
           const res = await fetch(`/api/search?${params}`);
@@ -133,6 +139,8 @@ function MarketplaceContent() {
           if (filterMake) params.set('make', filterMake);
           if (filterCategory) params.set('category', filterCategory);
           if (filterInStock) params.set('in_stock', 'true');
+          if (!isNaN(minP)) params.set('min_price', String(minP));
+          if (!isNaN(maxP)) params.set('max_price', String(maxP));
           params.set('sort', sortBy);
           params.set('per_page', String(PER_PAGE));
           params.set('page', String(page));
@@ -148,12 +156,17 @@ function MarketplaceContent() {
       }
     };
     load();
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery, page]);
+  }, [filterMake, filterCategory, filterInStock, filterMinPrice, filterMaxPrice, sortBy, searchQuery, page]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [filterMake, filterCategory, filterInStock, sortBy, searchQuery]);
+  }, [filterMake, filterCategory, filterInStock, filterMinPrice, filterMaxPrice, sortBy, searchQuery]);
+
+  // Scroll to top on page change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
 
   // Persist ?avail=1
   useEffect(() => {
@@ -211,8 +224,14 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-grid { grid-template-columns: 1fr !important; }
+          .mp-sidebar { position: static !important; }
+        }
+      `}</style>
+      <div className="mp-grid" style={s.container}>
+        <div className="mp-sidebar" style={s.sidebar}>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -279,11 +298,18 @@ function MarketplaceContent() {
               {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
             </select>
           </div>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={s.label}>Cena (RSD)</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input type="number" placeholder="Min" value={filterMinPrice} onChange={e => setFilterMinPrice(e.target.value)} min="0" style={{ ...s.select, padding: '8px 10px', width: '50%' }} />
+              <input type="number" placeholder="Max" value={filterMaxPrice} onChange={e => setFilterMaxPrice(e.target.value)} min="0" style={{ ...s.select, padding: '8px 10px', width: '50%' }} />
+            </div>
+          </div>
           <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
             <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
           </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setFilterMinPrice(''); setFilterMaxPrice(''); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
             Resetuj sve
           </button>
         </div>
