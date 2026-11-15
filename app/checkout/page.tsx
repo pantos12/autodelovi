@@ -126,33 +126,33 @@ export default function CheckoutPage() {
 
             <div style={{ marginBottom: '14px' }}>
               <label style={labelStyle}>Ime i prezime *</label>
-              <input type="text" required value={form.name} onChange={e => update('name', e.target.value)} style={inputStyle} />
+              <input type="text" required autoComplete="name" value={form.name} onChange={e => update('name', e.target.value)} style={inputStyle} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <label style={labelStyle}>Email *</label>
-                <input type="email" required value={form.email} onChange={e => update('email', e.target.value)} style={inputStyle} />
+                <input type="email" required autoComplete="email" value={form.email} onChange={e => update('email', e.target.value)} style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Telefon *</label>
-                <input type="tel" required value={form.phone} onChange={e => update('phone', e.target.value)} style={inputStyle} />
+                <input type="tel" required autoComplete="tel" value={form.phone} onChange={e => update('phone', e.target.value)} style={inputStyle} />
               </div>
             </div>
 
             <div style={{ marginBottom: '14px' }}>
               <label style={labelStyle}>Adresa za dostavu *</label>
-              <input type="text" required value={form.address} onChange={e => update('address', e.target.value)} style={inputStyle} />
+              <input type="text" required autoComplete="street-address" value={form.address} onChange={e => update('address', e.target.value)} style={inputStyle} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <label style={labelStyle}>Grad *</label>
-                <input type="text" required value={form.city} onChange={e => update('city', e.target.value)} style={inputStyle} />
+                <input type="text" required autoComplete="address-level2" value={form.city} onChange={e => update('city', e.target.value)} style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Poštanski broj</label>
-                <input type="text" value={form.postal} onChange={e => update('postal', e.target.value)} style={inputStyle} />
+                <input type="text" autoComplete="postal-code" value={form.postal} onChange={e => update('postal', e.target.value)} style={inputStyle} />
               </div>
             </div>
 
