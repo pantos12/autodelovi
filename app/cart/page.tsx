@@ -96,9 +96,25 @@ export default function CartPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', gap: '12px' }}>
               <span style={{ color: '#aaa', fontSize: '14px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px', fontWeight: 600, textAlign: 'right' }}>
-                {shipping === 0 ? 'Besplatno na stanju' : `${shipping} RSD ostalo`}
+                {shipping === 0 ? 'Besplatno' : `${shipping.toLocaleString('sr-RS')} ${currency}`}
               </span>
             </div>
+
+            {/* Free shipping progress */}
+            {shipping > 0 && (() => {
+              const remaining = freeShippingThreshold - subtotal;
+              const progress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
+              return (
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={{ background: '#252629', borderRadius: '4px', height: '6px', overflow: 'hidden', marginBottom: '6px' }}>
+                    <div style={{ background: '#22c55e', height: '100%', width: `${progress}%`, borderRadius: '4px', transition: 'width 0.3s' }} />
+                  </div>
+                  <p style={{ color: '#888', fontSize: '12px', margin: 0 }}>
+                    Još {remaining.toLocaleString('sr-RS')} {currency} do besplatne dostave
+                  </p>
+                </div>
+              );
+            })()}
 
             <div style={{ height: '1px', background: '#2a2b2f', margin: '14px 0' }} />
 
