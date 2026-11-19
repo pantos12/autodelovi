@@ -260,7 +260,7 @@ export async function POST(request: NextRequest) {
         mode: 'payment',
         line_items,
         customer_email: buyer.email,
-        success_url: `${origin}/order/{CHECKOUT_SESSION_ID}?status=success&order_id=${orderRow.id}`,
+        success_url: `${origin}/order/${orderRow.id}?status=success`,
         cancel_url: `${origin}/checkout?cancelled=1`,
         metadata: {
           order_id: orderRow.id,
