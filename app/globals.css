@@ -62,3 +62,30 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #47494c;
 }
+
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  text-decoration: none;
+  color: #fff;
+}
+.skip-to-content:focus {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  padding: 12px;
+  background: #f9372c;
+  color: #fff;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+}

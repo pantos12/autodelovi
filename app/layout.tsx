@@ -42,8 +42,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body style={{ margin: 0, background: '#0c0d0f', fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>
         <CartProvider>
+          <a href="#main-content" className="skip-to-content">
+            Preskoči na sadržaj
+          </a>
           <NavBar />
-          {children}
+          <div id="main-content">
+            {children}
+          </div>
         </CartProvider>
       </body>
     </html>
