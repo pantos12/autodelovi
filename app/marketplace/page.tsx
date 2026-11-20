@@ -100,6 +100,7 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -211,8 +212,24 @@ function MarketplaceContent() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
+      <style>{`
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        @media (max-width: 768px) {
+          .mp-container { grid-template-columns: 1fr !important; }
+          .mp-sidebar { display: none; }
+          .mp-sidebar.mp-sidebar--open { display: block; position: fixed; top: 64px; left: 0; right: 0; bottom: 0; z-index: 90; overflow-y: auto; border-radius: 0 !important; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+      `}</style>
+      <div className="mp-container" style={s.container}>
+        <div className={`mp-sidebar${filterOpen ? ' mp-sidebar--open' : ''}`} style={s.sidebar}>
+          <button
+            className="mp-filter-toggle"
+            onClick={() => setFilterOpen(false)}
+            style={{ display: 'none', width: '100%', padding: '10px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600, marginBottom: '16px', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
+          >
+            Zatvori filtere
+          </button>
           <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
             <label style={s.label}>Pretraga</label>
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -288,6 +305,13 @@ function MarketplaceContent() {
           </button>
         </div>
         <div>
+          <button
+            className="mp-filter-toggle"
+            onClick={() => setFilterOpen(o => !o)}
+            style={{ display: 'none', width: '100%', padding: '10px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600, marginBottom: '16px', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
+          >
+            Filteri
+          </button>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
             <p style={{ color: '#aaa', fontSize: '14px' }}>
               {loading ? 'Učitavanje...' : searchQuery ? `${total} rezultata za "${searchQuery}"` : `${total} delova`}
