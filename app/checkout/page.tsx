@@ -208,12 +208,17 @@ export default function CheckoutPage() {
               <span style={{ color: '#aaa', fontSize: '13px' }}>Subtotal</span>
               <span style={{ color: '#fff', fontSize: '13px' }}>{subtotal.toLocaleString('sr-RS')} {currency}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
               <span style={{ color: '#aaa', fontSize: '13px' }}>Dostava</span>
               <span style={{ color: shipping === 0 ? '#22c55e' : '#fff', fontSize: '13px' }}>
-                {shipping === 0 ? 'Besplatno' : `${shipping} ${currency}`}
+                {shipping === 0 ? 'Besplatno' : `${shipping.toLocaleString('sr-RS')} ${currency}`}
               </span>
             </div>
+            {shipping === 0 && (
+              <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '6px', padding: '6px 10px', marginBottom: '8px' }}>
+                <span style={{ color: '#22c55e', fontSize: '11px' }}>Ostvarili ste besplatnu dostavu</span>
+              </div>
+            )}
 
             <div style={{ height: '1px', background: '#2a2b2f', margin: '12px 0' }} />
 

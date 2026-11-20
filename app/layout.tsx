@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   authors: [{ name: 'AutoDelovi.sale' }],
   creator: 'AutoDelovi.sale',
   metadataBase: new URL('https://autodelovi.sale'),
+  icons: {
+    icon: '/favicon.svg',
+  },
   openGraph: {
     type: 'website',
     locale: 'sr_RS',
