@@ -19,6 +19,10 @@ export async function POST(req: Request) {
 
     const { session_id, items } = body;
 
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(session_id)) {
+      return NextResponse.json({ ok: false, error: 'invalid_session_id' }, { status: 400 });
+    }
+
     // 1) Upsert cart row by session_id
     const { data: cartRow, error: upsertErr } = await supabaseAdmin
       .from('carts')

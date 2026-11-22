@@ -6,7 +6,11 @@ export const runtime = 'edge';
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    const part = id.includes('-') && id.length === 36
+    if (!/^[a-z0-9-]+$/i.test(id)) {
+      return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
+    }
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const part = isUUID
       ? await getPartById(id)
       : await getPartBySlug(id) ?? await getPartById(id);
 
