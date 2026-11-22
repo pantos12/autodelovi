@@ -5,9 +5,13 @@ export const runtime = 'edge';
 
 export async function GET(request: NextRequest, { params }: { params: { partId: string } }) {
   try {
+    const { partId } = params;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(partId)) {
+      return NextResponse.json({ error: 'Invalid part ID' }, { status: 400 });
+    }
     const { searchParams } = new URL(request.url);
     const days = Math.min(parseInt(searchParams.get('days') ?? '30'), 365);
-    const history = await getPriceHistory(params.partId, days);
+    const history = await getPriceHistory(partId, days);
     const prices = history.map(h => h.price);
     const stats = prices.length > 0 ? {
       min: Math.min(...prices), max: Math.max(...prices),
