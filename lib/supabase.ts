@@ -16,7 +16,11 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 const isConfigured = () => !!process.env.NEXT_PUBLIC_SUPABASE_URL;
 
 export function sanitizeFilterValue(value: string): string {
-  return value.replace(/[,()]/g, ' ').replace(/\s+/g, ' ').trim();
+  return value
+    .replace(/[,().%_*\\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 200);
 }
 
 export async function getParts(params: {
