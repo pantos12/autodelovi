@@ -100,6 +100,7 @@ function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [availOnly, setAvailOnly] = useState(searchParams.get('avail') === '1');
+  const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') || '1');
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -209,83 +210,119 @@ function MarketplaceContent() {
     return out;
   }
 
+  const filterContent = (isMobile?: boolean) => (
+    <>
+      <form onSubmit={(e) => { handleSearch(e); if (isMobile) setFilterOpen(false); }} style={{ marginBottom: '20px' }}>
+        <label style={s.label}>Pretraga</label>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            placeholder="Naziv, broj dela, brend..."
+            style={{ ...s.select, flex: 1, padding: '8px 12px' }}
+          />
+          <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
+            🔍
+          </button>
+        </div>
+        {searchQuery && (
+          <button type="button" onClick={clearSearch} style={{ marginTop: '8px', background: 'none', border: 'none', color: '#f9372c', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
+            ✕ Obriši pretragu: &quot;{searchQuery}&quot;
+          </button>
+        )}
+      </form>
+
+      <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '16px' }}>Filteri</h3>
+
+      <div style={{ marginBottom: '16px' }}>
+        <label style={s.label}>Dostupnost</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
+            <input type="radio" name={isMobile ? 'avail-m' : 'avail'} checked={!availOnly} onChange={() => setAvailOnly(false)} style={{ accentColor: '#ff4d00' }} />
+            Sve ponude
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
+            <input type="radio" name={isMobile ? 'avail-m' : 'avail'} checked={availOnly} onChange={() => setAvailOnly(true)} style={{ accentColor: '#ff4d00' }} />
+            Samo dostupno (🟢 + 🟡)
+          </label>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '16px' }}>
+        <label style={s.label}>Marka</label>
+        <select style={s.select} value={filterMake} onChange={e => setFilterMake(e.target.value)}>
+          <option value="">Sve marke</option>
+          {['Volkswagen','BMW','Mercedes','Audi','Opel','Renault','Peugeot','Fiat','Toyota','Ford','Skoda','Seat'].map(m => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
+      </div>
+      <div style={{ marginBottom: '16px' }}>
+        <label style={s.label}>Kategorija</label>
+        <select style={s.select} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+          <option value="">Sve kategorije</option>
+          {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+        </select>
+      </div>
+      <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <input type="checkbox" id={isMobile ? 'instock-m' : 'instock'} checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
+        <label htmlFor={isMobile ? 'instock-m' : 'instock'} style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
+      </div>
+      <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+        Resetuj sve
+      </button>
+      {isMobile && (
+        <button onClick={() => setFilterOpen(false)} style={{ width: '100%', marginTop: '12px', padding: '12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+          Primeni filtere
+        </button>
+      )}
+    </>
+  );
+
   return (
     <div style={s.page}>
-      <div style={s.container}>
-        <div style={s.sidebar}>
-          <form onSubmit={handleSearch} style={{ marginBottom: '20px' }}>
-            <label style={s.label}>Pretraga</label>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <input
-                type="text"
-                value={searchInput}
-                onChange={e => setSearchInput(e.target.value)}
-                placeholder="Naziv, broj dela, brend..."
-                style={{ ...s.select, flex: 1, padding: '8px 12px' }}
-              />
-              <button type="submit" style={{ padding: '8px 12px', background: '#f9372c', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', flexShrink: 0 }}>
-                🔍
-              </button>
+      <style>{`
+        @media (max-width: 768px) {
+          .mp-grid { grid-template-columns: 1fr !important; }
+          .mp-sidebar-desktop { display: none !important; }
+          .mp-filter-toggle { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .mp-filter-toggle { display: none !important; }
+          .mp-sidebar-mobile { display: none !important; }
+        }
+      `}</style>
+
+      {/* Mobile filter toggle */}
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 16px 0' }}>
+        <button className="mp-filter-toggle" onClick={() => setFilterOpen(true)} style={{ display: 'none', alignItems: 'center', gap: '8px', padding: '10px 16px', background: '#1a1b1f', border: '1px solid #333', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+          <span>Filteri</span>
+          {(filterMake || filterCategory || filterInStock || availOnly || searchQuery) && (
+            <span style={{ background: '#f9372c', color: '#fff', fontSize: '11px', fontWeight: 700, borderRadius: '50%', width: '20px', height: '20px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              {[filterMake, filterCategory, filterInStock, availOnly, searchQuery].filter(Boolean).length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Mobile filter drawer */}
+      {filterOpen && (
+        <div className="mp-sidebar-mobile" style={{ position: 'fixed', inset: 0, zIndex: 200 }}>
+          <div onClick={() => setFilterOpen(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)' }} />
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '300px', maxWidth: '85vw', background: '#1a1b1f', padding: '20px', overflowY: 'auto', zIndex: 201 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, margin: 0 }}>Filteri</h3>
+              <button onClick={() => setFilterOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer', padding: '4px' }}>×</button>
             </div>
-            {searchQuery && (
-              <button type="button" onClick={clearSearch} style={{ marginTop: '8px', background: 'none', border: 'none', color: '#f9372c', fontSize: '12px', cursor: 'pointer', padding: 0 }}>
-                ✕ Obriši pretragu: &quot;{searchQuery}&quot;
-              </button>
-            )}
-          </form>
+            {filterContent(true)}
+          </div>
+        </div>
+      )}
 
-          <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '16px' }}>Filteri</h3>
-
-          {/* Availability band filter */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={s.label}>Dostupnost</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="avail"
-                  checked={!availOnly}
-                  onChange={() => setAvailOnly(false)}
-                  style={{ accentColor: '#ff4d00' }}
-                />
-                Sve ponude
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ddd', fontSize: '13px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="avail"
-                  checked={availOnly}
-                  onChange={() => setAvailOnly(true)}
-                  style={{ accentColor: '#ff4d00' }}
-                />
-                Samo dostupno (🟢 + 🟡)
-              </label>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <label style={s.label}>Marka</label>
-            <select style={s.select} value={filterMake} onChange={e => setFilterMake(e.target.value)}>
-              <option value="">Sve marke</option>
-              {['Volkswagen','BMW','Mercedes','Audi','Opel','Renault','Peugeot','Fiat','Toyota','Ford','Skoda','Seat'].map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={s.label}>Kategorija</label>
-            <select style={s.select} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-              <option value="">Sve kategorije</option>
-              {STATIC_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-            </select>
-          </div>
-          <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" id="instock" checked={filterInStock} onChange={e => setFilterInStock(e.target.checked)} style={{ accentColor: '#ff4d00' }} />
-            <label htmlFor="instock" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>Samo na stanju</label>
-          </div>
-          <button onClick={() => { setFilterMake(''); setFilterCategory(''); setFilterInStock(false); setAvailOnly(false); clearSearch(); }} style={{ width: '100%', padding: '8px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '13px' }}>
-            Resetuj sve
-          </button>
+      <div className="mp-grid" style={s.container}>
+        <div className="mp-sidebar-desktop" style={s.sidebar}>
+          {filterContent()}
         </div>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
